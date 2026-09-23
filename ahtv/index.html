@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AHtv · Solicita tu canción</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #0c0d10;
+      --card: #15171c;
+      --card2: #1c1f26;
+      --text: #f5f5f5;
+      --muted: #9ca3af;
+      --accent: #b8ff39;
+      --accentText: #111;
+      --danger: #ff5d5d;
+      --line: #2c3038;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #1a1d23 0%, var(--bg) 45%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+    .brand { text-align: center; margin: 8px 0 20px; }
+    .brand h1 { margin: 0; font-size: 34px; letter-spacing: .08em; }
+    .brand p { margin: 6px 0 0; color: var(--muted); }
+    .card {
+      background: rgba(21,23,28,.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      margin-top: 16px;
+    }
+    .counter { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .counter strong { font-size: 17px; }
+    .counter span { color: var(--accent); font-weight: 700; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.4; margin-top: 7px; }
+    .search { position: relative; margin-top: 16px; }
+    input {
+      width: 100%;
+      padding: 15px 16px;
+      background: #101217;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      outline: none;
+      font-size: 16px;
+    }
+    input:focus { border-color: var(--accent); }
+    .results { margin-top: 12px; display: grid; gap: 10px; }
+    .row {
+      background: var(--card2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 13px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .meta { min-width: 0; }
+    .artist { font-weight: 700; }
+    .title { color: #d4d7dd; margin-top: 3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    button {
+      border: 0; border-radius: 10px; padding: 10px 13px; font-weight: 800; cursor:pointer;
+      white-space: nowrap;
+    }
+    .request { background: var(--accent); color: var(--accentText); }
+    .request:disabled { background:#3c414b; color:#aeb3bb; cursor:not-allowed; }
+    .mine { margin-top: 18px; display:grid; gap:10px; }
+    .section-label { margin-top: 18px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .recent-item { padding:12px 13px; border-radius:12px; background:#111318; border:1px solid var(--line); }
+    .recent-item .artist { font-size: 14px; }
+    .recent-item .title { font-size: 14px; }
+    .recent-time { margin-top: 4px; color:#777f8b; font-size:11px; }
+    .mine-item { padding:12px 13px; border-radius:12px; background:#111318; border:1px solid var(--line); }
+    .mine-item .artist { font-size: 14px; }
+    .mine-item .title { font-size: 14px; }
+    .msg { margin-top: 12px; padding: 11px 12px; border-radius: 10px; font-size: 14px; background:#1b1e24; color:#d9dce2; }
+    .msg.error { border:1px solid rgba(255,93,93,.4); color:#ffd0d0; }
+    .empty { color:var(--muted); text-align:center; padding:18px 8px; }
+    .tiny { margin-top: 14px; color:#777f8b; font-size:11px; text-align:center; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="brand">
+      <h1>AHtv</h1>
+      <p>Solicita tu canción</p>
+    </header>
+
+    <section class="card">
+      <div class="counter">
+        <strong>Mis solicitudes</strong>
+        <span id="counter">0 de 2</span>
+      </div>
+      <div class="hint">Puedes tener máximo 2 solicitudes activas. Cuando suenen, podrás pedir más.</div>
+      <div id="mine" class="mine"></div>
+      <div class="section-label">Escuchadas recientemente</div>
+      <div id="recent" class="mine"></div>
+    </section>
+
+    <section class="card">
+      <strong>Buscar canción</strong>
+      <div class="search">
+        <input id="search" type="search" autocomplete="off" placeholder="Artista o canción…" />
+      </div>
+      <div id="results" class="results"></div>
+      <div id="message" class="msg" hidden></div>
+    </section>
+
+    <div class="tiny">AHtv · AvoHouse</div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://tjarildqqxtjmafpiyuz.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
+    const { createClient } = window.supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const searchInput = document.getElementById('search');
+    const resultsEl = document.getElementById('results');
+    const mineEl = document.getElementById('mine');
+    const recentEl = document.getElementById('recent');
+    const counterEl = document.getElementById('counter');
+    const messageEl = document.getElementById('message');
+
+    const TOKEN_KEY = 'ahtv_client_token';
+    let clientToken = localStorage.getItem(TOKEN_KEY);
+    if (!clientToken) {
+      clientToken = crypto.randomUUID();
+      localStorage.setItem(TOKEN_KEY, clientToken);
+    }
+
+    let myRequests = [];
+    let recentSongs = [];
+    let searchTimer = null;
+    let lastQuery = '';
+
+    function showMessage(text, error = false) {
+      messageEl.hidden = !text;
+      messageEl.textContent = text || '';
+      messageEl.classList.toggle('error', error);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+      })[ch]);
+    }
+
+    function updateMine() {
+      counterEl.textContent = \`\${myRequests.length} de 2\`;
+      mineEl.innerHTML = '';
+
+      if (!myRequests.length) {
+        mineEl.innerHTML = '<div class="empty">Todavía no has pedido canciones.</div>';
+        return;
+      }
+
+      for (const song of myRequests) {
+        const div = document.createElement('div');
+        div.className = 'mine-item';
+        div.innerHTML = \`<div class="artist">\${escapeHtml(song.artist)}</div><div class="title">\${escapeHtml(song.title)}</div>\`;
+        mineEl.appendChild(div);
+      }
+    }
+
+    function formatRecentTime(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return \`Escuchada: \${date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}\`;
+    }
+
+    function updateRecent() {
+      recentEl.innerHTML = '';
+
+      if (!recentSongs.length) {
+        recentEl.innerHTML = '<div class="empty">Todavía no has escuchado canciones solicitadas recientemente.</div>';
+        return;
+      }
+
+      for (const song of recentSongs) {
+        const div = document.createElement('div');
+        div.className = 'recent-item';
+        div.innerHTML = \`<div class="artist">\${escapeHtml(song.artist)}</div><div class="title">\${escapeHtml(song.title)}</div><div class="recent-time">\${escapeHtml(formatRecentTime(song.recent_at))}</div>\`;
+        recentEl.appendChild(div);
+      }
+    }
+
+    async function loadMine() {
+      const [mineResult, recentResult] = await Promise.all([
+        db.rpc('ahtv_mis_solicitudes', {
+          p_client_token: clientToken
+        }),
+        db.rpc('ahtv_escuchadas_recientemente', {
+          p_client_token: clientToken
+        })
+      ]);
+
+      if (mineResult.error) {
+        console.error(mineResult.error);
+      } else {
+        myRequests = mineResult.data || [];
+        updateMine();
+      }
+
+      if (recentResult.error) {
+        console.error(recentResult.error);
+      } else {
+        recentSongs = recentResult.data || [];
+        updateRecent();
+      }
+
+      const songs = lastQuery ? await fetchSongs(lastQuery) : [];
+      renderResults(songs);
+    }
+
+    async function fetchSongs(query) {
+      const q = query.trim();
+      if (q.length < 2) return [];
+
+      const safe = q.replace(/,/g, ' ');
+      const filter = \`artist.ilike.%\${safe}%,title.ilike.%\${safe}%\`;
+
+      const { data, error } = await db
+        .from('songs')
+        .select('id,artist,title')
+        .eq('active', true)
+        .or(filter)
+        .order('artist', { ascending: true })
+        .order('title', { ascending: true })
+        .limit(20);
+
+      if (error) {
+        console.error(error);
+        showMessage('No se pudo realizar la búsqueda.', true);
+        return [];
+      }
+      return data || [];
+    }
+
+    function isMine(songId) {
+      return myRequests.some(s => s.song_id === songId);
+    }
+
+    function isRecent(songId) {
+      return recentSongs.some(s => s.song_id === songId);
+    }
+
+    function renderResults(songs) {
+      resultsEl.innerHTML = '';
+      if (!lastQuery || lastQuery.trim().length < 2) {
+        resultsEl.innerHTML = '<div class="empty">Escribe al menos 2 caracteres para buscar.</div>';
+        return;
+      }
+      if (!songs.length) {
+        resultsEl.innerHTML = '<div class="empty">No encontramos coincidencias.</div>';
+        return;
+      }
+
+      const full = myRequests.length >= 2;
+      for (const song of songs) {
+        const already = isMine(song.id);
+        const recent = isRecent(song.id);
+        const blocked = already || recent || full;
+        const div = document.createElement('div');
+        div.className = 'row';
+
+        let label = 'SOLICITAR';
+        if (already) label = 'YA PEDIDA';
+        else if (recent) label = 'YA ESCUCHADA';
+
+        div.innerHTML = \`
+          <div class="meta">
+            <div class="artist">\${escapeHtml(song.artist)}</div>
+            <div class="title">\${escapeHtml(song.title)}</div>
+          </div>
+          <button class="request" \${blocked ? 'disabled' : ''}>
+            \${label}
+          </button>
+        \`;
+
+        const btn = div.querySelector('button');
+        if (!blocked) {
+          btn.addEventListener('click', () => requestSong(song, btn));
+        }
+        resultsEl.appendChild(div);
+      }
+    }
+
+    async function doSearch() {
+      lastQuery = searchInput.value;
+      if (lastQuery.trim().length < 2) {
+        renderResults([]);
+        return;
+      }
+      showMessage('');
+      const songs = await fetchSongs(lastQuery);
+      renderResults(songs);
+    }
+
+    async function requestSong(song, button) {
+      button.disabled = true;
+      button.textContent = 'ENVIANDO…';
+      showMessage('');
+
+      const { error } = await db.from('requests').insert({
+        song_id: song.id,
+        client_token: clientToken,
+        status: 'pending'
+      });
+
+      if (error) {
+        console.error(error);
+        const msg = String(error.message || '');
+        if (msg.includes('máximo de 2')) {
+          showMessage('Ya tienes 2 solicitudes activas. Espera a que suenen para pedir otra.', true);
+        } else if (msg.includes('Esta canción ya está solicitada')) {
+          showMessage('Esa canción ya está en tus solicitudes.', true);
+        } else if (msg.includes('ya fue reproducida hace menos de una hora')) {
+          showMessage('Esa canción fue escuchada recientemente. Podrás pedirla de nuevo más adelante.', true);
+        } else {
+          showMessage('No fue posible enviar la solicitud. Inténtalo de nuevo.', true);
+        }
+        button.disabled = false;
+        button.textContent = 'SOLICITAR';
+        await loadMine();
+        return;
+      }
+
+      myRequests.push({ song_id: song.id, artist: song.artist, title: song.title });
+      updateMine();
+      button.textContent = 'YA PEDIDA';
+      button.disabled = true;
+      showMessage('Solicitud enviada correctamente.');
+      renderResults(await fetchSongs(lastQuery));
+    }
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(doSearch, 280);
+    });
+
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        clearTimeout(searchTimer);
+        doSearch();
+      }
+    });
+
+    updateMine();
+    updateRecent();
+    renderResults([]);
+    loadMine();
+
+    // Refrescar
+    // Mantener "Mis solicitudes" sincronizado para liberar cupos
+    // cuando una solicitud deja de estar activa.
+    setInterval(loadMine, 10000);
+  </script>
+</body>
+</html>
