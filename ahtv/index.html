@@ -590,6 +590,16 @@ body::before {
     loadPublicNowPlaying();
     startPublicNowPlayingRealtime();
     loadRequestAvailability();
+
+    // Al volver a la pestaña/ventana, no dependemos de haber recibido el
+    // evento mientras estaba en segundo plano: volvemos a leer el estado actual.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshPublicStateOnReturn();
+    });
+
+    window.addEventListener('focus', refreshPublicStateOnReturn);
+    window.addEventListener('pageshow', refreshPublicStateOnReturn);
+    window.addEventListener('online', refreshPublicStateOnReturn);
     loadMine();
 
     // Refrescar
