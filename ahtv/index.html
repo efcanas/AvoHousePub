@@ -20,12 +20,13 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      overflow-x: hidden;
       background: radial-gradient(circle at top, #1a1d23 0%, var(--bg) 45%);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       min-height: 100vh;
     }
-    .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+    .wrap { width: 100%; max-width: 760px; margin: 0 auto; padding: 20px 12px 44px; }
     .brand { text-align: center; margin: 8px 0 20px; }
     .brand h1 { margin: 0; font-size: 34px; letter-spacing: .08em; }
     .brand p { margin: 6px 0 0; color: var(--muted); }
@@ -55,18 +56,21 @@
     input:focus { border-color: var(--accent); }
     .results { margin-top: 12px; display: grid; gap: 10px; }
     .row {
+      width: 100%;
+      min-width: 0;
       background: var(--card2);
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 13px 14px;
       display:flex; align-items:center; justify-content:space-between; gap:12px;
     }
-    .meta { min-width: 0; }
+    .meta { flex: 1 1 auto; min-width: 0; max-width: 100%; }
     .artist { font-weight: 700; }
-    .title { color: #d4d7dd; margin-top: 3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .title { color: #d4d7dd; margin-top: 3px; overflow-wrap:anywhere; word-break:break-word; line-height:1.3; }
     button {
       border: 0; border-radius: 10px; padding: 10px 13px; font-weight: 800; cursor:pointer;
       white-space: nowrap;
+      flex: 0 0 auto;
     }
     .request { background: var(--accent); color: var(--accentText); }
     .request:disabled { background:#3c414b; color:#aeb3bb; cursor:not-allowed; }
@@ -83,6 +87,16 @@
     .msg.error { border:1px solid rgba(255,93,93,.4); color:#ffd0d0; }
     .empty { color:var(--muted); text-align:center; padding:18px 8px; }
     .tiny { margin-top: 14px; color:#777f8b; font-size:11px; text-align:center; }
+    @media (max-width: 520px) {
+      .wrap { padding: 14px 10px 36px; }
+      .card { padding: 14px; border-radius: 15px; }
+      .row { align-items: flex-start; }
+      .row .request { align-self: center; }
+      .artist { font-size: 14px; }
+      .title { font-size: 14px; }
+      .brand h1 { font-size: 30px; }
+      .counter strong { font-size: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -94,10 +108,10 @@
 
     <section class="card">
       <div class="counter">
-        <strong>Solicitudes activas</strong>
+        <strong>Mis solicitudes</strong>
         <span id="counter">0 de 2</span>
       </div>
-      <div class="hint">Las solicitudes activas se comparten entre todos los clientes y ocupan tus 2 espacios disponibles.</div>
+      <div class="hint">Puedes tener máximo 2 solicitudes activas. Cuando suenen, podrás pedir más.</div>
       <div id="mine" class="mine"></div>
       <div class="section-label">Escuchadas recientemente</div>
       <div id="recent" class="mine"></div>
@@ -322,7 +336,7 @@
         if (msg.includes('máximo de 2')) {
           showMessage('Ya tienes 2 solicitudes activas. Espera a que suenen para pedir otra.', true);
         } else if (msg.includes('Esta canción ya está solicitada')) {
-          showMessage('Esa canción ya está pendiente para todos los clientes y cuenta como uno de tus 2 espacios.', true);
+          showMessage('Esa canción ya está en tus solicitudes.', true);
         } else if (msg.includes('ya fue reproducida hace menos de una hora')) {
           showMessage('Esa canción fue escuchada recientemente. Podrás pedirla de nuevo más adelante.', true);
         } else {
