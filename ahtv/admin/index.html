@@ -180,7 +180,7 @@
     </div>
 
     <div id="adminStatus" class="muted">Cargando…</div>
-    <div id="refreshInfo" class="meta">Actualización automática cada 5 segundos.</div>
+    <div id="refreshInfo" class="meta">Información en vivo.</div>
 
     <div class="mode-card">
       <div class="mode-row">
@@ -274,6 +274,11 @@
   let requestsEnabled = true;
   let requestsLoading = false;
   let queueActionBusy = false;
+  let realtimeChannel = null;
+  let liveRefreshTimer = null;
+  let liveNeedsRequests = false;
+  let liveNeedsNowPlaying = false;
+  let liveNeedsMode = false;
 
   function showError(el, message) {
     el.textContent = message;
@@ -334,9 +339,11 @@
     await loadRequestMode();
     await loadNowPlaying();
     await loadRequests();
+    await startRealtime();
   }
 
   async function logout() {
+    await stopRealtime();
     await db.auth.signOut();
     showLogin();
   }
@@ -612,11 +619,6 @@
     if (requestsLoading) return;
     requestsLoading = true;
 
-    adminStatus.className = "muted";
-    adminStatus.textContent = "Cargando solicitudes…";
-    requestsEl.innerHTML = "";
-    queueEl.innerHTML = "";
-
     const { data, error } = await db
       .from("requests")
       .select("id,status,requested_at,accepted_at,started_at,queue_position,song_id,songs(artist,title)")
@@ -654,12 +656,16 @@
     queueCount.textContent =
       queue.length === 1 ? "1" : `${queue.length}`;
 
+    adminStatus.className = "muted";
     adminStatus.textContent =
       `${pending.length} pendiente${pending.length === 1 ? "" : "s"} · ` +
       `${queue.length} en cola`;
 
     refreshInfo.textContent =
-      `Actualizado: ${new Date().toLocaleTimeString()} · actualización automática cada 5 segundos`;
+      `Actualizado: ${new Date().toLocaleTimeString()} · información en vivo`;
+
+    requestsEl.innerHTML = "";
+    queueEl.innerHTML = "";
 
     if (!pending.length) {
       requestsEl.innerHTML = '<div class="muted" style="padding:10px 0;">No hay solicitudes pendientes.</div>';
@@ -906,6 +912,84 @@
     await loadRequests();
   }
 
+  function scheduleLiveRefresh(type) {
+    if (type === "requests") liveNeedsRequests = true;
+    if (type === "now_playing") liveNeedsNowPlaying = true;
+    if (type === "settings") liveNeedsMode = true;
+
+    clearTimeout(liveRefreshTimer);
+    liveRefreshTimer = setTimeout(async () => {
+      liveRefreshTimer = null;
+
+      const needsRequests = liveNeedsRequests;
+      const needsNowPlaying = liveNeedsNowPlaying;
+      const needsMode = liveNeedsMode;
+
+      liveNeedsRequests = false;
+      liveNeedsNowPlaying = false;
+      liveNeedsMode = false;
+
+      const jobs = [];
+      if (needsRequests) jobs.push(loadRequests());
+      if (needsNowPlaying) jobs.push(loadNowPlaying());
+      if (needsMode) jobs.push(loadRequestMode());
+
+      await Promise.all(jobs);
+    }, 120);
+  }
+
+  async function startRealtime() {
+    await stopRealtime();
+
+    realtimeChannel = db
+      .channel("ahtv-admin-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "requests" },
+        () => scheduleLiveRefresh("requests")
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ahtv_now_playing" },
+        () => scheduleLiveRefresh("now_playing")
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ahtv_settings" },
+        () => scheduleLiveRefresh("settings")
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "playback_history" },
+        () => scheduleLiveRefresh("requests")
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          refreshInfo.textContent = "Conexión en vivo activa.";
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          refreshInfo.textContent = "Conexión en vivo temporalmente interrumpida.";
+        } else if (status === "CLOSED") {
+          refreshInfo.textContent = "Conexión en vivo cerrada. Pulsa ACTUALIZAR para comprobar el estado.";
+        }
+      });
+  }
+
+  async function stopRealtime() {
+    if (liveRefreshTimer) {
+      clearTimeout(liveRefreshTimer);
+      liveRefreshTimer = null;
+    }
+
+    liveNeedsRequests = false;
+    liveNeedsNowPlaying = false;
+    liveNeedsMode = false;
+
+    if (realtimeChannel) {
+      await db.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+  }
+
   async function init() {
     const { data } = await db.auth.getSession();
 
@@ -914,6 +998,7 @@
       await loadRequestMode();
       await loadNowPlaying();
       await loadRequests();
+      await startRealtime();
     } else {
       showLogin();
     }
@@ -933,19 +1018,6 @@
   });
 
   init();
-
-  setInterval(() => {
-    if (document.visibilityState === "visible") {
-      loadNowPlaying();
-    }
-  }, 2000);
-
-  setInterval(() => {
-    if (document.visibilityState === "visible") {
-      loadRequestMode();
-      loadRequests();
-    }
-  }, 5000);
 </script>
 </body>
 </html>
