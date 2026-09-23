@@ -165,6 +165,7 @@ body::before {
       <div class="search">
         <input id="search" type="search" autocomplete="off" placeholder="Artista o canción…" />
       </div>
+      <div id="availabilityMessage" class="msg" hidden></div>
       <div id="results" class="results"></div>
       <div id="message" class="msg" hidden></div>
     </section>
@@ -183,6 +184,7 @@ body::before {
     const mineEl = document.getElementById('mine');
     const recentEl = document.getElementById('recent');
     const counterEl = document.getElementById('counter');
+    const availabilityMessageEl = document.getElementById('availabilityMessage');
     const messageEl = document.getElementById('message');
 
     const TOKEN_KEY = 'ahtv_client_token';
@@ -194,8 +196,31 @@ body::before {
 
     let myRequests = [];
     let recentSongs = [];
+    let requestsEnabled = true;
     let searchTimer = null;
     let lastQuery = '';
+
+    function renderRequestAvailability() {
+      availabilityMessageEl.hidden = requestsEnabled;
+      availabilityMessageEl.textContent = requestsEnabled
+        ? ''
+        : 'Las solicitudes están cerradas en este momento.';
+      availabilityMessageEl.classList.toggle('error', !requestsEnabled);
+    }
+
+    async function loadRequestAvailability() {
+      const { data, error } = await db.rpc('ahtv_solicitudes_habilitadas');
+      if (error) {
+        console.error(error);
+        return;
+      }
+      requestsEnabled = data !== false;
+      renderRequestAvailability();
+      if (lastQuery) {
+        const songs = await fetchSongs(lastQuery);
+        renderResults(songs);
+      }
+    }
 
     function showMessage(text, error = false) {
       messageEl.hidden = !text;
@@ -324,12 +349,13 @@ body::before {
       for (const song of songs) {
         const already = isMine(song.id);
         const recent = isRecent(song.id);
-        const blocked = already || recent || full;
+        const blocked = !requestsEnabled || already || recent || full;
         const div = document.createElement('div');
         div.className = 'row';
 
         let label = 'SOLICITAR';
-        if (already) label = 'YA PEDIDA';
+        if (!requestsEnabled) label = 'CERRADAS';
+        else if (already) label = 'YA PEDIDA';
         else if (recent) label = 'YA ESCUCHADA';
         else if (full) label = 'SIN CUPOS';
 
@@ -376,7 +402,11 @@ body::before {
       if (error) {
         console.error(error);
         const msg = String(error.message || '');
-        if (msg.includes('máximo de 2')) {
+        if (msg.includes('Las solicitudes están cerradas')) {
+          requestsEnabled = false;
+          renderRequestAvailability();
+          showMessage('Las solicitudes están cerradas en este momento.', true);
+        } else if (msg.includes('máximo de 2')) {
           showMessage('Ya tienes 2 solicitudes activas. Espera a que suenen para pedir otra.', true);
         } else if (msg.includes('Esta canción ya está solicitada')) {
           showMessage('Esa canción ya está en tus solicitudes.', true);
@@ -413,13 +443,18 @@ body::before {
 
     updateMine();
     updateRecent();
+    renderRequestAvailability();
     renderResults([]);
+    loadRequestAvailability();
     loadMine();
 
     // Refrescar
     // Mantener "Mis solicitudes" sincronizado para liberar cupos
     // cuando una solicitud deja de estar activa.
-    setInterval(loadMine, 5000);
+    setInterval(() => {
+      loadMine();
+      loadRequestAvailability();
+    }, 5000);
   </script>
 </body>
 </html>
