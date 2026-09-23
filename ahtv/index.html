@@ -331,23 +331,74 @@ body::before {
       renderPublicNowPlaying(data);
     }
 
-    function startPublicNowPlayingRealtime() {
-      db
+    let publicNowPlayingChannel = null;
+    let publicNowPlayingRealtimeStatus = 'CLOSED';
+    let publicNowPlayingRefreshTimer = null;
+    let publicNowPlayingReconnectTimer = null;
+
+    async function startPublicNowPlayingRealtime() {
+      if (publicNowPlayingChannel) {
+        try {
+          await db.removeChannel(publicNowPlayingChannel);
+        } catch (e) {
+          console.warn('AHtv estado público: no se pudo retirar el canal anterior.', e);
+        }
+        publicNowPlayingChannel = null;
+      }
+
+      publicNowPlayingRealtimeStatus = 'CONNECTING';
+
+      const channel = db
         .channel('ahtv-public-now-playing')
         .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'ahtv_public_now_playing'
-          },
-          () => loadPublicNowPlaying()
-        )
-        .subscribe((status) => {
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn('AHtv estado público: Realtime no disponible.', status);
+          'broadcast',
+          { event: 'UPDATE' },
+          (message) => {
+            const data = message && message.payload;
+            if (data && data.updated_at) {
+              renderPublicNowPlaying(data);
+            } else {
+              loadPublicNowPlaying();
+            }
           }
-        });
+        );
+
+      publicNowPlayingChannel = channel;
+
+      channel.subscribe((status, err) => {
+        publicNowPlayingRealtimeStatus = status;
+
+        if (status === 'SUBSCRIBED') {
+          loadPublicNowPlaying();
+          return;
+        }
+
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('AHtv estado público: Realtime Broadcast no disponible.', status, err || '');
+
+          clearTimeout(publicNowPlayingReconnectTimer);
+          publicNowPlayingReconnectTimer = setTimeout(() => {
+            if (!document.hidden && navigator.onLine) {
+              startPublicNowPlayingRealtime();
+            }
+          }, 2000);
+        }
+      });
+    }
+
+    function refreshPublicStateOnReturn() {
+      clearTimeout(publicNowPlayingRefreshTimer);
+      publicNowPlayingRefreshTimer = setTimeout(async () => {
+        await loadPublicNowPlaying();
+
+        if (
+          publicNowPlayingRealtimeStatus !== 'SUBSCRIBED' &&
+          !document.hidden &&
+          navigator.onLine
+        ) {
+          await startPublicNowPlayingRealtime();
+        }
+      }, 120);
     }
 
     async function loadRequestAvailability() {
@@ -608,8 +659,9 @@ body::before {
     setInterval(() => {
       loadMine();
       loadRequestAvailability();
+      // Respaldo: el mecanismo principal es Broadcast en tiempo real.
       loadPublicNowPlaying();
-    }, 5000);
+    }, 15000);
   </script>
 </body>
 </html>
