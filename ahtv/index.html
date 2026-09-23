@@ -121,9 +121,22 @@ html, body {
   background: #000 !important;
 }
 body {
-  background: #000 url("../imagenes/FondoAHtv.png") center top / cover no-repeat fixed !important;
-  background-attachment: fixed !important;
-  padding-top: 0;
+  padding-top: 300px;
+  position: relative;
+}
+body::before {
+  content: "";
+  position: fixed;
+  top: 300px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("../imagenes/FondoAHtv.png") center center / cover no-repeat;
+  z-index: 0;
+}
+.wrap {
+  position: relative;
+  z-index: 1;
 }
 </style>
 
