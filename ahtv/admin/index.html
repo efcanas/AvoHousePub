@@ -189,6 +189,12 @@
           <div id="requestModeHelp" class="mode-help">Cargando configuración.</div>
         </div>
         <button id="requestModeBtn" class="primary" disabled>CAMBIAR</button>
+        <div>
+          <div class="mode-label">RECEPCIÓN DE SOLICITUDES</div>
+          <div id="requestsEnabledValue" class="mode-value">Cargando…</div>
+          <div id="requestsEnabledHelp" class="mode-help">Cargando configuración.</div>
+        </div>
+        <button id="requestsEnabledBtn" class="primary" disabled>CAMBIAR</button>
       </div>
     </div>
 
@@ -259,8 +265,12 @@
   const requestModeValueEl = document.getElementById("requestModeValue");
   const requestModeHelpEl = document.getElementById("requestModeHelp");
   const requestModeBtn = document.getElementById("requestModeBtn");
+  const requestsEnabledValueEl = document.getElementById("requestsEnabledValue");
+  const requestsEnabledHelpEl = document.getElementById("requestsEnabledHelp");
+  const requestsEnabledBtn = document.getElementById("requestsEnabledBtn");
 
   let currentRequestMode = "automatico";
+  let requestsEnabled = true;
   let requestsLoading = false;
   let queueActionBusy = false;
 
@@ -291,9 +301,13 @@
     nowMetaEl.textContent = "";
     nowMetaEl.className = "now-meta";
     currentRequestMode = "automatico";
+    requestsEnabled = true;
     requestModeValueEl.textContent = "";
     requestModeHelpEl.textContent = "";
     requestModeBtn.disabled = true;
+    requestsEnabledValueEl.textContent = "";
+    requestsEnabledHelpEl.textContent = "";
+    requestsEnabledBtn.disabled = true;
   }
 
   async function login() {
@@ -385,20 +399,62 @@
   async function loadRequestMode() {
     const { data, error } = await db
       .from("ahtv_settings")
-      .select("request_mode")
+      .select("request_mode,requests_enabled")
       .eq("id", 1)
       .maybeSingle();
 
     if (error) {
       console.error(error);
       requestModeValueEl.textContent = "No disponible";
-      requestModeHelpEl.textContent = `No se pudo cargar el modo: ${error.message}`;
+      requestModeHelpEl.textContent = `No se pudo cargar la configuración: ${error.message}`;
       requestModeBtn.disabled = true;
+      requestsEnabledValueEl.textContent = "No disponible";
+      requestsEnabledHelpEl.textContent = "";
+      requestsEnabledBtn.disabled = true;
       return;
     }
 
     currentRequestMode = data?.request_mode === "manual" ? "manual" : "automatico";
+    requestsEnabled = data?.requests_enabled !== false;
     renderRequestMode();
+    renderRequestsEnabled();
+  }
+
+  function renderRequestsEnabled() {
+    requestsEnabledValueEl.textContent = requestsEnabled ? "PERMITIDAS" : "BLOQUEADAS";
+    requestsEnabledHelpEl.textContent = requestsEnabled
+      ? "Los clientes pueden enviar nuevas solicitudes."
+      : "Los clientes no pueden enviar nuevas solicitudes. Las solicitudes ya existentes no se modifican.";
+    requestsEnabledBtn.textContent = requestsEnabled ? "BLOQUEAR" : "PERMITIR";
+    requestsEnabledBtn.disabled = false;
+  }
+
+  async function toggleRequestsEnabled() {
+    if (requestsEnabledBtn.disabled) return;
+
+    const nextValue = !requestsEnabled;
+    requestsEnabledBtn.disabled = true;
+
+    const { data, error } = await db.rpc("ahtv_establecer_solicitudes_habilitadas", {
+      p_habilitadas: nextValue
+    });
+
+    if (error) {
+      console.error(error);
+      adminStatus.className = "error";
+      adminStatus.textContent = `No se pudo cambiar la recepción de solicitudes: ${error.message}`;
+      renderRequestsEnabled();
+      return;
+    }
+
+    requestsEnabled = data !== false;
+    renderRequestsEnabled();
+    adminStatus.className = "ok";
+    adminStatus.textContent = requestsEnabled
+      ? "Solicitudes permitidas."
+      : "Solicitudes bloqueadas.";
+
+    await loadRequests();
   }
 
   async function toggleRequestMode() {
@@ -869,6 +925,7 @@
   });
   logoutBtn.addEventListener("click", logout);
   requestModeBtn.addEventListener("click", toggleRequestMode);
+  requestsEnabledBtn.addEventListener("click", toggleRequestsEnabled);
 
   passwordEl.addEventListener("keydown", e => {
     if (e.key === "Enter") login();
