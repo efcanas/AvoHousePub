@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AHtv · Administración</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101010;
+      color: #f3f3f3;
+    }
+    main {
+      width: min(900px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    h1 { margin: 0; font-size: 34px; }
+    .muted { color: #9e9e9e; }
+    .card {
+      border: 1px solid #2d2d2d;
+      border-radius: 14px;
+      background: #171717;
+      padding: 18px;
+      margin: 12px 0;
+    }
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      margin: 7px 0;
+      border: 1px solid #353535;
+      border-radius: 10px;
+      background: #121212;
+      color: #fff;
+      font-size: 16px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    .primary { background: #f0f0f0; color: #101010; }
+    .danger { background: #2a2a2a; color: #fff; }
+    button:disabled { opacity: .45; cursor: default; }
+    .song-artist { font-size: 19px; font-weight: 700; }
+    .song-title { margin-top: 4px; color: #c7c7c7; font-size: 17px; }
+    .meta { margin-top: 9px; color: #8f8f8f; font-size: 13px; }
+    .error { color: #ff8e8e; }
+    .ok { color: #9ff0ad; }
+    .hidden { display: none; }
+    .topline { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .queue-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .queue-actions button { margin-right: 0; min-width: 44px; }
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 11px 0;
+      border-top: 1px solid #292929;
+    }
+    .history-row:first-child { border-top: 0; }
+    .history-main { min-width: 0; }
+    .history-time { white-space: nowrap; color: #8f8f8f; font-size: 13px; }
+    .now-card {
+      border: 1px solid #3a3a3a;
+      border-radius: 14px;
+      background: #1b1b1b;
+      padding: 18px;
+      margin: 16px 0 18px;
+    }
+    .now-label {
+      font-size: 12px;
+      letter-spacing: .08em;
+      font-weight: 800;
+      color: #9ff0ad;
+    }
+    .now-artist {
+      margin-top: 9px;
+      font-size: 25px;
+      font-weight: 800;
+    }
+    .now-title {
+      margin-top: 4px;
+      font-size: 21px;
+      color: #d2d2d2;
+    }
+    .now-meta {
+      margin-top: 10px;
+      color: #8f8f8f;
+      font-size: 13px;
+    }
+    .now-empty {
+      margin-top: 8px;
+      color: #9e9e9e;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 7px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #242424;
+      color: #bdbdbd;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mode-card {
+      border: 1px solid #3a3a3a;
+      border-radius: 14px;
+      background: #151515;
+      padding: 16px 18px;
+      margin: 12px 0 18px;
+    }
+    .mode-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .mode-label {
+      font-size: 12px;
+      letter-spacing: .08em;
+      font-weight: 800;
+      color: #bdbdbd;
+    }
+    .mode-value {
+      margin-top: 5px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+    .mode-help {
+      margin-top: 7px;
+      color: #8f8f8f;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .badge-rejected {
+      background: #3a2323;
+      color: #ffaaaa;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>AHtv</h1>
+      <div class="muted">Administración de solicitudes</div>
+    </div>
+    <button id="logoutBtn" class="danger hidden">CERRAR SESIÓN</button>
+  </header>
+
+  <section id="loginCard" class="card">
+    <h2>Acceso</h2>
+    <input id="email" type="email" placeholder="Correo" autocomplete="username">
+    <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button id="loginBtn" class="primary">ENTRAR</button>
+    <div id="loginStatus" class="muted"></div>
+  </section>
+
+  <section id="adminArea" class="hidden">
+    <div class="topline">
+      <h2>Solicitudes</h2>
+      <button id="refreshBtn" class="primary">ACTUALIZAR</button>
+    </div>
+
+    <div id="adminStatus" class="muted">Cargando…</div>
+    <div id="refreshInfo" class="meta">Actualización automática cada 5 segundos.</div>
+
+    <div class="mode-card">
+      <div class="mode-row">
+        <div>
+          <div class="mode-label">MODO DE SOLICITUDES</div>
+          <div id="requestModeValue" class="mode-value">Cargando…</div>
+          <div id="requestModeHelp" class="mode-help">Cargando configuración.</div>
+        </div>
+        <button id="requestModeBtn" class="primary" disabled>CAMBIAR</button>
+      </div>
+    </div>
+
+    <div id="nowPlayingCard" class="now-card">
+      <div class="now-label">▶ REPRODUCIENDO AHORA</div>
+      <div id="nowArtist" class="now-artist">Cargando…</div>
+      <div id="nowTitle" class="now-title"></div>
+      <div id="nowMeta" class="now-meta"></div>
+    </div>
+
+    <div class="card">
+      <div class="topline">
+        <h3 style="margin:0;">Pendientes</h3>
+        <span id="pendingCount" class="muted"></span>
+      </div>
+      <div id="requests"></div>
+    </div>
+
+    <div class="card">
+      <div class="topline">
+        <h3 style="margin:0;">En cola</h3>
+        <span id="queueCount" class="muted"></span>
+      </div>
+      <div id="queue"></div>
+    </div>
+
+    <div class="card">
+      <div class="topline">
+        <h3 style="margin:0;">Lo que ha sonado</h3>
+        <span id="historyCount" class="muted"></span>
+      </div>
+      <div id="historyInfo" class="meta">Jornada AH: desde las 12:00.</div>
+      <div id="history"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Solo Publishable key. Nunca usar la Secret key aquí.
+  const SUPABASE_URL = "https://tjarildqqxtjmafpiyuz.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT";
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  const loginCard = document.getElementById("loginCard");
+  const adminArea = document.getElementById("adminArea");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  const emailEl = document.getElementById("email");
+  const passwordEl = document.getElementById("password");
+  const loginBtn = document.getElementById("loginBtn");
+  const loginStatus = document.getElementById("loginStatus");
+
+  const adminStatus = document.getElementById("adminStatus");
+  const requestsEl = document.getElementById("requests");
+  const queueEl = document.getElementById("queue");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const refreshInfo = document.getElementById("refreshInfo");
+  const pendingCount = document.getElementById("pendingCount");
+  const queueCount = document.getElementById("queueCount");
+  const historyEl = document.getElementById("history");
+  const historyCount = document.getElementById("historyCount");
+  const historyInfo = document.getElementById("historyInfo");
+  const nowArtistEl = document.getElementById("nowArtist");
+  const nowTitleEl = document.getElementById("nowTitle");
+  const nowMetaEl = document.getElementById("nowMeta");
+  const requestModeValueEl = document.getElementById("requestModeValue");
+  const requestModeHelpEl = document.getElementById("requestModeHelp");
+  const requestModeBtn = document.getElementById("requestModeBtn");
+
+  let currentRequestMode = "automatico";
+  let requestsLoading = false;
+  let queueActionBusy = false;
+
+  function showError(el, message) {
+    el.textContent = message;
+    el.className = "error";
+  }
+
+  function showAdmin() {
+    loginCard.classList.add("hidden");
+    adminArea.classList.remove("hidden");
+    logoutBtn.classList.remove("hidden");
+  }
+
+  function showLogin() {
+    loginCard.classList.remove("hidden");
+    adminArea.classList.add("hidden");
+    logoutBtn.classList.add("hidden");
+    requestsEl.innerHTML = "";
+    queueEl.innerHTML = "";
+    pendingCount.textContent = "";
+    queueCount.textContent = "";
+    historyEl.innerHTML = "";
+    historyCount.textContent = "";
+    historyInfo.textContent = "Jornada AH: desde las 12:00.";
+    nowArtistEl.textContent = "";
+    nowTitleEl.textContent = "";
+    nowMetaEl.textContent = "";
+    nowMetaEl.className = "now-meta";
+    currentRequestMode = "automatico";
+    requestModeValueEl.textContent = "";
+    requestModeHelpEl.textContent = "";
+    requestModeBtn.disabled = true;
+  }
+
+  async function login() {
+    loginBtn.disabled = true;
+    loginStatus.className = "muted";
+    loginStatus.textContent = "Iniciando sesión…";
+
+    const { error } = await db.auth.signInWithPassword({
+      email: emailEl.value.trim(),
+      password: passwordEl.value
+    });
+
+    loginBtn.disabled = false;
+
+    if (error) {
+      console.error(error);
+      showError(loginStatus, error.message);
+      return;
+    }
+
+    loginStatus.textContent = "";
+    showAdmin();
+    await loadRequestMode();
+    await loadNowPlaying();
+    await loadRequests();
+  }
+
+  async function logout() {
+    await db.auth.signOut();
+    showLogin();
+  }
+
+  const JORNADA_TIMEZONE = "America/Bogota";
+
+  function getJornadaStart() {
+    const now = new Date();
+
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: JORNADA_TIMEZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(now)
+        .filter(p => p.type !== "literal")
+        .map(p => [p.type, p.value])
+    );
+
+    let year = Number(parts.year);
+    let month = Number(parts.month);
+    let day = Number(parts.day);
+    const hour = Number(parts.hour);
+
+    if (hour < 12) {
+      const previous = new Date(Date.UTC(year, month - 1, day));
+      previous.setUTCDate(previous.getUTCDate() - 1);
+      year = previous.getUTCFullYear();
+      month = previous.getUTCMonth() + 1;
+      day = previous.getUTCDate();
+    }
+
+    const pad = n => String(n).padStart(2, "0");
+    return `${year}-${pad(month)}-${pad(day)}T12:00:00-05:00`;
+  }
+
+  function formatHistoryDate(value) {
+    return new Date(value).toLocaleString("es-CO", {
+      timeZone: JORNADA_TIMEZONE,
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+  }
+
+  function renderRequestMode() {
+    const automatico = currentRequestMode === "automatico";
+    requestModeValueEl.textContent = automatico ? "AUTOMÁTICO" : "MANUAL";
+    requestModeHelpEl.textContent = automatico
+      ? "Las nuevas solicitudes se aprueban automáticamente y entran directamente a la cola. Puedes rechazarlas desde En cola."
+      : "Las nuevas solicitudes quedan pendientes hasta que las apruebes o rechaces.";
+    requestModeBtn.textContent = automatico ? "PASAR A MANUAL" : "PASAR A AUTOMÁTICO";
+    requestModeBtn.disabled = false;
+  }
+
+  async function loadRequestMode() {
+    const { data, error } = await db
+      .from("ahtv_settings")
+      .select("request_mode")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      requestModeValueEl.textContent = "No disponible";
+      requestModeHelpEl.textContent = `No se pudo cargar el modo: ${error.message}`;
+      requestModeBtn.disabled = true;
+      return;
+    }
+
+    currentRequestMode = data?.request_mode === "manual" ? "manual" : "automatico";
+    renderRequestMode();
+  }
+
+  async function toggleRequestMode() {
+    if (requestModeBtn.disabled) return;
+
+    const nextMode = currentRequestMode === "automatico" ? "manual" : "automatico";
+    requestModeBtn.disabled = true;
+
+    const { data, error } = await db.rpc("ahtv_establecer_modo_solicitudes", {
+      p_modo: nextMode
+    });
+
+    if (error) {
+      console.error(error);
+      adminStatus.className = "error";
+      adminStatus.textContent = `No se pudo cambiar el modo: ${error.message}`;
+      renderRequestMode();
+      return;
+    }
+
+    currentRequestMode = data === "manual" ? "manual" : "automatico";
+    renderRequestMode();
+    adminStatus.className = "ok";
+    adminStatus.textContent = currentRequestMode === "automatico"
+      ? "Modo automático activado."
+      : "Modo manual activado.";
+
+    await loadRequests();
+  }
+
+  async function loadNowPlaying() {
+    const { data, error } = await db
+      .from("ahtv_now_playing")
+      .select("artist,title,source,started_at,updated_at")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      nowArtistEl.textContent = "No disponible";
+      nowTitleEl.textContent = "";
+      nowMetaEl.textContent = `No se pudo cargar: ${error.message}`;
+      nowMetaEl.className = "error";
+      return;
+    }
+
+    nowMetaEl.className = "now-meta";
+
+    if (!data || data.source === "None") {
+      nowArtistEl.textContent = "Sin reproducción registrada";
+      nowTitleEl.textContent = "";
+      nowMetaEl.textContent = "Esperando información del puente AHtv.";
+      return;
+    }
+
+    if (data.source === "Promo") {
+      nowArtistEl.textContent = "AHtv";
+      nowTitleEl.textContent = "Promoción";
+      nowMetaEl.textContent = `PROMOCIÓN · iniciada ${new Date(data.started_at).toLocaleTimeString()}`;
+      return;
+    }
+
+    nowArtistEl.textContent = data.artist || "Artista desconocido";
+    nowTitleEl.textContent = data.title || "Título desconocido";
+    nowMetaEl.textContent =
+      `${data.source === "Request" ? "REQUEST" : "PLAYLIST"} · iniciada ${new Date(data.started_at).toLocaleTimeString()}`;
+  }
+
+  async function loadHistory() {
+    const jornadaStart = getJornadaStart();
+
+    const { data, count, error } = await db
+      .from("playback_history")
+      .select("id,artist,title,source,played_at,outcome", { count: "exact" })
+      .gte("played_at", jornadaStart)
+      .order("played_at", { ascending: false })
+      .limit(1000);
+
+    if (error) {
+      console.error(error);
+      historyCount.textContent = "";
+      historyInfo.className = "error";
+      historyInfo.textContent =
+        `No se pudo cargar el historial: ${error.message}`;
+      historyEl.innerHTML = "";
+      return;
+    }
+
+    const playedCount = data.filter(item => item.outcome !== "rejected").length;
+    const rejectedCount = data.filter(item => item.outcome === "rejected").length;
+    historyCount.textContent =
+      `${count} ${count === 1 ? "registro" : "registros"}`;
+
+    const summaryParts = [];
+    if (playedCount) summaryParts.push(`${playedCount} reproducida${playedCount === 1 ? "" : "s"}`);
+    if (rejectedCount) summaryParts.push(`${rejectedCount} rechazada${rejectedCount === 1 ? "" : "s"}`);
+
+    const jornadaLabel = new Date(jornadaStart).toLocaleDateString("es-CO", {
+      timeZone: JORNADA_TIMEZONE,
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+
+    historyInfo.className = "meta";
+    historyInfo.textContent =
+      `Jornada desde las 12:00 del ${jornadaLabel}` +
+      (summaryParts.length ? ` · ${summaryParts.join(" · ")}` : "");
+
+    historyEl.innerHTML = "";
+
+    if (!data.length) {
+      historyEl.innerHTML =
+        '<div class="muted" style="padding:10px 0;">Todavía no hay canciones registradas en esta jornada.</div>';
+      return;
+    }
+
+    for (const item of data) {
+      const row = document.createElement("div");
+      row.className = "history-row";
+
+      const main = document.createElement("div");
+      main.className = "history-main";
+
+      const artist = document.createElement("div");
+      artist.className = "song-artist";
+      artist.textContent = item.artist;
+
+      const title = document.createElement("div");
+      title.className = "song-title";
+      title.textContent = item.title;
+
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      if (item.outcome === "rejected") {
+        badge.classList.add("badge-rejected");
+        badge.textContent = "REQUEST · RECHAZADA";
+      } else {
+        badge.textContent = item.source === "Request" ? "REQUEST" : "PLAYLIST";
+      }
+
+      main.append(artist, title, badge);
+
+      const time = document.createElement("div");
+      time.className = "history-time";
+      time.textContent = formatHistoryDate(item.played_at);
+
+      row.append(main, time);
+      historyEl.appendChild(row);
+    }
+  }
+
+  async function loadRequests() {
+    if (requestsLoading) return;
+    requestsLoading = true;
+
+    adminStatus.className = "muted";
+    adminStatus.textContent = "Cargando solicitudes…";
+    requestsEl.innerHTML = "";
+    queueEl.innerHTML = "";
+
+    const { data, error } = await db
+      .from("requests")
+      .select("id,status,requested_at,accepted_at,started_at,queue_position,song_id,songs(artist,title)")
+      .in("status", ["pending", "accepted", "playing"])
+      .order("requested_at", { ascending: true });
+
+    if (error) {
+      console.error(error);
+      showError(adminStatus, `No se pudieron cargar las solicitudes: ${error.message}`);
+      pendingCount.textContent = "";
+      queueCount.textContent = "";
+      requestsLoading = false;
+      return;
+    }
+
+    const pending = data.filter(r => r.status === "pending");
+
+    const playing = data.filter(r => r.status === "playing");
+    const acceptedQueue = data
+      .filter(r => r.status === "accepted")
+      .sort((a, b) => {
+        const ap = a.queue_position ?? Number.MAX_SAFE_INTEGER;
+        const bp = b.queue_position ?? Number.MAX_SAFE_INTEGER;
+        if (ap !== bp) return ap - bp;
+
+        return new Date(a.accepted_at || a.requested_at) -
+               new Date(b.accepted_at || b.requested_at);
+      });
+
+    const queue = [...playing, ...acceptedQueue];
+
+    pendingCount.textContent =
+      pending.length === 1 ? "1" : `${pending.length}`;
+
+    queueCount.textContent =
+      queue.length === 1 ? "1" : `${queue.length}`;
+
+    adminStatus.textContent =
+      `${pending.length} pendiente${pending.length === 1 ? "" : "s"} · ` +
+      `${queue.length} en cola`;
+
+    refreshInfo.textContent =
+      `Actualizado: ${new Date().toLocaleTimeString()} · actualización automática cada 5 segundos`;
+
+    if (!pending.length) {
+      requestsEl.innerHTML = '<div class="muted" style="padding:10px 0;">No hay solicitudes pendientes.</div>';
+    } else {
+      for (const request of pending) {
+        const song = Array.isArray(request.songs) ? request.songs[0] : request.songs;
+
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const artist = document.createElement("div");
+        artist.className = "song-artist";
+        artist.textContent = song?.artist ?? "Artista desconocido";
+
+        const title = document.createElement("div");
+        title.className = "song-title";
+        title.textContent = song?.title ?? "Canción desconocida";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `Solicitada: ${new Date(request.requested_at).toLocaleString()}`;
+
+        const approve = document.createElement("button");
+        approve.className = "primary";
+        approve.textContent = "APROBAR";
+        approve.onclick = () => updateRequest(request.id, "accepted", approve, reject);
+
+        const reject = document.createElement("button");
+        reject.className = "danger";
+        reject.textContent = "RECHAZAR";
+        reject.onclick = () => updateRequest(request.id, "rejected", approve, reject);
+
+        card.append(artist, title, meta, document.createElement("br"), approve, reject);
+        requestsEl.appendChild(card);
+      }
+    }
+
+    if (!queue.length) {
+      queueEl.innerHTML = '<div class="muted" style="padding:10px 0;">No hay solicitudes aprobadas en cola.</div>';
+    } else {
+      if (playing.length) {
+        const request = playing[0];
+        const song = Array.isArray(request.songs) ? request.songs[0] : request.songs;
+
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const artist = document.createElement("div");
+        artist.className = "song-artist";
+        artist.textContent = song?.artist ?? "Artista desconocido";
+
+        const title = document.createElement("div");
+        title.className = "song-title";
+        title.textContent = song?.title ?? "Canción desconocida";
+
+        const meta = document.createElement("div");
+        meta.className = "ok";
+        meta.textContent = "▶ REPRODUCIENDO AHORA";
+
+        card.append(artist, title, meta);
+        queueEl.appendChild(card);
+      }
+
+      acceptedQueue.forEach((request, index) => {
+        const song = Array.isArray(request.songs) ? request.songs[0] : request.songs;
+
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const artist = document.createElement("div");
+        artist.className = "song-artist";
+        artist.textContent = song?.artist ?? "Artista desconocido";
+
+        const title = document.createElement("div");
+        title.className = "song-title";
+        title.textContent = song?.title ?? "Canción desconocida";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent =
+          `EN COLA · posición ${index + 1} · aprobada: ${new Date(request.accepted_at || request.requested_at).toLocaleString()}`;
+
+        const actions = document.createElement("div");
+        actions.className = "queue-actions";
+
+        const up = document.createElement("button");
+        up.className = "primary";
+        up.textContent = "↑";
+        up.title = "Subir";
+        up.disabled = queueActionBusy || index === 0;
+        up.onclick = () => moveQueue(index, -1);
+
+        const down = document.createElement("button");
+        down.className = "primary";
+        down.textContent = "↓";
+        down.title = "Bajar";
+        down.disabled = queueActionBusy || index === acceptedQueue.length - 1;
+        down.onclick = () => moveQueue(index, 1);
+
+        const remove = document.createElement("button");
+        remove.className = "danger";
+        remove.textContent = "RECHAZAR";
+        remove.title = "Rechazar solicitud";
+        remove.disabled = queueActionBusy;
+        remove.onclick = () => cancelQueueRequest(request.id);
+
+        actions.append(up, down, remove);
+        card.append(artist, title, meta, actions);
+        queueEl.appendChild(card);
+      });
+    }
+
+    await loadHistory();
+
+    requestsLoading = false;
+  }
+
+  async function saveQueueOrder(orderedIds) {
+    queueActionBusy = true;
+
+    const { error } = await db.rpc("ahtv_reordenar_cola", {
+      p_ids: orderedIds
+    });
+
+    if (error) {
+      console.error(error);
+      adminStatus.className = "error";
+      adminStatus.textContent =
+        `No se pudo guardar el orden de la cola: ${error.message}`;
+      queueActionBusy = false;
+      return false;
+    }
+
+    queueActionBusy = false;
+    return true;
+  }
+
+  async function moveQueue(index, direction) {
+    if (queueActionBusy) return;
+
+    // Volver a consultar antes de modificar para evitar operar sobre una vista obsoleta.
+    const { data, error } = await db
+      .from("requests")
+      .select("id,status,queue_position,accepted_at,requested_at")
+      .eq("status", "accepted")
+      .order("queue_position", { ascending: true, nullsFirst: false })
+      .order("accepted_at", { ascending: true });
+
+    if (error) {
+      console.error(error);
+      adminStatus.className = "error";
+      adminStatus.textContent =
+        `No se pudo leer la cola antes de reordenar: ${error.message}`;
+      return;
+    }
+
+    const orderedIds = data.map(r => r.id);
+    const target = index + direction;
+
+    if (target < 0 || target >= orderedIds.length) return;
+
+    [orderedIds[index], orderedIds[target]] =
+      [orderedIds[target], orderedIds[index]];
+
+    if (await saveQueueOrder(orderedIds)) {
+      await loadRequests();
+    }
+  }
+
+  function dataPlayingCount() {
+    const marker = queueEl.querySelector(".ok");
+    return marker ? 1 : 0;
+  }
+
+  async function cancelQueueRequest(id) {
+    if (queueActionBusy) return;
+
+    if (!window.confirm("¿Rechazar esta solicitud desde la cola?")) {
+      return;
+    }
+
+    queueActionBusy = true;
+
+    const { data, error } = await db.rpc("ahtv_cancelar_solicitud", {
+      p_request_id: id
+    });
+
+    queueActionBusy = false;
+
+    if (error) {
+      console.error(error);
+      adminStatus.className = "error";
+      adminStatus.textContent =
+        `No se pudo rechazar la solicitud: ${error.message}`;
+      return;
+    }
+
+    if (!data) {
+      adminStatus.className = "error";
+      adminStatus.textContent =
+        "La solicitud ya no está disponible para quitarla de la cola.";
+      await loadRequests();
+      return;
+    }
+
+    adminStatus.className = "ok";
+    adminStatus.textContent = "Solicitud rechazada desde la cola.";
+    await loadRequests();
+  }
+
+  async function updateRequest(id, newStatus, approveBtn, rejectBtn) {
+    approveBtn.disabled = true;
+    rejectBtn.disabled = true;
+
+    const payload = {
+      status: newStatus
+    };
+
+    if (newStatus === "accepted") {
+      payload.accepted_at = new Date().toISOString();
+    } else {
+      payload.rejected_at = new Date().toISOString();
+      payload.rejection_reason = "Rechazada por administración";
+    }
+
+    const { error } = await db
+      .from("requests")
+      .update(payload)
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      adminStatus.className = "error";
+      adminStatus.textContent = `No se pudo actualizar la solicitud: ${error.message}`;
+      approveBtn.disabled = false;
+      rejectBtn.disabled = false;
+      return;
+    }
+
+    adminStatus.className = "ok";
+    adminStatus.textContent =
+      newStatus === "accepted" ? "Solicitud aprobada." : "Solicitud rechazada.";
+
+    await loadRequests();
+  }
+
+  async function init() {
+    const { data } = await db.auth.getSession();
+
+    if (data.session) {
+      showAdmin();
+      await loadRequestMode();
+      await loadNowPlaying();
+      await loadRequests();
+    } else {
+      showLogin();
+    }
+  }
+
+  loginBtn.addEventListener("click", login);
+  refreshBtn.addEventListener("click", async () => {
+    await loadNowPlaying();
+    await loadRequests();
+  });
+  logoutBtn.addEventListener("click", logout);
+  requestModeBtn.addEventListener("click", toggleRequestMode);
+
+  passwordEl.addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+  });
+
+  init();
+
+  setInterval(() => {
+    if (document.visibilityState === "visible") {
+      loadNowPlaying();
+    }
+  }, 2000);
+
+  setInterval(() => {
+    if (document.visibilityState === "visible") {
+      loadRequestMode();
+      loadRequests();
+    }
+  }, 5000);
+</script>
+</body>
+</html>
