@@ -153,7 +153,7 @@
     }
 
     function updateMine() {
-      counterEl.textContent = \`\${myRequests.length} de 2\`;
+      counterEl.textContent = `${myRequests.length} de 2`;
       mineEl.innerHTML = '';
 
       if (!myRequests.length) {
@@ -164,7 +164,7 @@
       for (const song of myRequests) {
         const div = document.createElement('div');
         div.className = 'mine-item';
-        div.innerHTML = \`<div class="artist">\${escapeHtml(song.artist)}</div><div class="title">\${escapeHtml(song.title)}</div>\`;
+        div.innerHTML = `<div class="artist">${escapeHtml(song.artist)}</div><div class="title">${escapeHtml(song.title)}</div>`;
         mineEl.appendChild(div);
       }
     }
@@ -173,7 +173,7 @@
       if (!value) return '';
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return '';
-      return \`Escuchada: \${date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}\`;
+      return `Escuchada: ${date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`;
     }
 
     function updateRecent() {
@@ -187,7 +187,7 @@
       for (const song of recentSongs) {
         const div = document.createElement('div');
         div.className = 'recent-item';
-        div.innerHTML = \`<div class="artist">\${escapeHtml(song.artist)}</div><div class="title">\${escapeHtml(song.title)}</div><div class="recent-time">\${escapeHtml(formatRecentTime(song.recent_at))}</div>\`;
+        div.innerHTML = `<div class="artist">${escapeHtml(song.artist)}</div><div class="title">${escapeHtml(song.title)}</div><div class="recent-time">${escapeHtml(formatRecentTime(song.recent_at))}</div>`;
         recentEl.appendChild(div);
       }
     }
@@ -225,7 +225,7 @@
       if (q.length < 2) return [];
 
       const safe = q.replace(/,/g, ' ');
-      const filter = \`artist.ilike.%\${safe}%,title.ilike.%\${safe}%\`;
+      const filter = `artist.ilike.%${safe}%,title.ilike.%${safe}%`;
 
       const { data, error } = await db
         .from('songs')
@@ -275,15 +275,15 @@
         if (already) label = 'YA PEDIDA';
         else if (recent) label = 'YA ESCUCHADA';
 
-        div.innerHTML = \`
+        div.innerHTML = `
           <div class="meta">
-            <div class="artist">\${escapeHtml(song.artist)}</div>
-            <div class="title">\${escapeHtml(song.title)}</div>
+            <div class="artist">${escapeHtml(song.artist)}</div>
+            <div class="title">${escapeHtml(song.title)}</div>
           </div>
-          <button class="request" \${blocked ? 'disabled' : ''}>
-            \${label}
+          <button class="request" ${blocked ? 'disabled' : ''}>
+            ${label}
           </button>
-        \`;
+        `;
 
         const btn = div.querySelector('button');
         if (!blocked) {
