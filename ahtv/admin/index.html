@@ -6,163 +6,437 @@
   <title>AHtv · Administración</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root { color-scheme: dark; }
+    :root {
+      color-scheme: dark;
+      --bg: #0c0d10;
+      --card: rgba(21,23,28,.94);
+      --card2: #111318;
+      --text: #f5f5f5;
+      --muted: #9ca3af;
+      --accent: #b8ff39;
+      --accent-text: #111;
+      --danger: #ff6b6b;
+      --line: #2c3038;
+    }
+
     * { box-sizing: border-box; }
-    body {
+
+    html, body {
+      min-height: 100%;
       margin: 0;
+      background: #000;
+      color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #101010;
-      color: #f3f3f3;
     }
-    main {
-      width: min(900px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 28px 0 42px;
+
+    body {
+      padding-top: 300px;
+      position: relative;
+      overflow-x: hidden;
     }
-    header {
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 300px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("../../imagenes/FondoAHtv.png") center center / cover no-repeat;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      top: 300px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,.32);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      text-align: center;
+      padding: 25px 20px 15px;
+      background: rgba(0,0,0,.86);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .logo {
+      width: 260px;
+      max-width: 90%;
+      margin-bottom: 8px;
+    }
+
+    .header-title {
+      font-size: 1.35em;
+      letter-spacing: 3px;
+      margin-bottom: 6px;
+      color: #d4af37;
+      font-weight: 800;
+    }
+
+    .header-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .header-actions {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 22px;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    h1 { margin: 0; font-size: 34px; }
-    .muted { color: #9e9e9e; }
-    .card {
-      border: 1px solid #2d2d2d;
-      border-radius: 14px;
-      background: #171717;
-      padding: 18px;
+
+    .home-button,
+    .header button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: white;
+      padding: 10px 16px;
+      border: 1px solid rgba(255,255,255,.20);
+      border-radius: 30px;
+      font-size: .82em;
+      background: rgba(255,255,255,.04);
+    }
+
+    .home-button:hover,
+    .header button:hover {
+      background: white;
+      color: #111;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px 12px 44px;
+    }
+
+    .card,
+    .mode-card,
+    .now-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
       margin: 12px 0;
     }
+
+    .card {
+      padding: 18px;
+    }
+
+    h1, h2, h3 {
+      color: var(--text);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+
+    h3 {
+      font-size: 18px;
+    }
+
+    .muted { color: var(--muted); }
+
     input {
       width: 100%;
-      padding: 13px 14px;
+      padding: 15px 16px;
       margin: 7px 0;
-      border: 1px solid #353535;
-      border-radius: 10px;
-      background: #121212;
-      color: #fff;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #101217;
+      color: var(--text);
+      outline: none;
       font-size: 16px;
     }
+
+    input:focus {
+      border-color: var(--accent);
+    }
+
     button {
       border: 0;
       border-radius: 10px;
       padding: 11px 15px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       margin-right: 8px;
+      transition: .18s ease;
     }
-    .primary { background: #f0f0f0; color: #101010; }
-    .danger { background: #2a2a2a; color: #fff; }
-    button:disabled { opacity: .45; cursor: default; }
-    .song-artist { font-size: 19px; font-weight: 700; }
-    .song-title { margin-top: 4px; color: #c7c7c7; font-size: 17px; }
-    .meta { margin-top: 9px; color: #8f8f8f; font-size: 13px; }
-    .error { color: #ff8e8e; }
-    .ok { color: #9ff0ad; }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+
+    .danger {
+      background: #23262d;
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: default;
+      transform: none;
+    }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .topline h2,
+    .topline h3 {
+      margin: 0;
+    }
+
+    #adminArea {
+      margin-top: 10px;
+    }
+
+    #adminStatus {
+      margin-top: 10px;
+      min-height: 18px;
+    }
+
+    .mode-card {
+      padding: 16px;
+      margin: 14px 0 18px;
+    }
+
+    .mode-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mode-setting {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(10,12,16,.58);
+    }
+
+    .mode-setting .primary {
+      margin-top: 12px;
+      margin-right: 0;
+      width: 100%;
+    }
+
+    .mode-label {
+      font-size: 11px;
+      letter-spacing: .08em;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .mode-value {
+      margin-top: 6px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .mode-help {
+      margin-top: 7px;
+      color: #8f96a3;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .now-card {
+      padding: 18px;
+      margin: 0 0 18px;
+      background: rgba(8,10,13,.94);
+      border-color: rgba(184,255,57,.22);
+    }
+
+    .now-label {
+      font-size: 11px;
+      letter-spacing: .08em;
+      font-weight: 900;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .now-artist {
+      margin-top: 9px;
+      font-size: 24px;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .now-title {
+      margin-top: 4px;
+      font-size: 19px;
+      color: #d6d9df;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .now-meta,
+    .meta {
+      margin-top: 9px;
+      color: #8f96a3;
+      font-size: 12px;
+    }
+
+    .error { color: #ffadad; }
+    .ok { color: #baff87; }
     .hidden { display: none; }
-    .topline { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-    .queue-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .queue-actions button { margin-right: 0; min-width: 44px; }
+
+    .queue-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .queue-actions button {
+      margin-right: 0;
+      min-width: 44px;
+    }
+
+    .song-artist {
+      font-size: 16px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .song-title {
+      margin-top: 4px;
+      color: #d4d7dd;
+      font-size: 15px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
     .history-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 12px;
-      padding: 11px 0;
-      border-top: 1px solid #292929;
+      padding: 12px 0;
+      border-top: 1px solid #292d35;
     }
+
     .history-row:first-child { border-top: 0; }
+
     .history-main { min-width: 0; }
-    .history-time { white-space: nowrap; color: #8f8f8f; font-size: 13px; }
-    .now-card {
-      border: 1px solid #3a3a3a;
-      border-radius: 14px;
-      background: #1b1b1b;
-      padding: 18px;
-      margin: 16px 0 18px;
-    }
-    .now-label {
+
+    .history-time {
+      white-space: nowrap;
+      color: #8f96a3;
       font-size: 12px;
-      letter-spacing: .08em;
-      font-weight: 800;
-      color: #9ff0ad;
     }
-    .now-artist {
-      margin-top: 9px;
-      font-size: 25px;
-      font-weight: 800;
-    }
-    .now-title {
-      margin-top: 4px;
-      font-size: 21px;
-      color: #d2d2d2;
-    }
-    .now-meta {
-      margin-top: 10px;
-      color: #8f8f8f;
-      font-size: 13px;
-    }
-    .now-empty {
-      margin-top: 8px;
-      color: #9e9e9e;
-    }
+
     .badge {
       display: inline-block;
       margin-top: 7px;
       padding: 4px 8px;
       border-radius: 999px;
-      background: #242424;
-      color: #bdbdbd;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .mode-card {
-      border: 1px solid #3a3a3a;
-      border-radius: 14px;
-      background: #151515;
-      padding: 16px 18px;
-      margin: 12px 0 18px;
-    }
-    .mode-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .mode-label {
-      font-size: 12px;
-      letter-spacing: .08em;
-      font-weight: 800;
-      color: #bdbdbd;
-    }
-    .mode-value {
-      margin-top: 5px;
-      font-size: 20px;
+      background: #242830;
+      color: #c3c8d1;
+      font-size: 11px;
       font-weight: 800;
     }
-    .mode-help {
-      margin-top: 7px;
-      color: #8f8f8f;
-      font-size: 13px;
-      line-height: 1.45;
-    }
+
     .badge-rejected {
       background: #3a2323;
       color: #ffaaaa;
+    }
+
+    .refresh-status {
+      color: var(--accent);
+      font-size: 12px;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding-top: 300px;
+      }
+
+      .header {
+        padding: 18px 15px 12px;
+      }
+
+      .logo {
+        width: 200px;
+      }
+
+      .header-title {
+        font-size: 1.1em;
+      }
+
+      main {
+        padding: 14px 10px 36px;
+      }
+
+      .card,
+      .mode-card,
+      .now-card {
+        border-radius: 15px;
+      }
+
+      .card {
+        padding: 14px;
+      }
+
+      .mode-row {
+        grid-template-columns: 1fr;
+      }
+
+      .topline {
+        align-items: flex-start;
+      }
+
+      .topline > button {
+        margin-right: 0;
+      }
+
+      .history-row {
+        gap: 8px;
+      }
     }
   </style>
 </head>
 <body>
 <main>
-  <header>
-    <div>
-      <h1>AHtv</h1>
-      <div class="muted">Administración de solicitudes</div>
+  <header class="header">
+    <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
+    <div class="header-title">AHtv</div>
+    <div class="header-subtitle">Administración de solicitudes</div>
+    <div class="header-actions">
+      <a href="../index.html" class="home-button">← AHtv</a>
+      <button id="logoutBtn" class="danger hidden">CERRAR SESIÓN</button>
     </div>
-    <button id="logoutBtn" class="danger hidden">CERRAR SESIÓN</button>
   </header>
 
   <section id="loginCard" class="card">
@@ -184,18 +458,19 @@
 
     <div class="mode-card">
       <div class="mode-row">
-        <div>
+        <div class="mode-setting">
           <div class="mode-label">MODO DE SOLICITUDES</div>
           <div id="requestModeValue" class="mode-value">Cargando…</div>
           <div id="requestModeHelp" class="mode-help">Cargando configuración.</div>
+          <button id="requestModeBtn" class="primary" disabled>CAMBIAR</button>
         </div>
-        <button id="requestModeBtn" class="primary" disabled>CAMBIAR</button>
-        <div>
+
+        <div class="mode-setting">
           <div class="mode-label">RECEPCIÓN DE SOLICITUDES</div>
           <div id="requestsEnabledValue" class="mode-value">Cargando…</div>
           <div id="requestsEnabledHelp" class="mode-help">Cargando configuración.</div>
+          <button id="requestsEnabledBtn" class="primary" disabled>CAMBIAR</button>
         </div>
-        <button id="requestsEnabledBtn" class="primary" disabled>CAMBIAR</button>
       </div>
     </div>
 
