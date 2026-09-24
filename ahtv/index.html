@@ -98,50 +98,6 @@
     .msg { margin-top: 12px; padding: 11px 12px; border-radius: 10px; font-size: 14px; background:#1b1e24; color:#d9dce2; }
     .msg.error { border:1px solid rgba(255,93,93,.4); color:#ffd0d0; }
     .empty { color:var(--muted); text-align:center; padding:18px 8px; }
-    .now-next {
-      margin-top: 16px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .live-card {
-      background: rgba(10,12,16,.94);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px 18px;
-      box-shadow: 0 10px 26px rgba(0,0,0,.22);
-      min-width: 0;
-    }
-    .live-label {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-    .live-artist {
-      margin-top: 9px;
-      font-size: 18px;
-      font-weight: 800;
-      overflow-wrap: anywhere;
-    }
-    .live-title {
-      margin-top: 4px;
-      color: #d4d7dd;
-      font-size: 16px;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
-    }
-    .live-meta {
-      margin-top: 8px;
-      color: #777f8b;
-      font-size: 11px;
-    }
-    .live-empty {
-      color: var(--muted);
-      margin-top: 9px;
-      line-height: 1.4;
-    }
     .tiny { margin-top: 14px; color:#777f8b; font-size:11px; text-align:center; }
     @media (max-width: 520px) {
       body { padding-top: 300px; }
@@ -156,8 +112,6 @@
       .title { font-size: 14px; }
       .brand h1 { font-size: 30px; }
       .counter strong { font-size: 16px; }
-      .now-next { grid-template-columns: 1fr; }
-      .live-card { padding: 14px; }
     }
   </style>
 
@@ -195,21 +149,6 @@ body::before {
       <a href="../index.html" class="home-button">← Inicio</a>
     </header>
 
-    <section class="now-next" aria-live="polite">
-      <div class="live-card">
-        <div class="live-label">▶ Sonando ahora</div>
-        <div id="publicCurrentArtist" class="live-artist">Cargando…</div>
-        <div id="publicCurrentTitle" class="live-title"></div>
-        <div id="publicCurrentMeta" class="live-meta"></div>
-      </div>
-      <div class="live-card">
-        <div class="live-label">A continuación</div>
-        <div id="publicNextArtist" class="live-artist">Cargando…</div>
-        <div id="publicNextTitle" class="live-title"></div>
-        <div id="publicNextMeta" class="live-meta"></div>
-      </div>
-    </section>
-
     <section class="card">
       <div class="counter">
         <strong>Mis solicitudes</strong>
@@ -246,13 +185,6 @@ body::before {
     const recentEl = document.getElementById('recent');
     const counterEl = document.getElementById('counter');
     const availabilityMessageEl = document.getElementById('availabilityMessage');
-    const publicCurrentArtistEl = document.getElementById('publicCurrentArtist');
-    const publicCurrentTitleEl = document.getElementById('publicCurrentTitle');
-    const publicCurrentMetaEl = document.getElementById('publicCurrentMeta');
-    const publicNextArtistEl = document.getElementById('publicNextArtist');
-    const publicNextTitleEl = document.getElementById('publicNextTitle');
-    const publicNextMetaEl = document.getElementById('publicNextMeta');
-
     const messageEl = document.getElementById('message');
 
     const TOKEN_KEY = 'ahtv_client_token';
@@ -274,131 +206,6 @@ body::before {
         ? ''
         : 'Las solicitudes están cerradas en este momento.';
       availabilityMessageEl.classList.toggle('error', !requestsEnabled);
-    }
-
-    function renderPublicNowPlaying(data) {
-      const source = data && data.current_source ? data.current_source : 'None';
-
-      if (source === 'Promo') {
-        publicCurrentArtistEl.textContent = 'AHtv';
-        publicCurrentTitleEl.textContent = 'Promoción';
-        publicCurrentMetaEl.textContent = data && data.current_started_at
-          ? 'PROMOCIÓN · iniciada ' + new Date(data.current_started_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-          : 'PROMOCIÓN';
-      } else if (!data || source === 'None') {
-        publicCurrentArtistEl.textContent = 'Sin reproducción registrada';
-        publicCurrentTitleEl.textContent = '';
-        publicCurrentMetaEl.textContent = 'Esperando información del sistema AHtv.';
-      } else {
-        publicCurrentArtistEl.textContent = data.current_artist || 'Artista desconocido';
-        publicCurrentTitleEl.textContent = data.current_title || 'Título desconocido';
-        const origen = source === 'Request' ? 'SOLICITUD' : 'PLAYLIST';
-        const hora = data.current_started_at
-          ? ' · iniciada ' + new Date(data.current_started_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-          : '';
-        publicCurrentMetaEl.textContent = origen + hora;
-      }
-
-      if (data && data.next_source === 'Request' && data.next_artist && data.next_title) {
-        publicNextArtistEl.textContent = data.next_artist;
-        publicNextTitleEl.textContent = data.next_title;
-        publicNextMetaEl.textContent = 'SOLICITUD EN COLA';
-      } else {
-        publicNextArtistEl.textContent = 'Selección aleatoria';
-        publicNextTitleEl.textContent = 'AH Playlist';
-        publicNextMetaEl.textContent = 'La siguiente canción se elige automáticamente.';
-      }
-    }
-
-    async function loadPublicNowPlaying() {
-      const { data, error } = await db
-        .from('ahtv_public_now_playing')
-        .select('current_artist,current_title,current_source,current_started_at,next_artist,next_title,next_source,updated_at')
-        .eq('id', 1)
-        .maybeSingle();
-
-      if (error) {
-        console.error(error);
-        publicCurrentArtistEl.textContent = 'Información no disponible';
-        publicCurrentTitleEl.textContent = '';
-        publicCurrentMetaEl.textContent = '';
-        publicNextArtistEl.textContent = 'Información no disponible';
-        publicNextTitleEl.textContent = '';
-        publicNextMetaEl.textContent = '';
-        return;
-      }
-
-      renderPublicNowPlaying(data);
-    }
-
-    let publicNowPlayingChannel = null;
-    let publicNowPlayingRealtimeStatus = 'CLOSED';
-    let publicNowPlayingRefreshTimer = null;
-    let publicNowPlayingReconnectTimer = null;
-
-    async function startPublicNowPlayingRealtime() {
-      if (publicNowPlayingChannel) {
-        try {
-          await db.removeChannel(publicNowPlayingChannel);
-        } catch (e) {
-          console.warn('AHtv estado público: no se pudo retirar el canal anterior.', e);
-        }
-        publicNowPlayingChannel = null;
-      }
-
-      publicNowPlayingRealtimeStatus = 'CONNECTING';
-
-      const channel = db
-        .channel('ahtv-public-now-playing')
-        .on(
-          'broadcast',
-          { event: 'UPDATE' },
-          (message) => {
-            const data = message && message.payload;
-            if (data && data.updated_at) {
-              renderPublicNowPlaying(data);
-            } else {
-              loadPublicNowPlaying();
-            }
-          }
-        );
-
-      publicNowPlayingChannel = channel;
-
-      channel.subscribe((status, err) => {
-        publicNowPlayingRealtimeStatus = status;
-
-        if (status === 'SUBSCRIBED') {
-          loadPublicNowPlaying();
-          return;
-        }
-
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.warn('AHtv estado público: Realtime Broadcast no disponible.', status, err || '');
-
-          clearTimeout(publicNowPlayingReconnectTimer);
-          publicNowPlayingReconnectTimer = setTimeout(() => {
-            if (!document.hidden && navigator.onLine) {
-              startPublicNowPlayingRealtime();
-            }
-          }, 2000);
-        }
-      });
-    }
-
-    function refreshPublicStateOnReturn() {
-      clearTimeout(publicNowPlayingRefreshTimer);
-      publicNowPlayingRefreshTimer = setTimeout(async () => {
-        await loadPublicNowPlaying();
-
-        if (
-          publicNowPlayingRealtimeStatus !== 'SUBSCRIBED' &&
-          !document.hidden &&
-          navigator.onLine
-        ) {
-          await startPublicNowPlayingRealtime();
-        }
-      }, 120);
     }
 
     async function loadRequestAvailability() {
@@ -638,19 +445,7 @@ body::before {
     updateRecent();
     renderRequestAvailability();
     renderResults([]);
-    loadPublicNowPlaying();
-    startPublicNowPlayingRealtime();
     loadRequestAvailability();
-
-    // Al volver a la pestaña/ventana, no dependemos de haber recibido el
-    // evento mientras estaba en segundo plano: volvemos a leer el estado actual.
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) refreshPublicStateOnReturn();
-    });
-
-    window.addEventListener('focus', refreshPublicStateOnReturn);
-    window.addEventListener('pageshow', refreshPublicStateOnReturn);
-    window.addEventListener('online', refreshPublicStateOnReturn);
     loadMine();
 
     // Refrescar
@@ -659,9 +454,7 @@ body::before {
     setInterval(() => {
       loadMine();
       loadRequestAvailability();
-      // Respaldo: el mecanismo principal es Broadcast en tiempo real.
-      loadPublicNowPlaying();
-    }, 15000);
+    }, 5000);
   </script>
 </body>
 </html>
