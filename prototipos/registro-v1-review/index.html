@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AvoHouse · Registro</title>
+<style>
+:root{--bg:#f4f4f0;--card:#fff;--ink:#20251f;--muted:#687067;--line:#d9ddd8;--brand:#24422f}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#eef0ec,#f7f6f2);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--ink)}
+.page{max-width:720px;margin:36px auto;padding:0 18px 48px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px;box-shadow:0 12px 36px rgba(0,0,0,.06)}
+.brand{letter-spacing:.08em;font-size:12px;font-weight:800;color:var(--brand);text-transform:uppercase}
+h1{font-size:32px;line-height:1.15;margin:7px 0 8px}
+.lead{margin:0 0 26px;color:var(--muted);line-height:1.55}
+h2{font-size:18px;margin:28px 0 14px}
+.field{display:block;font-weight:700;margin:0 0 16px}
+input,select{width:100%;margin-top:7px;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;font:inherit}
+input:focus,select:focus{outline:2px solid rgba(36,66,47,.15);border-color:var(--brand)}
+.radios{display:flex;gap:22px;margin-top:9px;font-weight:500}
+.radios label,.check{display:flex;gap:10px;align-items:flex-start;font-weight:500;line-height:1.48}
+.radios input,.check input{width:auto;margin-top:4px}
+.hidden{display:none}
+.block{border-top:1px solid var(--line);padding-top:16px;margin-top:16px}
+.optional{background:#fafbf9;border:1px solid var(--line);border-radius:13px;padding:15px}
+.links{margin:8px 0 0 29px;font-size:14px}
+.links a{color:var(--brand);text-decoration:underline;cursor:pointer}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:16px}
+button{width:100%;border:0;border-radius:12px;padding:14px;background:var(--brand);color:#fff;font-size:16px;font-weight:800;cursor:pointer;margin-top:24px}
+button:hover{filter:brightness(.96)}
+.error{display:none;color:#9b2222;font-size:13px;margin-top:6px}
+.demo{font-size:12px;color:#7a817a;margin-top:20px;text-align:center}
+dialog{border:0;border-radius:16px;max-width:700px;width:calc(100% - 28px);padding:0;box-shadow:0 20px 70px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.modal{padding:24px}
+.modal h3{margin:0 0 10px}.modal p{line-height:1.55;color:#4e574f}.close{background:#eee;color:#222;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="card">
+<div class="brand">AvoHouse Gastrobar</div>
+<h1>Crear cuenta</h1>
+<p class="lead">Regístrate para acceder a las funcionalidades de AvoHouse, incluida la gestión de Puntos AH.</p>
+
+<form id="form">
+<h2>Datos personales</h2>
+
+<label class="field">Nombre completo *
+<input required name="nombre" autocomplete="name">
+</label>
+
+<label class="field">Tipo de documento *
+<select required name="tipo_documento">
+<option value="">Selecciona una opción</option>
+<option>Cédula de ciudadanía</option><option>Cédula de extranjería</option><option>Pasaporte</option>
+</select>
+</label>
+
+<label class="field">Número de documento *
+<input required name="documento" inputmode="numeric">
+</label>
+
+<label class="field">Correo electrónico *
+<input required type="email" name="correo" autocomplete="email">
+</label>
+
+<label class="field">Número de celular *
+<input required name="telefono" inputmode="tel" autocomplete="tel">
+</label>
+
+<label class="field">¿Este número también corresponde a tu WhatsApp? *
+<span class="radios">
+<label><input required type="radio" name="wa_mismo" value="si"> Sí</label>
+<label><input type="radio" name="wa_mismo" value="no"> No</label>
+</span>
+</label>
+
+<div id="waWrap" class="hidden">
+<label class="field">Número de WhatsApp *
+<input id="wa" name="whatsapp" inputmode="tel">
+</label>
+</div>
+
+<label class="field">Contraseña *
+<input required type="password" name="pass" minlength="8" autocomplete="new-password">
+</label>
+
+<label class="field">Confirmar contraseña *
+<input required type="password" name="pass2" minlength="8" autocomplete="new-password">
+<div id="err" class="error">Las contraseñas no coinciden.</div>
+</label>
+
+<h2>Verificación de mayoría de edad</h2>
+<label class="check"><input required type="checkbox" name="mayor"> <span>Declaro que soy mayor de 18 años.</span></label>
+
+<h2>Autorizaciones</h2>
+
+<div class="block">
+<label class="check">
+<input required type="checkbox" name="terms">
+<span>He leído y acepto los <strong>Términos y Condiciones de AvoHouse</strong>.</span>
+</label>
+<div class="links"><a data-doc="terms">Leer Términos y Condiciones</a></div>
+</div>
+
+<div class="block">
+<label class="check">
+<input required type="checkbox" name="data">
+<span>Autorizo de manera previa, expresa e informada a AvoHouse Gastrobar para el tratamiento de mis datos personales conforme a la Autorización para el Tratamiento de Datos Personales y la Política de Tratamiento de Datos Personales de AvoHouse.</span>
+</label>
+<div class="links"><a data-doc="data">Leer Autorización de Tratamiento de Datos</a> · <a data-doc="policy">Leer Política</a></div>
+</div>
+
+<div class="block optional">
+<label class="check">
+<input type="checkbox" name="marketing">
+<span>Autorizo a AvoHouse Gastrobar para enviarme comunicaciones comerciales y publicitarias sobre promociones, eventos, novedades, productos y beneficios mediante correo electrónico, SMS y WhatsApp. Esta autorización es opcional y puedo retirarla posteriormente.</span>
+</label>
+</div>
+
+<button type="submit">Crear mi cuenta</button>
+<p class="note">El sistema deberá conservar evidencia de las decisiones tomadas, incluyendo fecha y hora de registro, versión de los documentos y estado de cada autorización.</p>
+</form>
+
+<p class="demo">Prototipo de revisión · no conectado a una base de datos.</p>
+</div>
+</div>
+
+<dialog id="docDialog"><div class="modal">
+<h3 id="docTitle"></h3><p id="docBody"></p><button class="close" onclick="docDialog.close()">Cerrar</button>
+</div></dialog>
+
+<script>
+const form=document.getElementById('form'), wrap=document.getElementById('waWrap'), wa=document.getElementById('wa'), err=document.getElementById('err');
+document.querySelectorAll('input[name=wa_mismo]').forEach(r=>r.addEventListener('change',()=>{
+ const same=form.wa_mismo.value==='si'; wrap.classList.toggle('hidden',same); wa.required=!same; if(same)wa.value='';
+}));
+function passwordsOk(){const ok=form.pass.value===form.pass2.value;err.style.display=ok?'none':'block';return ok}
+form.pass.addEventListener('input',passwordsOk);form.pass2.addEventListener('input',passwordsOk);
+const docs={
+terms:['Términos y Condiciones de AvoHouse','Documento público que establece las reglas de registro y funcionamiento de Puntos AH, AHtv y demás funcionalidades de la plataforma.'],
+data:['Autorización para el Tratamiento de Datos Personales','Documento que informa las finalidades del tratamiento y recoge la autorización previa, expresa e informada del titular.'],
+policy:['Política de Tratamiento de Datos Personales','Documento público que explica cómo AvoHouse trata, protege, conserva y atiende las solicitudes relacionadas con datos personales.']
+};
+document.querySelectorAll('[data-doc]').forEach(a=>a.addEventListener('click',()=>{
+ const d=docs[a.dataset.doc];docTitle.textContent=d[0];docBody.textContent=d[1];docDialog.showModal();
+}));
+form.addEventListener('submit',e=>{
+ e.preventDefault();
+ if(!form.checkValidity()){form.reportValidity();return}
+ if(!passwordsOk())return;
+ const data=Object.fromEntries(new FormData(form).entries());
+ if(data.wa_mismo==='si')data.whatsapp=data.telefono;
+ alert('Formulario validado. Esta versión es solo para revisión visual.');
+ console.log(data);
+});
+</script>
+</body>
+</html>
