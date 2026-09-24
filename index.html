@@ -6,157 +6,54 @@
 <title>AvoHouse Pub</title>
 
 <style>
+*{margin:0;padding:0;box-sizing:border-box;scroll-behavior:smooth}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:white;background:url('Fondo.png') center/cover fixed no-repeat}
+body::before{content:"";position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:-1}
+.hero{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px}
+.hero img{width:320px;max-width:90%;margin-bottom:20px}
+.hero h1{font-size:2em;letter-spacing:4px;margin-bottom:15px}
+.hero p{font-size:1.1em;letter-spacing:2px;color:#ccc;margin-bottom:30px}
+.hero button{padding:14px 30px;border:1px solid white;background:transparent;color:white;font-size:.9em;letter-spacing:2px;cursor:pointer;transition:.3s;border-radius:30px;margin-bottom:30px}
+.hero button:hover{background:white;color:black}
+.social-icons{display:flex;gap:25px;justify-content:center}
+.social-icons a img{width:32px;transition:.3s}
+.social-icons a img:hover{transform:scale(1.2)}
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-scroll-behavior:smooth;
-}
+.menu-section{padding:100px 20px 80px;text-align:center}
+.menu-title{font-size:1.6em;letter-spacing:4px;margin-bottom:40px}
+.menu-buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:20px}
+.menu-buttons a{display:inline-block;text-decoration:none;color:white;border:1px solid rgba(255,255,255,.3);padding:15px 25px;border-radius:30px;font-size:.9em;letter-spacing:2px;transition:.3s}
+.menu-buttons a:hover{background:white;color:black}
 
-body{
-font-family:'Helvetica Neue', Arial, sans-serif;
-color:white;
-background:url('Fondo.png') center/cover fixed no-repeat;
-}
-
-body::before{
-content:"";
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.75);
-z-index:-1;
-}
-
-/* ===== PORTADA ===== */
-
-.hero{
-height:100vh;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-text-align:center;
-padding:20px;
-}
-
-.hero img{
-width:320px;
-max-width:90%;
-margin-bottom:20px;
-}
-
-.hero h1{
-font-size:2em;
-letter-spacing:4px;
-margin-bottom:15px;
-}
-
-.hero p{
-font-size:1.1em;
-letter-spacing:2px;
-color:#ccc;
-margin-bottom:30px;
-}
-
-.hero button{
-padding:14px 30px;
-border:1px solid white;
-background:transparent;
-color:white;
-font-size:0.9em;
-letter-spacing:2px;
-cursor:pointer;
-transition:0.3s;
-border-radius:30px;
-margin-bottom:30px;
-}
-
-.hero button:hover{
-background:white;
-color:black;
-}
-
-/* ===== REDES ===== */
-
-.social-icons{
-display:flex;
-gap:25px;
-justify-content:center;
-}
-
-.social-icons a img{
-width:32px;
-transition:0.3s;
-}
-
-.social-icons a img:hover{
-transform:scale(1.2);
-}
-
-/* ===== MENÚ ===== */
-
-.menu-section{
-padding:100px 20px 80px 20px;
-text-align:center;
-}
-
-.menu-title{
-font-size:1.6em;
-letter-spacing:4px;
-margin-bottom:40px;
-}
-
-.menu-buttons{
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
-gap:20px;
-}
-
-.menu-buttons a{
-text-decoration:none;
-color:white;
-border:1px solid rgba(255,255,255,0.3);
-padding:15px 25px;
-border-radius:30px;
-font-size:0.9em;
-letter-spacing:2px;
-transition:0.3s;
-}
-
-.menu-buttons a:hover{
-background:white;
-color:black;
-}
-
-/* RESPONSIVE */
+.register-section{padding:40px 20px 110px;max-width:720px;margin:0 auto}
+.register-title{text-align:center;font-size:1.6em;letter-spacing:4px;margin-bottom:12px}
+.register-intro{text-align:center;color:#ccc;line-height:1.55;margin-bottom:35px}
+.register-card{background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:28px;backdrop-filter:blur(5px)}
+.register-card h2{font-size:18px;margin:22px 0 14px;letter-spacing:1px}
+.field{display:block;font-weight:600;margin-bottom:16px}
+.field input,.field select{width:100%;margin-top:7px;padding:12px 13px;border:1px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(255,255,255,.08);color:white;font:inherit}
+.field select option{color:#111}
+.field input:focus,.field select:focus{outline:2px solid rgba(255,255,255,.25)}
+.radios{display:flex;gap:22px;margin-top:10px;font-weight:400}
+.radios label,.check{display:flex;gap:9px;align-items:flex-start;font-weight:400;line-height:1.45}
+.radios input,.check input{width:auto;margin-top:4px}
+.hidden{display:none}
+.consent{border-top:1px solid rgba(255,255,255,.15);padding-top:16px;margin-top:16px}
+.consent a{color:white;text-decoration:underline;font-size:14px}
+.optional{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px}
+.register-submit{width:100%;border:1px solid white;border-radius:12px;padding:14px;background:transparent;color:white;font-size:16px;font-weight:700;cursor:pointer;margin-top:24px}
+.register-submit:hover{background:white;color:black}
+.form-note{font-size:12px;color:#aaa;line-height:1.5;margin-top:14px}
+.form-error{display:none;color:#ffb4b4;font-size:13px;margin-top:6px}
 
 @media(max-width:480px){
-
-.hero img{
-width:260px;
+.hero img{width:260px}.hero h1{font-size:1.6em}.hero p{font-size:1em}
+.register-card{padding:22px}
 }
-
-.hero h1{
-font-size:1.6em;
-}
-
-.hero p{
-font-size:1em;
-}
-
-}
-
 </style>
 </head>
 
 <body>
-
-<!-- PORTADA -->
 
 <section class="hero">
 <img src="LogoPrincipal.png">
@@ -166,39 +63,149 @@ font-size:1em;
 <button onclick="document.getElementById('menu').scrollIntoView()">Ver Menú ↓</button>
 
 <div class="social-icons">
-<a href="https://wa.me/573026475174" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/733/733585.png">
-</a>
-
-<a href="https://www.instagram.com/avohouseguaviare" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png">
-</a>
-
-<a href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/733/733547.png">
-</a>
-
-<a href="https://www.google.com/maps/place/AvoHouse/@2.5596824,-72.6297883" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/684/684908.png">
-</a>
+<a href="https://wa.me/573026475174" target="_blank" rel="noopener"><img src="https://cdn-icons-png.flaticon.com/512/733/733585.png"></a>
+<a href="https://www.instagram.com/avohouseguaviare" target="_blank" rel="noopener"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png"></a>
+<a href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener"><img src="https://cdn-icons-png.flaticon.com/512/733/733547.png"></a>
+<a href="https://www.google.com/maps/place/AvoHouse/@2.5596824,-72.6297883" target="_blank" rel="noopener"><img src="https://cdn-icons-png.flaticon.com/512/684/684908.png"></a>
 </div>
-
 </section>
 
-<!-- MENÚ -->
-
 <section id="menu" class="menu-section">
-
 <div class="menu-title">MENÚ</div>
-
 <div class="menu-buttons">
 <a href="ahtv/index.html">Solicitar música</a>
 <a href="mezcladitas.html">Mezcladitas</a>
 <a href="cervezas.html">Cervezas</a>
 <a href="sinalcohol.html">Sin Alcohol</a>
+<a href="#registro">Puntos AH</a>
+</div>
+</section>
+
+<section id="registro" class="register-section">
+<div class="register-title">PUNTOS AH</div>
+<p class="register-intro">Crea tu cuenta para acceder a las funcionalidades de AvoHouse y participar en Puntos AH.</p>
+
+<div class="register-card">
+<form id="registroForm" novalidate>
+<h2>Datos personales</h2>
+
+<label class="field">Nombre completo *
+<input required name="nombre" autocomplete="name">
+</label>
+
+<label class="field">Tipo de documento *
+<select required name="tipo_documento">
+<option value="">Selecciona una opción</option>
+<option>Cédula de ciudadanía</option>
+<option>Cédula de extranjería</option>
+<option>Pasaporte</option>
+</select>
+</label>
+
+<label class="field">Número de documento *
+<input required name="documento" inputmode="numeric" autocomplete="off">
+</label>
+
+<label class="field">Correo electrónico *
+<input required type="email" name="correo" autocomplete="email">
+</label>
+
+<label class="field">Número de celular *
+<input required name="telefono" inputmode="tel" autocomplete="tel">
+</label>
+
+<label class="field">¿Este número también corresponde a tu WhatsApp? *
+<span class="radios">
+<label><input required type="radio" name="wa_mismo" value="si"> Sí</label>
+<label><input type="radio" name="wa_mismo" value="no"> No</label>
+</span>
+</label>
+
+<div id="waWrap" class="hidden">
+<label class="field">Número de WhatsApp *
+<input id="whatsapp" name="whatsapp" inputmode="tel" autocomplete="tel">
+</label>
 </div>
 
+<label class="field">Contraseña *
+<input required type="password" name="password" minlength="8" autocomplete="new-password">
+</label>
+
+<label class="field">Confirmar contraseña *
+<input required type="password" name="password_confirm" minlength="8" autocomplete="new-password">
+<div id="passError" class="form-error">Las contraseñas no coinciden.</div>
+</label>
+
+<h2>Verificación de mayoría de edad</h2>
+<label class="check"><input required type="checkbox" name="mayor_18"><span>Declaro que soy mayor de 18 años.</span></label>
+
+<h2>Autorizaciones</h2>
+
+<div class="consent">
+<label class="check">
+<input required type="checkbox" name="terminos">
+<span>He leído y acepto los <strong>Términos y Condiciones de AvoHouse</strong>.</span>
+</label>
+<div style="margin:8px 0 0 29px"><a href="AvoHouse_Terminos_Condiciones_v1.pdf" target="_blank" rel="noopener">Leer Términos y Condiciones</a></div>
+</div>
+
+<div class="consent">
+<label class="check">
+<input required type="checkbox" name="datos">
+<span>Autorizo de manera previa, expresa e informada a AvoHouse Gastrobar para el tratamiento de mis datos personales conforme a la Autorización para el Tratamiento de Datos Personales y la Política de Tratamiento de Datos Personales de AvoHouse.</span>
+</label>
+<div style="margin:8px 0 0 29px">
+<a href="AvoHouse_Autorizacion_Datos_Personales_v1.pdf" target="_blank" rel="noopener">Leer Autorización</a><br>
+<a href="AvoHouse_Politica_Tratamiento_Datos_Personales_v1.pdf" target="_blank" rel="noopener">Leer Política de Tratamiento de Datos</a>
+</div>
+</div>
+
+<div class="consent optional">
+<label class="check">
+<input type="checkbox" name="publicidad">
+<span>Autorizo a AvoHouse Gastrobar para enviarme comunicaciones comerciales y publicitarias sobre promociones, eventos, novedades, productos y beneficios mediante correo electrónico, SMS y WhatsApp. Esta autorización es opcional y puedo retirarla posteriormente.</span>
+</label>
+</div>
+
+<button class="register-submit" type="submit">Crear mi cuenta</button>
+<p class="form-note">El sistema deberá conservar evidencia de las decisiones tomadas, incluyendo fecha y hora de registro, versión de los documentos y estado de cada autorización.</p>
+</form>
+</div>
 </section>
+
+<script>
+const form=document.getElementById('registroForm');
+const waWrap=document.getElementById('waWrap');
+const wa=document.getElementById('whatsapp');
+const passError=document.getElementById('passError');
+
+document.querySelectorAll('input[name="wa_mismo"]').forEach(r=>{
+r.addEventListener('change',()=>{
+const same=form.wa_mismo.value==='si';
+waWrap.classList.toggle('hidden',same);
+wa.required=!same;
+if(same)wa.value='';
+});
+});
+
+function passwordsOk(){
+const ok=form.password.value===form.password_confirm.value;
+passError.style.display=ok?'none':'block';
+return ok;
+}
+form.password.addEventListener('input',passwordsOk);
+form.password_confirm.addEventListener('input',passwordsOk);
+
+form.addEventListener('submit',e=>{
+e.preventDefault();
+if(!form.checkValidity()){form.reportValidity();return;}
+if(!passwordsOk())return;
+const data=Object.fromEntries(new FormData(form).entries());
+if(data.wa_mismo==='si')data.whatsapp=data.telefono;
+alert('Formulario validado. Esta versión es para revisión; todavía no crea una cuenta real.');
+console.log(data);
+});
+</script>
 
 </body>
 </html>
