@@ -47,6 +47,9 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .error{display:none;color:#ffb7b7;font-size:12px;margin-top:-6px;margin-bottom:10px}
 .hidden{display:none!important}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.radio-group{display:flex;align-items:center;gap:26px;margin-top:8px}
+.radio-option{display:flex;align-items:center;gap:7px;font-size:14px;color:#ddd;line-height:1}
+.radio-option input{margin:0}
 
 .legal-box{margin-top:24px;border-top:1px solid rgba(255,255,255,.13);padding-top:22px}
 .legal-heading{display:flex;align-items:center;gap:12px;margin-bottom:18px}
@@ -156,9 +159,9 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
           </label>
 
           <label class="field">¿Este número también corresponde a tu WhatsApp? *
-            <span class="row" style="grid-template-columns:auto auto;justify-content:start;margin-top:9px;gap:18px">
-              <label class="check" style="margin:0"><input type="radio" name="wa_mismo" value="si" required> Sí</label>
-              <label class="check" style="margin:0"><input type="radio" name="wa_mismo" value="no"> No</label>
+            <span class="radio-group">
+              <label class="radio-option"><input type="radio" name="wa_mismo" value="si" required> Sí</label>
+              <label class="radio-option"><input type="radio" name="wa_mismo" value="no"> No</label>
             </span>
           </label>
 
