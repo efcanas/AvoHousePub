@@ -379,6 +379,13 @@ document.getElementById('resetForm').addEventListener('submit',async e=>{
 supabase.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){
     showView('resetView');
+    return;
+  }
+  if(event==='SIGNED_IN' && session){
+    const recovering=new URLSearchParams(window.location.search).get('recovery')==='1';
+    if(!recovering && document.getElementById('resetView').classList.contains('active')===false){
+      window.location.href='mi-cuenta.html';
+    }
   }
 });
 
