@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AvoHouse · Cuenta</title>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:'Helvetica Neue',Arial,sans-serif;color:#fff;background:url('../Fondo.png') center/cover fixed no-repeat}
+body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:-1}
+.page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px}
+.shell{width:100%;max-width:460px}
+.back{display:inline-block;margin:0 0 18px 4px;color:#fff;text-decoration:none;font-size:13px;letter-spacing:1px;opacity:.8}
+.back:hover{opacity:1}
+.card{background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.17);border-radius:22px;padding:30px;backdrop-filter:blur(7px);box-shadow:0 18px 60px rgba(0,0,0,.24)}
+.logo{display:block;width:125px;max-width:45%;margin:0 auto 18px}
+.kicker{text-align:center;text-transform:uppercase;letter-spacing:3px;font-size:11px;opacity:.72;margin-bottom:8px}
+h1{text-align:center;font-size:28px;margin:0 0 8px}
+.subtitle{text-align:center;color:#c9c9c9;line-height:1.5;font-size:14px;margin:0 0 25px}
+.view{display:none}.view.active{display:block}
+.field{display:block;font-size:14px;font-weight:600;margin:0 0 15px}
+.field input,.field select{width:100%;margin-top:7px;padding:12px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:inherit}
+.field select option{color:#111}
+.field input:focus,.field select:focus{outline:2px solid rgba(255,255,255,.18);border-color:rgba(255,255,255,.65)}
+.password-row{position:relative}
+.password-row input{padding-right:78px}
+.toggle-password{position:absolute;right:9px;bottom:9px;border:0;background:transparent;color:#ddd;font-size:12px;cursor:pointer;padding:5px}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:7px 0 20px}
+.link{color:#fff;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.primary,.secondary{width:100%;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer;transition:.2s}
+.primary{background:#fff;color:#111;border:1px solid #fff}
+.primary:hover:not(:disabled){filter:brightness(.94)}
+.primary:disabled{opacity:.35;cursor:not-allowed}
+.secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
+.secondary:hover{background:rgba(255,255,255,.07)}
+.divider{display:flex;align-items:center;gap:12px;margin:23px 0;color:#9f9f9f;font-size:12px}
+.divider::before,.divider::after{content:"";height:1px;background:rgba(255,255,255,.15);flex:1}
+.bottom{text-align:center;color:#cfcfcf;font-size:14px;margin-top:20px}
+.bottom a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.notice{display:none;margin:0 0 15px;padding:11px 12px;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);font-size:13px;line-height:1.45;color:#ddd}
+.notice.show{display:block}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:#ddd;line-height:1.45;margin:12px 0}
+.check input{margin-top:3px}
+.consent{border-top:1px solid rgba(255,255,255,.13);padding-top:14px;margin-top:14px}
+.small{font-size:11px;color:#aaa;line-height:1.45;margin-top:12px}
+.error{display:none;color:#ffb7b7;font-size:12px;margin-top:-6px;margin-bottom:10px}
+.hidden{display:none!important}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.card{padding:23px 19px}.row{grid-template-columns:1fr}.logo{width:105px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="shell">
+    <a class="back" href="../index.html">← Volver a AvoHouse</a>
+
+    <div class="card">
+      <img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
+
+      <!-- INGRESAR -->
+      <section id="loginView" class="view active">
+        <div class="kicker">AvoHouse</div>
+        <h1>Ingresar</h1>
+        <p class="subtitle">Accede a tu cuenta, consulta tus Puntos AH y utiliza las funcionalidades disponibles.</p>
+
+        <div id="loginNotice" class="notice"></div>
+
+        <form id="loginForm">
+          <label class="field">Correo electrónico
+            <input id="loginEmail" type="email" autocomplete="email" required>
+          </label>
+
+          <label class="field password-row">Contraseña
+            <input id="loginPassword" type="password" autocomplete="current-password" required>
+            <button class="toggle-password" type="button" data-target="loginPassword">Mostrar</button>
+          </label>
+
+          <div class="actions">
+            <span></span>
+            <a class="link" data-show="recoverView">¿Olvidaste tu contraseña?</a>
+          </div>
+
+          <button class="primary" type="submit">Ingresar</button>
+        </form>
+
+        <div class="divider">o</div>
+        <div class="bottom">¿Aún no tienes una cuenta? <a data-show="registerView">Regístrate</a></div>
+      </section>
+
+      <!-- RECUPERAR -->
+      <section id="recoverView" class="view">
+        <div class="kicker">Cuenta AvoHouse</div>
+        <h1>Recuperar contraseña</h1>
+        <p class="subtitle">Te enviaremos instrucciones para restablecer el acceso a tu cuenta.</p>
+
+        <div id="recoverNotice" class="notice"></div>
+
+        <form id="recoverForm">
+          <label class="field">Correo electrónico
+            <input id="recoverEmail" type="email" autocomplete="email" required>
+          </label>
+
+          <button class="primary" type="submit">Enviar instrucciones</button>
+          <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
+        </form>
+      </section>
+
+      <!-- REGISTRO -->
+      <section id="registerView" class="view">
+        <div class="kicker">Puntos AH</div>
+        <h1>Crear cuenta</h1>
+        <p class="subtitle">Completa tus datos para crear tu cuenta de AvoHouse.</p>
+
+        <div id="registerNotice" class="notice"></div>
+
+        <form id="registerForm" novalidate>
+          <label class="field">Nombre completo *
+            <input name="nombre" autocomplete="name" required>
+          </label>
+
+          <div class="row">
+            <label class="field">Tipo de documento *
+              <select name="tipo_documento" required>
+                <option value="">Selecciona</option>
+                <option>Cédula de ciudadanía</option>
+                <option>Cédula de extranjería</option>
+                <option>Pasaporte</option>
+              </select>
+            </label>
+
+            <label class="field">Número de documento *
+              <input name="documento" inputmode="numeric" autocomplete="off" required>
+            </label>
+          </div>
+
+          <label class="field">Correo electrónico *
+            <input name="correo" type="email" autocomplete="email" required>
+          </label>
+
+          <label class="field">Número de celular *
+            <input name="telefono" inputmode="tel" autocomplete="tel" required>
+          </label>
+
+          <label class="field">¿Este número también corresponde a tu WhatsApp? *
+            <span class="row" style="grid-template-columns:auto auto;justify-content:start;margin-top:9px;gap:18px">
+              <label class="check" style="margin:0"><input type="radio" name="wa_mismo" value="si" required> Sí</label>
+              <label class="check" style="margin:0"><input type="radio" name="wa_mismo" value="no"> No</label>
+            </span>
+          </label>
+
+          <div id="waWrap" class="hidden">
+            <label class="field">Número de WhatsApp *
+              <input id="whatsapp" name="whatsapp" inputmode="tel" autocomplete="tel">
+            </label>
+          </div>
+
+          <label class="field password-row">Contraseña *
+            <input name="password" type="password" minlength="8" autocomplete="new-password" required>
+            <button class="toggle-password" type="button" data-target="regPassword">Mostrar</button>
+          </label>
+
+          <label class="field password-row">Confirmar contraseña *
+            <input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
+            <button class="toggle-password" type="button" data-target="regPasswordConfirm">Mostrar</button>
+          </label>
+
+          <div id="passError" class="error">Las contraseñas deben coincidir y tener mínimo 8 caracteres.</div>
+
+          <div class="consent">
+            <label class="check"><input type="checkbox" name="mayor_18" required><span>Declaro que soy mayor de 18 años.</span></label>
+          </div>
+
+          <div class="consent">
+            <label class="check"><input type="checkbox" name="terminos" required><span>He leído y acepto los <strong>Términos y Condiciones de AvoHouse</strong>.</span></label>
+            <p class="small">Los documentos completos estarán disponibles desde esta sección cuando queden publicados en la web.</p>
+          </div>
+
+          <div class="consent">
+            <label class="check"><input type="checkbox" name="datos" required><span>Autorizo de manera previa, expresa e informada el tratamiento de mis datos personales conforme a la Autorización y la Política de Tratamiento de Datos de AvoHouse.</span></label>
+          </div>
+
+          <div class="consent">
+            <label class="check"><input type="checkbox" name="publicidad"><span>Autorizo a AvoHouse a enviarme comunicaciones comerciales por correo electrónico, SMS y WhatsApp. Esta autorización es opcional.</span></label>
+          </div>
+
+          <button id="registerBtn" class="primary" type="submit" disabled>Crear mi cuenta</button>
+          <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
+
+          <p class="small">El sistema deberá conservar la evidencia de las decisiones tomadas, incluyendo fecha/hora y versión de los documentos aceptados.</p>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const views=[...document.querySelectorAll('.view')];
+function showView(id){
+  views.forEach(v=>v.classList.toggle('active',v.id===id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-show]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.show)));
+
+document.querySelectorAll('.toggle-password').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const inputId=btn.dataset.target;
+    const input=document.getElementById(inputId) || btn.parentElement.querySelector('input');
+    if(!input)return;
+    const visible=input.type==='text';
+    input.type=visible?'password':'text';
+    btn.textContent=visible?'Mostrar':'Ocultar';
+  });
+});
+
+const registerForm=document.getElementById('registerForm');
+const registerBtn=document.getElementById('registerBtn');
+const waWrap=document.getElementById('waWrap');
+const waInput=document.getElementById('whatsapp');
+const passError=document.getElementById('passError');
+const registerNotice=document.getElementById('registerNotice');
+
+function field(name){return registerForm.elements[name]}
+function waChoice(){const r=document.querySelector('input[name="wa_mismo"]:checked');return r?r.value:''}
+function passwordsOk(show=false){
+  const p=field('password').value;
+  const p2=field('password_confirm').value;
+  const ok=p.length>=8 && p===p2;
+  if(show || p2)passError.style.display=ok?'none':'block';
+  return ok;
+}
+function requiredOk(){
+  const requiredNames=['nombre','tipo_documento','documento','correo','telefono'];
+  for(const name of requiredNames) if(!field(name).value.trim()) return false;
+  if(!field('correo').validity.valid)return false;
+  const same=waChoice();
+  if(!same)return false;
+  if(same==='no' && !waInput.value.trim())return false;
+  return field('mayor_18').checked && field('terminos').checked && field('datos').checked;
+}
+function updateRegisterButton(){
+  registerBtn.disabled=!(requiredOk() && passwordsOk(false));
+}
+document.querySelectorAll('#registerForm input,#registerForm select').forEach(el=>{
+  el.addEventListener('input',updateRegisterButton);
+  el.addEventListener('change',updateRegisterButton);
+});
+document.querySelectorAll('input[name="wa_mismo"]').forEach(r=>r.addEventListener('change',()=>{
+  const same=waChoice()==='si';
+  waWrap.classList.toggle('hidden',same);
+  waInput.required=!same;
+  if(same)waInput.value='';
+  updateRegisterButton();
+}));
+registerForm.querySelector('input[name="password"]').id='regPassword';
+
+registerForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  passwordsOk(true);
+  updateRegisterButton();
+  if(registerBtn.disabled)return;
+  registerNotice.textContent='Formulario validado. Esta versión es de revisión y todavía no crea una cuenta real.';
+  registerNotice.classList.add('show');
+});
+
+document.getElementById('loginForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const notice=document.getElementById('loginNotice');
+  notice.textContent='Acceso en modo de revisión: la autenticación real se conectará cuando implementemos el backend.';
+  notice.classList.add('show');
+});
+
+document.getElementById('recoverForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const notice=document.getElementById('recoverNotice');
+  notice.textContent='Solicitud preparada. En la versión conectada, aquí se enviará el enlace de recuperación al correo indicado.';
+  notice.classList.add('show');
+});
+
+updateRegisterButton();
+</script>
+</body>
+</html>
