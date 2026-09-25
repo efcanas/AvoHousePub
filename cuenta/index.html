@@ -32,6 +32,8 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .primary{background:#fff;color:#111;border:1px solid #fff}
 .primary:hover:not(:disabled){filter:brightness(.94)}
 .primary:disabled{opacity:.35;cursor:not-allowed}
+.requirement-status{font-size:12px;line-height:1.45;color:#aaa;text-align:center;margin:10px 6px 0;min-height:18px}
+.requirement-status.ready{color:#ddd}
 .secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
 .secondary:hover{background:rgba(255,255,255,.07)}
 .divider{display:flex;align-items:center;gap:12px;margin:23px 0;color:#9f9f9f;font-size:12px}
@@ -175,13 +177,14 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
             <input name="password" type="password" minlength="8" autocomplete="new-password" required>
             <button class="toggle-password" type="button" data-target="regPassword">Mostrar</button>
           </label>
+          <p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
 
           <label class="field password-row">Confirmar contraseña *
             <input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
             <button class="toggle-password" type="button" data-target="regPasswordConfirm">Mostrar</button>
           </label>
 
-          <div id="passError" class="error">Las contraseñas deben coincidir y tener mínimo 8 caracteres.</div>
+          <div id="passError" class="error">La contraseña no cumple los requisitos o las contraseñas no coinciden.</div>
 
           <div class="consent">
             <label class="check"><input type="checkbox" name="mayor_18" required><span>Declaro que soy mayor de 18 años.</span></label>
@@ -202,19 +205,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
               <input type="checkbox" name="publicidad">
               <span>Autorizo el envío de comunicaciones comerciales y publicitarias por correo electrónico, SMS y WhatsApp.</span>
             </label>
-          </div>
-
-          <button id="registerBtn" class="primary" type="submit" disabled>Crear mi cuenta</button>
-          <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
-
-          
-        </form>
-      </section>
-    </div>
-  </div>
-</div>
-
-<script>
+          </<script>
 const views=[...document.querySelectorAll('.view')];
 function showView(id){
   views.forEach(v=>v.classList.toggle('active',v.id===id));
@@ -234,6 +225,7 @@ document.querySelectorAll('.toggle-password').forEach(btn=>{
 
 const registerForm=document.getElementById('registerForm');
 const registerBtn=document.getElementById('registerBtn');
+const status=document.getElementById('requirementStatus');
 const waWrap=document.getElementById('waWrap');
 const waInput=document.getElementById('whatsapp');
 const passError=document.getElementById('passError');
@@ -244,37 +236,84 @@ passwordInput.id='regPassword';
 const passwordConfirm=registerForm.querySelector('input[name="password_confirm"]');
 
 function getField(name){ return registerForm.querySelector('[name="'+name+'"]'); }
+
 function getWhatsAppChoice(){
   const selected=registerForm.querySelector('input[name="wa_mismo"]:checked');
   return selected ? selected.value : '';
 }
 
+function passwordChecks(){
+  const p=passwordInput.value;
+  return {
+    length:p.length>=8,
+    upper:/[A-ZÁÉÍÓÚÜÑ]/.test(p),
+    lower:/[a-záéíóúüñ]/.test(p),
+    number:/\d/.test(p),
+    match:p.length>0 && p===passwordConfirm.value
+  };
+}
+
 function passwordsOk(showError=false){
-  const password=passwordInput.value;
-  const confirm=passwordConfirm.value;
-  const ok=password.length>=8 && password===confirm;
-  if(showError && confirm) passError.style.display=ok?'none':'block';
+  const c=passwordChecks();
+  const ok=c.length && c.upper && c.lower && c.number && c.match;
+  if(showError && passwordConfirm.value){
+    passError.style.display=ok?'none':'block';
+  } else if(!passwordConfirm.value){
+    passError.style.display='none';
+  }
   return ok;
 }
 
-function registrationReady(){
-  const textFields=['nombre','documento','correo','telefono'];
-  if(textFields.some(name=>!getField(name).value.trim())) return false;
-  if(!getField('tipo_documento').value) return false;
-  if(!getField('correo').checkValidity()) return false;
+function getMissing(){
+  const missing=[];
+  const requiredFields=[
+    ['nombre','nombre completo'],
+    ['tipo_documento','tipo de documento'],
+    ['documento','número de documento'],
+    ['correo','correo electrónico'],
+    ['telefono','número de celular']
+  ];
 
-  const waChoice=getWhatsAppChoice();
-  if(!waChoice) return false;
-  if(waChoice==='no' && !waInput.value.trim()) return false;
+  for(const [name,label] of requiredFields){
+    const input=getField(name);
+    if(!input.value.trim()) missing.push(label);
+  }
 
-  if(!getField('mayor_18').checked) return false;
-  if(!getField('terminos').checked) return false;
+  if(getField('correo').value.trim() && !getField('correo').checkValidity()){
+    missing.push('un correo electrónico válido');
+  }
 
-  return passwordsOk(false);
+  const wa=getWhatsAppChoice();
+  if(!wa) missing.push('seleccionar si el celular también es WhatsApp');
+  if(wa==='no' && !waInput.value.trim()) missing.push('número de WhatsApp');
+
+  const p=passwordChecks();
+  if(!p.length) missing.push('una contraseña de mínimo 8 caracteres');
+  if(p.length && !p.upper) missing.push('una mayúscula en la contraseña');
+  if(p.length && !p.lower) missing.push('una minúscula en la contraseña');
+  if(p.length && !p.number) missing.push('un número en la contraseña');
+  if(passwordConfirm.value && !p.match) missing.push('que las contraseñas coincidan');
+
+  if(!getField('mayor_18').checked) missing.push('aceptar mayoría de edad');
+  if(!getField('terminos').checked) missing.push('aceptar los Términos y Condiciones');
+
+  return missing;
 }
 
 function updateRegisterButton(){
-  registerBtn.disabled=!registrationReady();
+  const missing=getMissing();
+  const ready=missing.length===0;
+  registerBtn.disabled=!ready;
+
+  if(ready){
+    status.textContent='Todo listo. Puedes crear tu cuenta.';
+    status.classList.add('ready');
+  }else{
+    status.classList.remove('ready');
+    const shown=missing.slice(0,2).join(' y ');
+    const extra=missing.length>2 ? ` y ${missing.length-2} requisito${missing.length-2===1?'':'s'} más` : '';
+    status.textContent='Falta: '+shown+extra+'.';
+  }
 }
 
 registerForm.querySelectorAll('input,select').forEach(el=>{
@@ -305,6 +344,18 @@ document.getElementById('loginForm').addEventListener('submit',e=>{
   e.preventDefault();
   const notice=document.getElementById('loginNotice');
   notice.textContent='Acceso en modo de revisión: la autenticación real se conectará cuando implementemos el backend.';
+  notice.classList.add('show');
+});
+
+document.getElementById('recoverForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const notice=document.getElementById('recoverNotice');
+  notice.textContent='Solicitud preparada. En la versión conectada, aquí se enviará el enlace de recuperación al correo indicado.';
+  notice.classList.add('show');
+});
+
+updateRegisterButton();
+</script>mos el backend.';
   notice.classList.add('show');
 });
 
