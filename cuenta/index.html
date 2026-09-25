@@ -255,7 +255,7 @@ function waChoice(){
 }
 function passwordChecks(){
   const p=field('password').value;
-  return {length:p.length>=8,upper:/[A-ZÁÉÍÓÚÜÑ]/.test(p),lower:/[a-záéíóúüñ]/.test(p),number:/d/.test(p),match:p.length>0&&p===field('password_confirm').value};
+  return {length:p.length>=8,upper:/[A-ZÁÉÍÓÚÜÑ]/.test(p),lower:/[a-záéíóúüñ]/.test(p),number:/\d/.test(p),match:p.length>0&&p===field('password_confirm').value};
 }
 function getMissing(){
   const missing=[];
