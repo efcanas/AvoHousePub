@@ -26,14 +26,12 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .password-row{position:relative}
 .password-row input{padding-right:78px}
 .toggle-password{position:absolute;right:9px;bottom:9px;border:0;background:transparent;color:#ddd;font-size:12px;cursor:pointer;padding:5px}
-.actions{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:7px 0 20px}
+.actions{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin:7px 0 20px}
 .link{color:#fff;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .primary,.secondary{width:100%;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer;transition:.2s}
 .primary{background:#fff;color:#111;border:1px solid #fff}
 .primary:hover:not(:disabled){filter:brightness(.94)}
 .primary:disabled{opacity:.35;cursor:not-allowed}
-.requirement-status{font-size:12px;line-height:1.45;color:#aaa;text-align:center;margin:10px 6px 0;min-height:18px}
-.requirement-status.ready{color:#ddd}
 .secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
 .secondary:hover{background:rgba(255,255,255,.07)}
 .divider{display:flex;align-items:center;gap:12px;margin:23px 0;color:#9f9f9f;font-size:12px}
@@ -52,7 +50,6 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .radio-group{display:flex;align-items:center;gap:26px;margin-top:8px}
 .radio-option{display:flex;align-items:center;gap:7px;font-size:14px;color:#ddd;line-height:1}
 .radio-option input{margin:0}
-
 .legal-box{margin-top:24px;border-top:1px solid rgba(255,255,255,.13);padding-top:22px}
 .legal-heading{display:flex;align-items:center;gap:12px;margin-bottom:18px}
 .legal-icon{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
@@ -60,11 +57,8 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .legal-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#ddd;line-height:1.5;margin:13px 0}
 .legal-item input{margin:3px 0 0;flex:0 0 auto}
 .legal-item a{color:#fff;text-decoration:underline;text-underline-offset:3px}
-.legal-links{margin:-4px 0 12px 27px;font-size:11px;color:#aaa;line-height:1.6}
-.legal-links a{color:#fff}
-.legal-divider{height:1px;background:rgba(255,255,255,.1);margin:16px 0}
-.legal-optional{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 13px}
-.legal-optional .legal-item{margin:0}
+.requirement-status{font-size:12px;line-height:1.45;color:#aaa;text-align:center;margin:10px 6px 0;min-height:18px}
+.requirement-status.ready{color:#ddd}
 @media(max-width:480px){.card{padding:23px 19px}.row{grid-template-columns:1fr}.logo{width:105px}}
 </style>
 </head>
@@ -76,12 +70,10 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
     <div class="card">
       <img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
 
-      <!-- INGRESAR -->
       <section id="loginView" class="view active">
         <div class="kicker">AvoHouse</div>
         <h1>Ingresar</h1>
         <p class="subtitle">Accede a tu cuenta, consulta tus Puntos AH y utiliza las funcionalidades disponibles.</p>
-
         <div id="loginNotice" class="notice"></div>
 
         <form id="loginForm">
@@ -95,8 +87,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
           </label>
 
           <div class="actions">
-            <span></span>
-            <a class="link" data-show="recoverView">¿Olvidaste tu contraseña?</a>
+            <a class="link" href="#recoverView" data-show="recoverView">¿Olvidaste tu contraseña?</a>
           </div>
 
           <button class="primary" type="submit">Ingresar</button>
@@ -106,30 +97,25 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
         <div class="bottom">¿Aún no tienes una cuenta? <a href="#registerView" data-show="registerView">Regístrate</a></div>
       </section>
 
-      <!-- RECUPERAR -->
       <section id="recoverView" class="view">
         <div class="kicker">Cuenta AvoHouse</div>
         <h1>Recuperar contraseña</h1>
         <p class="subtitle">Te enviaremos instrucciones para restablecer el acceso a tu cuenta.</p>
-
         <div id="recoverNotice" class="notice"></div>
 
         <form id="recoverForm">
           <label class="field">Correo electrónico
             <input id="recoverEmail" type="email" autocomplete="email" required>
           </label>
-
           <button class="primary" type="submit">Enviar instrucciones</button>
           <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
         </form>
       </section>
 
-      <!-- REGISTRO -->
       <section id="registerView" class="view">
         <div class="kicker">Puntos AH</div>
         <h1>Crear cuenta</h1>
         <p class="subtitle">Completa tus datos para crear tu cuenta de AvoHouse.</p>
-
         <div id="registerNotice" class="notice"></div>
 
         <form id="registerForm" novalidate>
@@ -146,7 +132,6 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
                 <option>Pasaporte</option>
               </select>
             </label>
-
             <label class="field">Número de documento *
               <input name="documento" inputmode="numeric" autocomplete="off" required>
             </label>
@@ -174,7 +159,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
           </div>
 
           <label class="field password-row">Contraseña *
-            <input name="password" type="password" minlength="8" autocomplete="new-password" required>
+            <input id="regPassword" name="password" type="password" minlength="8" autocomplete="new-password" required>
             <button class="toggle-password" type="button" data-target="regPassword">Mostrar</button>
           </label>
           <p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
@@ -183,7 +168,6 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
             <input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
             <button class="toggle-password" type="button" data-target="regPasswordConfirm">Mostrar</button>
           </label>
-
           <div id="passError" class="error">La contraseña no cumple los requisitos o las contraseñas no coinciden.</div>
 
           <div class="consent">
@@ -205,23 +189,35 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
               <input type="checkbox" name="publicidad">
               <span>Autorizo el envío de comunicaciones comerciales y publicitarias por correo electrónico, SMS y WhatsApp.</span>
             </label>
-          </<script>
+          </div>
+
+          <button id="registerBtn" class="primary" type="submit" disabled>Crear mi cuenta</button>
+          <div id="requirementStatus" class="requirement-status" aria-live="polite"></div>
+          <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
 const views=[...document.querySelectorAll('.view')];
+
 function showView(id){
-  views.forEach(v=>v.classList.toggle('active',v.id===id));
+  views.forEach(view=>view.classList.toggle('active',view.id===id));
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
 document.querySelectorAll('[data-show]').forEach(el=>{
   el.addEventListener('click',e=>{
     e.preventDefault();
-    e.stopPropagation();
     showView(el.dataset.show);
   });
 });
 
 document.querySelectorAll('.toggle-password').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    const input=document.getElementById(btn.dataset.target) || btn.parentElement.querySelector('input');
+    const input=document.getElementById(btn.dataset.target);
     if(!input)return;
     const visible=input.type==='text';
     input.type=visible?'password':'text';
@@ -237,37 +233,22 @@ const waInput=document.getElementById('whatsapp');
 const passError=document.getElementById('passError');
 const registerNotice=document.getElementById('registerNotice');
 
-const passwordInput=registerForm.querySelector('input[name="password"]');
-passwordInput.id='regPassword';
-const passwordConfirm=registerForm.querySelector('input[name="password_confirm"]');
+function field(name){return registerForm.elements[name]}
 
-function getField(name){ return registerForm.querySelector('[name="'+name+'"]'); }
-
-function getWhatsAppChoice(){
+function waChoice(){
   const selected=registerForm.querySelector('input[name="wa_mismo"]:checked');
   return selected ? selected.value : '';
 }
 
 function passwordChecks(){
-  const p=passwordInput.value;
+  const password=field('password').value;
   return {
-    length:p.length>=8,
-    upper:/[A-ZÁÉÍÓÚÜÑ]/.test(p),
-    lower:/[a-záéíóúüñ]/.test(p),
-    number:/\d/.test(p),
-    match:p.length>0 && p===passwordConfirm.value
+    length:password.length>=8,
+    upper:/[A-ZÁÉÍÓÚÜÑ]/.test(password),
+    lower:/[a-záéíóúüñ]/.test(password),
+    number:/\d/.test(password),
+    match:password.length>0 && password===field('password_confirm').value
   };
-}
-
-function passwordsOk(showError=false){
-  const c=passwordChecks();
-  const ok=c.length && c.upper && c.lower && c.number && c.match;
-  if(showError && passwordConfirm.value){
-    passError.style.display=ok?'none':'block';
-  } else if(!passwordConfirm.value){
-    passError.style.display='none';
-  }
-  return ok;
 }
 
 function getMissing(){
@@ -280,16 +261,15 @@ function getMissing(){
     ['telefono','número de celular']
   ];
 
-  for(const [name,label] of requiredFields){
-    const input=getField(name);
-    if(!input.value.trim()) missing.push(label);
-  }
+  requiredFields.forEach(([name,label])=>{
+    if(!field(name).value.trim()) missing.push(label);
+  });
 
-  if(getField('correo').value.trim() && !getField('correo').checkValidity()){
+  if(field('correo').value.trim() && !field('correo').checkValidity()){
     missing.push('un correo electrónico válido');
   }
 
-  const wa=getWhatsAppChoice();
+  const wa=waChoice();
   if(!wa) missing.push('seleccionar si el celular también es WhatsApp');
   if(wa==='no' && !waInput.value.trim()) missing.push('número de WhatsApp');
 
@@ -298,10 +278,10 @@ function getMissing(){
   if(p.length && !p.upper) missing.push('una mayúscula en la contraseña');
   if(p.length && !p.lower) missing.push('una minúscula en la contraseña');
   if(p.length && !p.number) missing.push('un número en la contraseña');
-  if(passwordConfirm.value && !p.match) missing.push('que las contraseñas coincidan');
+  if(field('password_confirm').value && !p.match) missing.push('que las contraseñas coincidan');
 
-  if(!getField('mayor_18').checked) missing.push('aceptar mayoría de edad');
-  if(!getField('terminos').checked) missing.push('aceptar los Términos y Condiciones');
+  if(!field('mayor_18').checked) missing.push('aceptar mayoría de edad');
+  if(!field('terminos').checked) missing.push('aceptar los Términos y Condiciones');
 
   return missing;
 }
@@ -315,33 +295,35 @@ function updateRegisterButton(){
     status.textContent='Todo listo. Puedes crear tu cuenta.';
     status.classList.add('ready');
   }else{
+    const first=missing.slice(0,2).join(' y ');
+    const extra=missing.length>2 ? ' y '+(missing.length-2)+' requisito'+(missing.length-2===1?'':'s')+' más' : '';
+    status.textContent='Falta: '+first+extra+'.';
     status.classList.remove('ready');
-    const shown=missing.slice(0,2).join(' y ');
-    const extra=missing.length>2 ? ` y ${missing.length-2} requisito${missing.length-2===1?'':'s'} más` : '';
-    status.textContent='Falta: '+shown+extra+'.';
   }
 }
 
-registerForm.querySelectorAll('input,select').forEach(el=>{
+document.querySelectorAll('#registerForm input,#registerForm select').forEach(el=>{
   el.addEventListener('input',updateRegisterButton);
   el.addEventListener('change',updateRegisterButton);
 });
 
 registerForm.querySelectorAll('input[name="wa_mismo"]').forEach(radio=>{
   radio.addEventListener('change',()=>{
-    const same=getWhatsAppChoice()==='si';
+    const same=waChoice()==='si';
     waWrap.classList.toggle('hidden',same);
     waInput.required=!same;
-    if(same) waInput.value='';
+    if(same)waInput.value='';
     updateRegisterButton();
   });
 });
 
 registerForm.addEventListener('submit',e=>{
   e.preventDefault();
-  passwordsOk(true);
   updateRegisterButton();
-  if(registerBtn.disabled) return;
+  if(registerBtn.disabled){
+    passwordsOk(true);
+    return;
+  }
   registerNotice.textContent='Formulario validado. Esta versión es de revisión y todavía no crea una cuenta real.';
   registerNotice.classList.add('show');
 });
