@@ -64,154 +64,169 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 </head>
 <body>
 <div class="page">
-  <div class="shell">
-    <a class="back" href="../index.html">← Volver a AvoHouse</a>
+<div class="shell">
+<a class="back" href="../index.html">← Volver a AvoHouse</a>
+<div class="card">
+<img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
 
-    <div class="card">
-      <img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
+<section id="loginView" class="view active">
+<div class="kicker">AvoHouse</div>
+<h1>Ingresar</h1>
+<p class="subtitle">Accede a tu cuenta, consulta tus Puntos AH y utiliza las funcionalidades disponibles.</p>
+<div id="loginNotice" class="notice"></div>
+<form id="loginForm">
+<label class="field">Correo electrónico
+<input id="loginEmail" type="email" autocomplete="email" required>
+</label>
+<label class="field password-row">Contraseña
+<input id="loginPassword" type="password" autocomplete="current-password" required>
+<button class="toggle-password" type="button" data-target="loginPassword">Mostrar</button>
+</label>
+<div class="actions"><a class="link" href="#recoverView" data-show="recoverView">¿Olvidaste tu contraseña?</a></div>
+<button class="primary" type="submit">Ingresar</button>
+</form>
+<div class="divider">o</div>
+<div class="bottom">¿Aún no tienes una cuenta? <a href="#registerView" data-show="registerView">Regístrate</a></div>
+</section>
 
-      <section id="loginView" class="view active">
-        <div class="kicker">AvoHouse</div>
-        <h1>Ingresar</h1>
-        <p class="subtitle">Accede a tu cuenta, consulta tus Puntos AH y utiliza las funcionalidades disponibles.</p>
-        <div id="loginNotice" class="notice"></div>
+<section id="recoverView" class="view">
+<div class="kicker">Cuenta AvoHouse</div>
+<h1>Recuperar contraseña</h1>
+<p class="subtitle">Te enviaremos instrucciones para restablecer el acceso a tu cuenta.</p>
+<div id="recoverNotice" class="notice"></div>
+<form id="recoverForm">
+<label class="field">Correo electrónico
+<input id="recoverEmail" type="email" autocomplete="email" required>
+</label>
+<button class="primary" type="submit">Enviar instrucciones</button>
+<button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
+</form>
+</section>
 
-        <form id="loginForm">
-          <label class="field">Correo electrónico
-            <input id="loginEmail" type="email" autocomplete="email" required>
-          </label>
+<section id="resetView" class="view">
+<div class="kicker">Cuenta AvoHouse</div>
+<h1>Nueva contraseña</h1>
+<p class="subtitle">Establece una nueva contraseña para tu cuenta.</p>
+<div id="resetNotice" class="notice"></div>
+<form id="resetForm">
+<label class="field password-row">Nueva contraseña
+<input id="resetPassword" type="password" minlength="8" autocomplete="new-password" required>
+<button class="toggle-password" type="button" data-target="resetPassword">Mostrar</button>
+</label>
+<p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
+<label class="field password-row">Confirmar contraseña
+<input id="resetPasswordConfirm" type="password" minlength="8" autocomplete="new-password" required>
+<button class="toggle-password" type="button" data-target="resetPasswordConfirm">Mostrar</button>
+</label>
+<button class="primary" id="resetBtn" type="submit">Actualizar contraseña</button>
+<button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
+</form>
+</section>
 
-          <label class="field password-row">Contraseña
-            <input id="loginPassword" type="password" autocomplete="current-password" required>
-            <button class="toggle-password" type="button" data-target="loginPassword">Mostrar</button>
-          </label>
+<section id="registerView" class="view">
+<div class="kicker">Puntos AH</div>
+<h1>Crear cuenta</h1>
+<p class="subtitle">Completa tus datos para crear tu cuenta de AvoHouse.</p>
+<div id="registerNotice" class="notice"></div>
 
-          <div class="actions">
-            <a class="link" href="#recoverView" data-show="recoverView">¿Olvidaste tu contraseña?</a>
-          </div>
+<form id="registerForm" novalidate>
+<label class="field">Nombre completo *
+<input name="nombre" autocomplete="name" required>
+</label>
 
-          <button class="primary" type="submit">Ingresar</button>
-        </form>
-
-        <div class="divider">o</div>
-        <div class="bottom">¿Aún no tienes una cuenta? <a href="#registerView" data-show="registerView">Regístrate</a></div>
-      </section>
-
-      <section id="recoverView" class="view">
-        <div class="kicker">Cuenta AvoHouse</div>
-        <h1>Recuperar contraseña</h1>
-        <p class="subtitle">Te enviaremos instrucciones para restablecer el acceso a tu cuenta.</p>
-        <div id="recoverNotice" class="notice"></div>
-
-        <form id="recoverForm">
-          <label class="field">Correo electrónico
-            <input id="recoverEmail" type="email" autocomplete="email" required>
-          </label>
-          <button class="primary" type="submit">Enviar instrucciones</button>
-          <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
-        </form>
-      </section>
-
-      <section id="registerView" class="view">
-        <div class="kicker">Puntos AH</div>
-        <h1>Crear cuenta</h1>
-        <p class="subtitle">Completa tus datos para crear tu cuenta de AvoHouse.</p>
-        <div id="registerNotice" class="notice"></div>
-
-        <form id="registerForm" novalidate>
-          <label class="field">Nombre completo *
-            <input name="nombre" autocomplete="name" required>
-          </label>
-
-          <div class="row">
-            <label class="field">Tipo de documento *
-              <select name="tipo_documento" required>
-                <option value="">Selecciona</option>
-                <option>Cédula de ciudadanía</option>
-                <option>Cédula de extranjería</option>
-                <option>Pasaporte</option>
-              </select>
-            </label>
-            <label class="field">Número de documento *
-              <input name="documento" inputmode="numeric" autocomplete="off" required>
-            </label>
-          </div>
-
-          <label class="field">Correo electrónico *
-            <input name="correo" type="email" autocomplete="email" required>
-          </label>
-
-          <label class="field">Número de celular *
-            <input name="telefono" inputmode="tel" autocomplete="tel" required>
-          </label>
-
-          <label class="field">¿Este número también corresponde a tu WhatsApp? *
-            <span class="radio-group">
-              <label class="radio-option"><input type="radio" name="wa_mismo" value="si" required> Sí</label>
-              <label class="radio-option"><input type="radio" name="wa_mismo" value="no"> No</label>
-            </span>
-          </label>
-
-          <div id="waWrap" class="hidden">
-            <label class="field">Número de WhatsApp *
-              <input id="whatsapp" name="whatsapp" inputmode="tel" autocomplete="tel">
-            </label>
-          </div>
-
-          <label class="field password-row">Contraseña *
-            <input id="regPassword" name="password" type="password" minlength="8" autocomplete="new-password" required>
-            <button class="toggle-password" type="button" data-target="regPassword">Mostrar</button>
-          </label>
-          <p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
-
-          <label class="field password-row">Confirmar contraseña *
-            <input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
-            <button class="toggle-password" type="button" data-target="regPasswordConfirm">Mostrar</button>
-          </label>
-          <div id="passError" class="error">La contraseña no cumple los requisitos o las contraseñas no coinciden.</div>
-
-          <div class="consent">
-            <label class="check"><input type="checkbox" name="mayor_18" required><span>Declaro que soy mayor de 18 años.</span></label>
-          </div>
-
-          <div class="legal-box">
-            <div class="legal-heading">
-              <div class="legal-icon">✓</div>
-              <h2>Términos y condiciones</h2>
-            </div>
-
-            <label class="legal-item">
-              <input type="checkbox" name="terminos" required>
-              <span>Acepto los <a href="../legal/terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a> y autorizo a AvoHouse al tratamiento de mis datos personales conforme a la <a href="../legal/politica-datos.html" target="_blank" rel="noopener">Política de Tratamiento de Datos</a>.</span>
-            </label>
-
-            <label class="legal-item">
-              <input type="checkbox" name="publicidad">
-              <span>Autorizo el envío de comunicaciones comerciales y publicitarias por correo electrónico, SMS y WhatsApp.</span>
-            </label>
-          </div>
-
-          <button id="registerBtn" class="primary" type="submit" disabled>Crear mi cuenta</button>
-          <div id="requirementStatus" class="requirement-status" aria-live="polite"></div>
-          <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
-        </form>
-      </section>
-    </div>
-  </div>
+<div class="row">
+<label class="field">Tipo de documento *
+<select name="tipo_documento" required>
+<option value="">Selecciona</option>
+<option>Cédula de ciudadanía</option>
+<option>Cédula de extranjería</option>
+<option>Pasaporte</option>
+</select>
+</label>
+<label class="field">Número de documento *
+<input name="documento" inputmode="numeric" autocomplete="off" required>
+</label>
 </div>
 
+<label class="field">Correo electrónico *
+<input name="correo" type="email" autocomplete="email" required>
+</label>
+
+<label class="field">Número de celular *
+<input name="telefono" inputmode="tel" autocomplete="tel" required>
+</label>
+
+<label class="field">¿Este número también corresponde a tu WhatsApp? *
+<span class="radio-group">
+<label class="radio-option"><input type="radio" name="wa_mismo" value="si" required> Sí</label>
+<label class="radio-option"><input type="radio" name="wa_mismo" value="no"> No</label>
+</span>
+</label>
+
+<div id="waWrap" class="hidden">
+<label class="field">Número de WhatsApp *
+<input id="whatsapp" name="whatsapp" inputmode="tel" autocomplete="tel">
+</label>
+</div>
+
+<label class="field password-row">Contraseña *
+<input id="regPassword" name="password" type="password" minlength="8" autocomplete="new-password" required>
+<button class="toggle-password" type="button" data-target="regPassword">Mostrar</button>
+</label>
+<p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
+
+<label class="field password-row">Confirmar contraseña *
+<input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
+<button class="toggle-password" type="button" data-target="regPasswordConfirm">Mostrar</button>
+</label>
+<div id="passError" class="error">La contraseña no cumple los requisitos o las contraseñas no coinciden.</div>
+
+<div class="consent">
+<label class="check"><input type="checkbox" name="mayor_18" required><span>Declaro que soy mayor de 18 años.</span></label>
+</div>
+
+<div class="legal-box">
+<div class="legal-heading"><div class="legal-icon">✓</div><h2>Términos y condiciones</h2></div>
+<label class="legal-item">
+<input type="checkbox" name="terminos" required>
+<span>Acepto los <a href="../legal/terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a> y autorizo a AvoHouse al tratamiento de mis datos personales conforme a la <a href="../legal/politica-datos.html" target="_blank" rel="noopener">Política de Tratamiento de Datos</a>.</span>
+</label>
+<label class="legal-item">
+<input type="checkbox" name="publicidad">
+<span>Autorizo el envío de comunicaciones comerciales y publicitarias por correo electrónico, SMS y WhatsApp.</span>
+</label>
+</div>
+
+<button id="registerBtn" class="primary" type="submit" disabled>Crear mi cuenta</button>
+<div id="requirementStatus" class="requirement-status" aria-live="polite"></div>
+<button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
+</form>
+</section>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
+const {createClient}=window.supabase;
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+
+const ACCOUNT_URL=window.location.origin+window.location.pathname;
 const views=[...document.querySelectorAll('.view')];
 
 function showView(id){
   views.forEach(view=>view.classList.toggle('active',view.id===id));
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
 document.querySelectorAll('[data-show]').forEach(el=>{
   el.addEventListener('click',e=>{
     e.preventDefault();
-    showView(el.dataset.show);
+    const target=el.dataset.show;
+    showView(target);
   });
 });
 
@@ -234,113 +249,142 @@ const passError=document.getElementById('passError');
 const registerNotice=document.getElementById('registerNotice');
 
 function field(name){return registerForm.elements[name]}
-
 function waChoice(){
   const selected=registerForm.querySelector('input[name="wa_mismo"]:checked');
-  return selected ? selected.value : '';
+  return selected?selected.value:'';
 }
-
 function passwordChecks(){
-  const password=field('password').value;
-  return {
-    length:password.length>=8,
-    upper:/[A-ZÁÉÍÓÚÜÑ]/.test(password),
-    lower:/[a-záéíóúüñ]/.test(password),
-    number:/\d/.test(password),
-    match:password.length>0 && password===field('password_confirm').value
-  };
+  const p=field('password').value;
+  return {length:p.length>=8,upper:/[A-ZÁÉÍÓÚÜÑ]/.test(p),lower:/[a-záéíóúüñ]/.test(p),number:/d/.test(p),match:p.length>0&&p===field('password_confirm').value};
 }
-
 function getMissing(){
   const missing=[];
-  const requiredFields=[
-    ['nombre','nombre completo'],
-    ['tipo_documento','tipo de documento'],
-    ['documento','número de documento'],
-    ['correo','correo electrónico'],
-    ['telefono','número de celular']
-  ];
-
-  requiredFields.forEach(([name,label])=>{
-    if(!field(name).value.trim()) missing.push(label);
-  });
-
-  if(field('correo').value.trim() && !field('correo').checkValidity()){
-    missing.push('un correo electrónico válido');
-  }
-
+  [['nombre','nombre completo'],['tipo_documento','tipo de documento'],['documento','número de documento'],['correo','correo electrónico'],['telefono','número de celular']].forEach(([n,l])=>{if(!field(n).value.trim())missing.push(l)});
+  if(field('correo').value.trim()&&!field('correo').checkValidity())missing.push('un correo electrónico válido');
   const wa=waChoice();
-  if(!wa) missing.push('seleccionar si el celular también es WhatsApp');
-  if(wa==='no' && !waInput.value.trim()) missing.push('número de WhatsApp');
-
+  if(!wa)missing.push('seleccionar si el celular también es WhatsApp');
+  if(wa==='no'&&!waInput.value.trim())missing.push('número de WhatsApp');
   const p=passwordChecks();
-  if(!p.length) missing.push('una contraseña de mínimo 8 caracteres');
-  if(p.length && !p.upper) missing.push('una mayúscula en la contraseña');
-  if(p.length && !p.lower) missing.push('una minúscula en la contraseña');
-  if(p.length && !p.number) missing.push('un número en la contraseña');
-  if(field('password_confirm').value && !p.match) missing.push('que las contraseñas coincidan');
-
-  if(!field('mayor_18').checked) missing.push('aceptar mayoría de edad');
-  if(!field('terminos').checked) missing.push('aceptar los Términos y Condiciones');
-
+  if(!p.length)missing.push('una contraseña de mínimo 8 caracteres');
+  else{if(!p.upper)missing.push('una mayúscula en la contraseña');if(!p.lower)missing.push('una minúscula en la contraseña');if(!p.number)missing.push('un número en la contraseña')}
+  if(field('password_confirm').value&&!p.match)missing.push('que las contraseñas coincidan');
+  if(!field('mayor_18').checked)missing.push('aceptar mayoría de edad');
+  if(!field('terminos').checked)missing.push('aceptar los Términos y Condiciones');
   return missing;
 }
-
 function updateRegisterButton(){
   const missing=getMissing();
   const ready=missing.length===0;
   registerBtn.disabled=!ready;
+  if(ready){status.textContent='Todo listo. Puedes crear tu cuenta.';status.classList.add('ready')}
+  else{status.classList.remove('ready');const first=missing.slice(0,2).join(' y ');const extra=missing.length>2?' y '+(missing.length-2)+' requisito'+(missing.length-2===1?'':'s')+' más':'';status.textContent='Falta: '+first+extra+'.'}
+}
+registerForm.querySelectorAll('input,select').forEach(el=>{el.addEventListener('input',updateRegisterButton);el.addEventListener('change',updateRegisterButton)});
+registerForm.querySelectorAll('input[name="wa_mismo"]').forEach(radio=>radio.addEventListener('change',()=>{
+  const same=waChoice()==='si';waWrap.classList.toggle('hidden',same);waInput.required=!same;if(same)waInput.value='';updateRegisterButton();
+}));
 
-  if(ready){
-    status.textContent='Todo listo. Puedes crear tu cuenta.';
-    status.classList.add('ready');
-  }else{
-    const first=missing.slice(0,2).join(' y ');
-    const extra=missing.length>2 ? ' y '+(missing.length-2)+' requisito'+(missing.length-2===1?'':'s')+' más' : '';
-    status.textContent='Falta: '+first+extra+'.';
-    status.classList.remove('ready');
-  }
+async function finishAfterAuth(){
+  window.location.href='mi-cuenta.html';
 }
 
-document.querySelectorAll('#registerForm input,#registerForm select').forEach(el=>{
-  el.addEventListener('input',updateRegisterButton);
-  el.addEventListener('change',updateRegisterButton);
-});
-
-registerForm.querySelectorAll('input[name="wa_mismo"]').forEach(radio=>{
-  radio.addEventListener('change',()=>{
-    const same=waChoice()==='si';
-    waWrap.classList.toggle('hidden',same);
-    waInput.required=!same;
-    if(same)waInput.value='';
-    updateRegisterButton();
-  });
-});
-
-registerForm.addEventListener('submit',e=>{
+registerForm.addEventListener('submit',async e=>{
   e.preventDefault();
   updateRegisterButton();
-  if(registerBtn.disabled){
-    passwordsOk(true);
+  if(registerBtn.disabled)return;
+  registerBtn.disabled=true;
+
+  const fullName=field('nombre').value.trim();
+  const documentType=field('tipo_documento').value;
+  const documentNumber=field('documento').value.trim();
+  const email=field('correo').value.trim().toLowerCase();
+  const phone=field('telefono').value.trim();
+  const same=waChoice()==='si';
+  const whatsapp=same?phone:waInput.value.trim();
+  const password=field('password').value;
+  const marketing=field('publicidad').checked;
+
+  const {data,error}=await supabase.auth.signUp({
+    email,password,
+    options:{
+      emailRedirectTo:ACCOUNT_URL,
+      data:{
+        full_name:fullName,
+        document_type:documentType,
+        document_number:documentNumber,
+        phone,
+        whatsapp,
+        whatsapp_same:same,
+        age_confirmed:true,
+        terms_accepted:true,
+        data_authorized:true,
+        marketing_authorized:marketing,
+        terms_version:'1.0',
+        privacy_version:'1.0',
+        data_authorization_version:'1.0'
+      }
+    }
+  });
+
+  if(error){
+    registerNotice.textContent='No fue posible crear la cuenta. '+error.message;
+    registerNotice.classList.add('show');
+    registerBtn.disabled=false;
     return;
   }
-  registerNotice.textContent='Formulario validado. Esta versión es de revisión y todavía no crea una cuenta real.';
+
+  if(data.session){
+    window.location.href='mi-cuenta.html';
+    return;
+  }
+
+  registerNotice.textContent='Cuenta creada. Revisa tu correo para confirmar la dirección y completar el acceso.';
   registerNotice.classList.add('show');
+  registerBtn.disabled=false;
 });
 
-document.getElementById('loginForm').addEventListener('submit',e=>{
+document.getElementById('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password=document.getElementById('loginPassword').value;
   const notice=document.getElementById('loginNotice');
-  notice.textContent='Acceso en modo de revisión: la autenticación real se conectará cuando implementemos el backend.';
+  const {data,error}=await supabase.auth.signInWithPassword({email,password});
+  if(error){notice.textContent='No fue posible ingresar. Verifica el correo y la contraseña.';notice.classList.add('show');return}
+  if(data.session)window.location.href='mi-cuenta.html';
+});
+
+document.getElementById('recoverForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=document.getElementById('recoverEmail').value.trim().toLowerCase();
+  const notice=document.getElementById('recoverNotice');
+  const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:ACCOUNT_URL+'?recovery=1'});
+  notice.textContent=error?'No fue posible iniciar la recuperación. Inténtalo nuevamente.':'Te enviamos un enlace de recuperación al correo indicado.';
   notice.classList.add('show');
 });
 
-document.getElementById('recoverForm').addEventListener('submit',e=>{
+document.getElementById('resetForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const notice=document.getElementById('recoverNotice');
-  notice.textContent='Solicitud preparada. En la versión conectada, aquí se enviará el enlace de recuperación al correo indicado.';
+  const p=document.getElementById('resetPassword').value;
+  const p2=document.getElementById('resetPasswordConfirm').value;
+  const notice=document.getElementById('resetNotice');
+  if(p.length<8||!/[A-ZÁÉÍÓÚÜÑ]/.test(p)||!/[a-záéíóúüñ]/.test(p)||!/\d/.test(p)){notice.textContent='La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número.';notice.classList.add('show');return}
+  if(p!==p2){notice.textContent='Las contraseñas no coinciden.';notice.classList.add('show');return}
+  const {error}=await supabase.auth.updateUser({password:p});
+  if(error){notice.textContent='No fue posible actualizar la contraseña. Inténtalo nuevamente.';notice.classList.add('show');return}
+  notice.textContent='Contraseña actualizada correctamente.';
   notice.classList.add('show');
+  setTimeout(()=>showView('loginView'),900);
 });
+
+supabase.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){
+    showView('resetView');
+  }
+});
+
+if(new URLSearchParams(window.location.search).get('recovery')==='1'){
+  setTimeout(()=>showView('resetView'),300);
+}
 
 updateRegisterButton();
 </script>
