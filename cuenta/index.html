@@ -224,8 +224,7 @@ document.querySelectorAll('[data-show]').forEach(el=>el.addEventListener('click'
 
 document.querySelectorAll('.toggle-password').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    const inputId=btn.dataset.target;
-    const input=document.getElementById(inputId) || btn.parentElement.querySelector('input');
+    const input=document.getElementById(btn.dataset.target) || btn.parentElement.querySelector('input');
     if(!input)return;
     const visible=input.type==='text';
     input.type=visible?'password':'text';
@@ -240,45 +239,64 @@ const waInput=document.getElementById('whatsapp');
 const passError=document.getElementById('passError');
 const registerNotice=document.getElementById('registerNotice');
 
-function field(name){return registerForm.elements[name]}
-function waChoice(){const r=document.querySelector('input[name="wa_mismo"]:checked');return r?r.value:''}
-function passwordsOk(show=false){
-  const p=field('password').value;
-  const p2=field('password_confirm').value;
-  const ok=p.length>=8 && p===p2;
-  if(show || p2)passError.style.display=ok?'none':'block';
+const passwordInput=registerForm.querySelector('input[name="password"]');
+passwordInput.id='regPassword';
+const passwordConfirm=registerForm.querySelector('input[name="password_confirm"]');
+
+function getField(name){ return registerForm.querySelector('[name="'+name+'"]'); }
+function getWhatsAppChoice(){
+  const selected=registerForm.querySelector('input[name="wa_mismo"]:checked');
+  return selected ? selected.value : '';
+}
+
+function passwordsOk(showError=false){
+  const password=passwordInput.value;
+  const confirm=passwordConfirm.value;
+  const ok=password.length>=8 && password===confirm;
+  if(showError && confirm) passError.style.display=ok?'none':'block';
   return ok;
 }
-function requiredOk(){
-  const requiredNames=['nombre','tipo_documento','documento','correo','telefono'];
-  for(const name of requiredNames) if(!field(name).value.trim()) return false;
-  if(!field('correo').validity.valid)return false;
-  const same=waChoice();
-  if(!same)return false;
-  if(same==='no' && !waInput.value.trim())return false;
-  return field('mayor_18').checked && field('terminos').checked;
+
+function registrationReady(){
+  const textFields=['nombre','documento','correo','telefono'];
+  if(textFields.some(name=>!getField(name).value.trim())) return false;
+  if(!getField('tipo_documento').value) return false;
+  if(!getField('correo').checkValidity()) return false;
+
+  const waChoice=getWhatsAppChoice();
+  if(!waChoice) return false;
+  if(waChoice==='no' && !waInput.value.trim()) return false;
+
+  if(!getField('mayor_18').checked) return false;
+  if(!getField('terminos').checked) return false;
+
+  return passwordsOk(false);
 }
+
 function updateRegisterButton(){
-  registerBtn.disabled=!(requiredOk() && passwordsOk(false));
+  registerBtn.disabled=!registrationReady();
 }
-document.querySelectorAll('#registerForm input,#registerForm select').forEach(el=>{
+
+registerForm.querySelectorAll('input,select').forEach(el=>{
   el.addEventListener('input',updateRegisterButton);
   el.addEventListener('change',updateRegisterButton);
 });
-document.querySelectorAll('input[name="wa_mismo"]').forEach(r=>r.addEventListener('change',()=>{
-  const same=waChoice()==='si';
-  waWrap.classList.toggle('hidden',same);
-  waInput.required=!same;
-  if(same)waInput.value='';
-  updateRegisterButton();
-}));
-registerForm.querySelector('input[name="password"]').id='regPassword';
+
+registerForm.querySelectorAll('input[name="wa_mismo"]').forEach(radio=>{
+  radio.addEventListener('change',()=>{
+    const same=getWhatsAppChoice()==='si';
+    waWrap.classList.toggle('hidden',same);
+    waInput.required=!same;
+    if(same) waInput.value='';
+    updateRegisterButton();
+  });
+});
 
 registerForm.addEventListener('submit',e=>{
   e.preventDefault();
   passwordsOk(true);
   updateRegisterButton();
-  if(registerBtn.disabled)return;
+  if(registerBtn.disabled) return;
   registerNotice.textContent='Formulario validado. Esta versión es de revisión y todavía no crea una cuenta real.';
   registerNotice.classList.add('show');
 });
