@@ -255,7 +255,7 @@ function requiredOk(){
   const same=waChoice();
   if(!same)return false;
   if(same==='no' && !waInput.value.trim())return false;
-  return field('mayor_18').checked && field('terminos').checked && field('datos').checked;
+  return field('mayor_18').checked && field('terminos').checked;
 }
 function updateRegisterButton(){
   registerBtn.disabled=!(requiredOk() && passwordsOk(false));
