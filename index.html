@@ -195,9 +195,16 @@ const wa=document.getElementById('whatsapp');
 const passError=document.getElementById('passError');
 const submitBtn=document.getElementById('submitBtn');
 
+const el=name=>form.elements[name];
+
+function getWhatsAppSame(){
+const selected=document.querySelector('input[name="wa_mismo"]:checked');
+return selected ? selected.value : '';
+}
+
 document.querySelectorAll('input[name="wa_mismo"]').forEach(r=>{
 r.addEventListener('change',()=>{
-const same=form.wa_mismo.value==='si';
+const same=getWhatsAppSame()==='si';
 waWrap.classList.toggle('hidden',same);
 wa.required=!same;
 if(same)wa.value='';
@@ -206,34 +213,58 @@ updateSubmitState();
 });
 
 function passwordsOk(showError=false){
-const ok=form.password.value===form.password_confirm.value;
-if(showError || form.password_confirm.value) passError.style.display=ok?'none':'block';
+const password=el('password').value;
+const confirm=el('password_confirm').value;
+const ok=password.length>=8 && password===confirm;
+if(showError || confirm) passError.style.display=ok?'none':'block';
 return ok;
 }
 
-function updateSubmitState(){
-const valid=form.checkValidity() && passwordsOk(false);
-submitBtn.disabled=!valid;
+function requiredDataOk(){
+const textFields=['nombre','documento','correo','telefono'];
+for(const name of textFields){
+if(!el(name).value.trim()) return false;
 }
 
-form.querySelectorAll('input, select').forEach(el=>{
-el.addEventListener('input',updateSubmitState);
-el.addEventListener('change',updateSubmitState);
-});
+if(!el('tipo_documento').value) return false;
+if(!el('correo').validity.valid) return false;
 
-form.password.addEventListener('input',()=>{passwordsOk(false);updateSubmitState();});
-form.password_confirm.addEventListener('input',()=>{passwordsOk(true);updateSubmitState();});
+const same=getWhatsAppSame();
+if(!same) return false;
+if(same==='no' && !wa.value.trim()) return false;
+
+if(!el('mayor_18').checked) return false;
+if(!el('terminos').checked) return false;
+if(!el('datos').checked) return false;
+
+return true;
+}
+
+function updateSubmitState(){
+submitBtn.disabled=!(requiredDataOk() && passwordsOk(false));
+}
+
+form.querySelectorAll('input, select').forEach(input=>{
+input.addEventListener('input',updateSubmitState);
+input.addEventListener('change',updateSubmitState);
+});
 
 form.addEventListener('submit',e=>{
 e.preventDefault();
-passwordsOk(true);
+
+const valid=requiredDataOk() && passwordsOk(true);
 updateSubmitState();
-if(form.checkValidity() && passwordsOk(true)){
+
+if(!valid){
+form.reportValidity();
+return;
+}
+
 const data=Object.fromEntries(new FormData(form).entries());
-if(data.wa_mismo==='si')data.whatsapp=data.telefono;
+if(data.wa_mismo==='si') data.whatsapp=data.telefono;
+
 alert('Formulario validado. Esta versión es para revisión; todavía no crea una cuenta real.');
 console.log(data);
-}
 });
 
 updateSubmitState();
