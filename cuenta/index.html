@@ -103,7 +103,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
         </form>
 
         <div class="divider">o</div>
-        <div class="bottom">¿Aún no tienes una cuenta? <a data-show="registerView">Regístrate</a></div>
+        <div class="bottom">¿Aún no tienes una cuenta? <a href="#registerView" data-show="registerView">Regístrate</a></div>
       </section>
 
       <!-- RECUPERAR -->
@@ -211,7 +211,13 @@ function showView(id){
   views.forEach(v=>v.classList.toggle('active',v.id===id));
   window.scrollTo({top:0,behavior:'smooth'});
 }
-document.querySelectorAll('[data-show]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.show)));
+document.querySelectorAll('[data-show]').forEach(el=>{
+  el.addEventListener('click',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    showView(el.dataset.show);
+  });
+});
 
 document.querySelectorAll('.toggle-password').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -344,18 +350,6 @@ document.getElementById('loginForm').addEventListener('submit',e=>{
   e.preventDefault();
   const notice=document.getElementById('loginNotice');
   notice.textContent='Acceso en modo de revisión: la autenticación real se conectará cuando implementemos el backend.';
-  notice.classList.add('show');
-});
-
-document.getElementById('recoverForm').addEventListener('submit',e=>{
-  e.preventDefault();
-  const notice=document.getElementById('recoverNotice');
-  notice.textContent='Solicitud preparada. En la versión conectada, aquí se enviará el enlace de recuperación al correo indicado.';
-  notice.classList.add('show');
-});
-
-updateRegisterButton();
-</script>mos el backend.';
   notice.classList.add('show');
 });
 
