@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AvoHouse · Mi cuenta</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#fff;background:url('../Fondo.png') center/cover fixed no-repeat}
+body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:-1}
+.page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px}
+.card{width:100%;max-width:520px;background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.17);border-radius:22px;padding:30px;backdrop-filter:blur(7px);box-shadow:0 18px 60px rgba(0,0,0,.24)}
+.logo{display:block;width:125px;max-width:45%;margin:0 auto 18px}
+.kicker{text-align:center;text-transform:uppercase;letter-spacing:3px;font-size:11px;opacity:.72}
+h1{text-align:center;font-size:28px;margin:8px 0}.subtitle{text-align:center;color:#c9c9c9;line-height:1.5;font-size:14px}
+.notice{display:none;margin:18px 0 0;padding:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);border-radius:11px;font-size:13px;line-height:1.5}
+.notice.show{display:block}
+.profile{margin-top:24px;border-top:1px solid rgba(255,255,255,.13);padding-top:20px}
+.item{display:flex;justify-content:space-between;gap:18px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px}
+.item span:first-child{color:#aaa}.item span:last-child{text-align:right}
+.points{margin-top:24px;padding:18px;border-radius:14px;background:rgba(255,255,255,.06);text-align:center}
+.points-label{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#aaa}.points-value{font-size:32px;font-weight:800;margin-top:5px}
+.actions{display:flex;gap:10px;margin-top:24px}
+button,a.btn{flex:1;text-align:center;text-decoration:none;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer}
+.primary{border:1px solid #fff;background:#fff;color:#111}.secondary{border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff}
+.loading{text-align:center;color:#aaa;padding:30px 0}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="card">
+<img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
+<div class="kicker">AvoHouse</div>
+<h1>Mi cuenta</h1>
+<p id="welcome" class="subtitle">Cargando...</p>
+<div id="notice" class="notice"></div>
+
+<div id="content" class="loading">Comprobando sesión…</div>
+
+<div class="actions">
+<a class="btn secondary" href="../index.html">Volver a AvoHouse</a>
+<button id="logoutBtn" class="primary" type="button">Cerrar sesión</button>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
+const {createClient}=window.supabase;
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const content=document.getElementById('content');
+const notice=document.getElementById('notice');
+
+function showNotice(message){
+  notice.textContent=message;
+  notice.classList.add('show');
+}
+
+async function loadAccount(){
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError||!user){
+    window.location.href='index.html';
+    return;
+  }
+
+  const {data:profile,error:profileError}=await supabase.from('profiles').select('full_name,document_type,document_number,email,phone,whatsapp,created_at').eq('id',user.id).single();
+
+  const name=profile?.full_name || user.user_metadata?.full_name || 'Usuario';
+  document.getElementById('welcome').textContent='Hola, '+name+'.';
+
+  if(profileError||!profile){
+    content.innerHTML='<div class="loading">La sesión está activa, pero todavía no se pudo cargar el perfil.</div>';
+    showNotice('Tu autenticación funciona; revisaremos el perfil si este mensaje persiste.');
+    return;
+  }
+
+  content.innerHTML=
+    '<div class="profile">'+
+      '<div class="item"><span>Correo</span><span>'+escapeHtml(profile.email)+'</span></div>'+
+      '<div class="item"><span>Celular</span><span>'+escapeHtml(profile.phone)+'</span></div>'+
+      '<div class="item"><span>WhatsApp</span><span>'+escapeHtml(profile.whatsapp)+'</span></div>'+
+      '<div class="item"><span>Documento</span><span>'+escapeHtml(profile.document_type)+' · '+escapeHtml(profile.document_number)+'</span></div>'+
+    '</div>'+
+    '<div class="points"><div class="points-label">Puntos AH</div><div class="points-value">0</div><div class="small" style="color:#aaa;font-size:11px;margin-top:5px">El saldo real se conectará cuando incorporemos el módulo de puntos.</div></div>';
+}
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('logoutBtn').addEventListener('click',async()=>{
+  const {error}=await supabase.auth.signOut();
+  if(error){showNotice('No fue posible cerrar la sesión.');return}
+  window.location.href='index.html';
+});
+
+loadAccount();
+</script>
+</body>
+</html>
