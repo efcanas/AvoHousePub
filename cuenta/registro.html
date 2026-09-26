@@ -108,13 +108,13 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 
 <label class="field password-row">Contraseña *
 <input id="regPassword" name="password" type="password" minlength="8" autocomplete="new-password" required>
-<button class="toggle-password" type="button" data-target="regPassword">Mostrar</button>
+<button class="toggle-password" type="button" data-target="regPassword" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
 
 <label class="field password-row">Confirmar contraseña *
 <input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
-<button class="toggle-password" type="button" data-target="regPasswordConfirm">Mostrar</button>
+<button class="toggle-password" type="button" data-target="regPasswordConfirm" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 
 <div class="consent">
@@ -190,12 +190,13 @@ registerForm.querySelectorAll('input[name="wa_mismo"]').forEach(radio=>radio.add
   if(same)waInput.value='';
   updateRegisterButton();
 }));
-document.querySelectorAll('.toggle-password').forEach(btn=>btn.addEventListener('click',()=>{
-  const input=document.getElementById(btn.dataset.target);
+function togglePassword(button){
+  const input=document.getElementById(button.getAttribute('data-target'));
+  if(!input)return;
   const visible=input.type==='text';
   input.type=visible?'password':'text';
-  btn.textContent=visible?'Mostrar':'Ocultar';
-}));
+  button.textContent=visible?'Mostrar':'Ocultar';
+}
 let supabaseClient=null;
 if(window.supabase?.createClient){
   supabaseClient=window.supabase.createClient(
