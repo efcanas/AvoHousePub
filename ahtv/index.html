@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AHtv · Solicita tu canción</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../app.js"></script>
   <style>
     :root {
       --bg: #0c0d10;
@@ -36,7 +37,7 @@
     .logo { width: 260px; max-width: 90%; margin-bottom: 8px; }
     .header-title { font-size: 1.4em; letter-spacing: 3px; margin-bottom: 15px; color: #d4af37; }
     .home-button {
-      display: inline-block; text-decoration: none; color: white;
+      display: none; text-decoration: none; color: white;
       padding: 10px 18px; border: 1px solid rgba(255,255,255,.25);
       border-radius: 30px; font-size: .85em; transition: .3s;
     }
@@ -146,7 +147,7 @@ body::before {
     <header class="header">
       <img src="../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
       <div class="header-title">AHtv</div>
-      <a href="../index.html" class="home-button">← Inicio</a>
+      
     </header>
 
     <section class="card">
@@ -199,6 +200,8 @@ body::before {
     let requestsEnabled = true;
     let searchTimer = null;
     let lastQuery = '';
+    let currentUser = null;
+    let currentUsername = null;
 
     function renderRequestAvailability() {
       availabilityMessageEl.hidden = requestsEnabled;
@@ -275,12 +278,13 @@ body::before {
     }
 
     async function loadMine() {
+      if (!currentUser) return;
       const [mineResult, recentResult] = await Promise.all([
-        db.rpc('ahtv_mis_solicitudes', {
-          p_client_token: clientToken
+        db.rpc('ahtv_mis_solicitudes_usuario', {
+          p_user_id: currentUser.id
         }),
-        db.rpc('ahtv_escuchadas_recientemente', {
-          p_client_token: clientToken
+        db.rpc('ahtv_escuchadas_recientemente_usuario', {
+          p_user_id: currentUser.id
         })
       ]);
 
@@ -393,8 +397,17 @@ body::before {
       button.textContent = 'ENVIANDO…';
       showMessage('');
 
+      if (!currentUser || !currentUsername) {
+        showMessage('No pudimos identificar tu cuenta. Vuelve a ingresar e inténtalo nuevamente.', true);
+        button.disabled = false;
+        button.textContent = 'SOLICITAR';
+        return;
+      }
+
       const { error } = await db.from('requests').insert({
         song_id: song.id,
+        user_id: currentUser.id,
+        username_snapshot: currentUsername,
         client_token: clientToken,
         status: 'pending'
       });
@@ -427,6 +440,27 @@ body::before {
       button.disabled = true;
       showMessage('Solicitud enviada correctamente.');
       renderResults(await fetchSongs(lastQuery));
+    }
+
+    async function initAhtvPage(){
+      const { data, error } = await db.auth.getSession();
+      if (error || !data.session) return;
+      currentUser = data.session.user;
+
+      const { data: profile, error: profileError } = await db
+        .from('profiles')
+        .select('username')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+      if (profileError || !profile?.username) {
+        showMessage('No fue posible cargar la identidad de tu cuenta. Vuelve a ingresar.', true);
+        return;
+      }
+
+      currentUsername = profile.username;
+      await loadRequestAvailability();
+      await loadMine();
     }
 
     searchInput.addEventListener('input', () => {
