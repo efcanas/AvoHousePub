@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preload" as="image" href="../Fondo.png" fetchpriority="high">
+<title>AvoHouse · Ingresar</title>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:'Helvetica Neue',Arial,sans-serif;color:#fff;background:url('../Fondo.png') center/cover fixed no-repeat}
+body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:-1}
+.page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px}
+.shell{width:100%;max-width:460px}
+.back{display:inline-block;margin:0 0 18px 4px;color:#fff;text-decoration:none;font-size:13px;letter-spacing:1px;opacity:.8}
+.card{background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.17);border-radius:22px;padding:30px;backdrop-filter:blur(7px);box-shadow:0 18px 60px rgba(0,0,0,.24)}
+.logo{display:block;width:125px;max-width:45%;margin:0 auto 18px}
+.kicker{text-align:center;text-transform:uppercase;letter-spacing:3px;font-size:11px;opacity:.72;margin-bottom:8px}
+h1{text-align:center;font-size:28px;margin:0 0 8px}
+.subtitle{text-align:center;color:#c9c9c9;line-height:1.5;font-size:14px;margin:0 0 25px}
+.view{display:block}
+.hidden{display:none!important}
+.field{display:block;font-size:14px;font-weight:600;margin:0 0 15px}
+.field input{width:100%;margin-top:7px;padding:12px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:inherit}
+.field input:focus{outline:2px solid rgba(255,255,255,.18);border-color:rgba(255,255,255,.65)}
+.password-row{position:relative}
+.password-row input{padding-right:78px}
+.toggle-password{position:absolute;right:9px;bottom:9px;border:0;background:transparent;color:#ddd;font-size:12px;cursor:pointer;padding:5px}
+.primary,.secondary{display:block;width:100%;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer;transition:.2s;text-align:center;text-decoration:none}
+.primary{background:#fff;color:#111;border:1px solid #fff}
+.primary:hover:not(:disabled){filter:brightness(.94)}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);margin-top:10px}
+.secondary:hover{background:rgba(255,255,255,.07)}
+.actions{display:flex;justify-content:flex-end;margin:7px 0 20px}
+.link{color:#fff;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.divider{display:flex;align-items:center;gap:12px;margin:23px 0;color:#9f9f9f;font-size:12px}
+.divider::before,.divider::after{content:"";height:1px;background:rgba(255,255,255,.15);flex:1}
+.bottom{text-align:center;color:#cfcfcf;font-size:14px;margin-top:20px}
+.bottom a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.notice{display:none;margin:0 0 15px;padding:11px 12px;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);font-size:13px;line-height:1.5;color:#ddd}
+.notice.show{display:block}
+.status{text-align:center;color:#aaa;font-size:11px;margin-top:14px;min-height:16px}
+@media(max-width:480px){.card{padding:23px 19px}.logo{width:105px}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="shell">
+<a class="back" href="../index.html">← Volver a AvoHouse</a>
+<div class="card">
+<img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
+
+<section id="loginView" class="view">
+<div class="kicker">AvoHouse</div>
+<h1>Ingresar</h1>
+<p class="subtitle">Accede a tu cuenta y a las funcionalidades disponibles.</p>
+<div id="loginNotice" class="notice"></div>
+<form id="loginForm" onsubmit="return false;">
+<label class="field">Correo electrónico
+<input id="loginEmail" type="email" autocomplete="email">
+</label>
+<label class="field password-row">Contraseña
+<input id="loginPassword" type="password" autocomplete="current-password">
+<button class="toggle-password" type="button" data-target="loginPassword" onclick="togglePassword(this);return false;">Mostrar</button>
+</label>
+<div class="actions"><a id="recoverLink" class="link" href="#">¿Olvidaste tu contraseña?</a></div>
+<button id="loginBtn" class="primary" type="button">Ingresar</button>
+</form>
+<div class="status" id="loginStatus">Conectando con AvoHouse…</div>
+<div class="divider">o</div>
+<div class="bottom">¿Aún no tienes una cuenta? <a href="registro.html">Regístrate</a></div>
+</section>
+
+<section id="recoverView" class="view hidden">
+<div class="kicker">Cuenta AvoHouse</div>
+<h1>Recuperar contraseña</h1>
+<p class="subtitle">Te enviaremos un enlace para restablecer tu contraseña.</p>
+<div id="recoverNotice" class="notice"></div>
+<form id="recoverForm" onsubmit="return false;">
+<label class="field">Correo electrónico
+<input id="recoverEmail" type="email" autocomplete="email">
+</label>
+<button id="recoverBtn" class="primary" type="button">Enviar instrucciones</button>
+</form>
+<button id="backLoginFromRecover" class="secondary" type="button">Volver a ingresar</button>
+</section>
+
+<section id="resetView" class="view hidden">
+<div class="kicker">Cuenta AvoHouse</div>
+<h1>Nueva contraseña</h1>
+<p class="subtitle">Establece una nueva contraseña para tu cuenta.</p>
+<div id="resetNotice" class="notice"></div>
+<form id="resetForm" onsubmit="return false;">
+<label class="field password-row">Nueva contraseña
+<input id="resetPassword" type="password" minlength="8" autocomplete="new-password">
+<button class="toggle-password" type="button" data-target="resetPassword" onclick="togglePassword(this);return false;">Mostrar</button>
+</label>
+<p class="status" style="margin:0 0 14px;text-align:left;">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
+<label class="field password-row">Confirmar contraseña
+<input id="resetPasswordConfirm" type="password" minlength="8" autocomplete="new-password">
+<button class="toggle-password" type="button" data-target="resetPasswordConfirm" onclick="togglePassword(this);return false;">Mostrar</button>
+</label>
+<button id="resetBtn" class="primary" type="button">Actualizar contraseña</button>
+</form>
+<button id="backLoginFromReset" class="secondary" type="button">Volver a ingresar</button>
+</section>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
+const loginStatus=document.getElementById('loginStatus');
+const loginNotice=document.getElementById('loginNotice');
+const recoverNotice=document.getElementById('recoverNotice');
+const resetNotice=document.getElementById('resetNotice');
+let supabaseClient=null;
+
+function setNotice(el,message){
+  el.textContent=message;
+  el.classList.add('show');
+}
+function clearNotice(el){el.textContent='';el.classList.remove('show')}
+function showView(id){
+  ['loginView','recoverView','resetView'].forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function togglePassword(button){
+  const input=document.getElementById(button.getAttribute('data-target'));
+  if(!input)return;
+  const visible=input.type==='text';
+  input.type=visible?'password':'text';
+  button.textContent=visible?'Mostrar':'Ocultar';
+}
+
+if(window.supabase?.createClient){
+  supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+  loginStatus.textContent='Conexión lista.';
+}else{
+  loginStatus.textContent='No fue posible cargar el servicio de cuenta.';
+}
+
+async function loginAccount(){
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password=document.getElementById('loginPassword').value;
+  clearNotice(loginNotice);
+  if(!email||!password){setNotice(loginNotice,'Introduce tu correo y contraseña.');return}
+  if(!supabaseClient){setNotice(loginNotice,'No fue posible conectar con AvoHouse. Recarga la página e inténtalo nuevamente.');return}
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true;btn.textContent='Ingresando…';
+  try{
+    const result=await supabaseClient.auth.signInWithPassword({email,password});
+    const error=result.error,data=result.data;
+    if(error){
+      const msg=(error.message||'').toLowerCase();
+      if(msg.includes('email not confirmed'))setNotice(loginNotice,'Tu correo todavía no ha sido confirmado. Revisa el correo de confirmación.');
+      else if(msg.includes('invalid login credentials'))setNotice(loginNotice,'El correo o la contraseña no son correctos.');
+      else setNotice(loginNotice,'No fue posible ingresar. '+(error.message||'Inténtalo nuevamente.'));
+      return;
+    }
+    if(data?.session){window.location.href='mi-cuenta.html';return}
+    setNotice(loginNotice,'No se pudo iniciar la sesión. Inténtalo nuevamente.');
+  }catch(error){
+    setNotice(loginNotice,'No fue posible completar el ingreso. '+(error?.message||'Verifica tu conexión.'));
+  }finally{
+    btn.disabled=false;btn.textContent='Ingresar';
+  }
+}
+
+async function recoverAccount(){
+  const email=document.getElementById('recoverEmail').value.trim().toLowerCase();
+  clearNotice(recoverNotice);
+  if(!email){setNotice(recoverNotice,'Introduce tu correo electrónico.');return}
+  if(!supabaseClient){setNotice(recoverNotice,'No fue posible conectar con AvoHouse.');return}
+  const btn=document.getElementById('recoverBtn');
+  btn.disabled=true;btn.textContent='Enviando…';
+  try{
+    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:new URL('ingresar.html?recovery=1',window.location.href).href});
+    if(error)setNotice(recoverNotice,'No fue posible iniciar la recuperación. '+error.message);
+    else setNotice(recoverNotice,'Te enviamos un enlace de recuperación al correo indicado.');
+  }catch(error){
+    setNotice(recoverNotice,'No fue posible completar la solicitud. '+(error?.message||'Inténtalo nuevamente.'));
+  }finally{
+    btn.disabled=false;btn.textContent='Enviar instrucciones';
+  }
+}
+
+async function resetPassword(){
+  const p=document.getElementById('resetPassword').value;
+  const p2=document.getElementById('resetPasswordConfirm').value;
+  clearNotice(resetNotice);
+  if(p.length<8||!/[A-ZÁÉÍÓÚÜÑ]/.test(p)||!/[a-záéíóúüñ]/.test(p)||!/\d/.test(p)){
+    setNotice(resetNotice,'La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número.');
+    return;
+  }
+  if(p!==p2){setNotice(resetNotice,'Las contraseñas no coinciden.');return}
+  if(!supabaseClient){setNotice(resetNotice,'No fue posible conectar con AvoHouse.');return}
+  const btn=document.getElementById('resetBtn');
+  btn.disabled=true;btn.textContent='Actualizando…';
+  try{
+    const {error}=await supabaseClient.auth.updateUser({password:p});
+    if(error)setNotice(resetNotice,'No fue posible actualizar la contraseña. '+error.message);
+    else{
+      setNotice(resetNotice,'Contraseña actualizada correctamente.');
+      setTimeout(()=>showView('loginView'),1000);
+    }
+  }catch(error){
+    setNotice(resetNotice,'No fue posible actualizar la contraseña. '+(error?.message||'Inténtalo nuevamente.'));
+  }finally{
+    btn.disabled=false;btn.textContent='Actualizar contraseña';
+  }
+}
+
+document.getElementById('loginBtn').addEventListener('click',loginAccount);
+document.getElementById('recoverBtn').addEventListener('click',recoverAccount);
+document.getElementById('resetBtn').addEventListener('click',resetPassword);
+document.getElementById('recoverLink').addEventListener('click',e=>{
+  e.preventDefault();
+  document.getElementById('recoverEmail').value=document.getElementById('loginEmail').value.trim();
+  showView('recoverView');
+});
+document.getElementById('backLoginFromRecover').addEventListener('click',()=>showView('loginView'));
+document.getElementById('backLoginFromReset').addEventListener('click',()=>showView('loginView'));
+
+if(new URLSearchParams(window.location.search).get('recovery')==='1'){
+  showView('resetView');
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('../sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
