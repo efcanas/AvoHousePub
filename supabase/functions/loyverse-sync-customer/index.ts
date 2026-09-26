@@ -324,20 +324,26 @@ async function syncCustomer(profileId: string) {
         { method: "GET" },
       );
 
+      const currentPoints = Number(current?.total_points ?? 0);
+      if (!Number.isInteger(currentPoints) || currentPoints < 0) {
+        throw new Error("El saldo actual de puntos de Loyverse no es válido.");
+      }
+
+      if (currentPoints === avopuntosBalance) {
+        return {
+          profileId,
+          synced: true,
+          alreadyCurrent: true,
+          loyverseCustomerId: customerId,
+          balance: avopuntosBalance,
+        };
+      }
+
       customer = await loyverseRequest(token, "/customers", {
         method: "POST",
         body: JSON.stringify({
           id: customerId,
-          name: fullName,
-          email,
-          phone_number: phone,
-          address: current?.address ?? null,
-          city: current?.city ?? null,
-          region: current?.region ?? null,
-          postal_code: current?.postal_code ?? null,
-          country_code: current?.country_code ?? null,
-          customer_code: username,
-          note: current?.note ?? null,
+          name: String(current?.name ?? fullName).trim() || fullName,
           total_points: avopuntosBalance,
         }),
       });
@@ -349,12 +355,16 @@ async function syncCustomer(profileId: string) {
       );
 
       if (
-        String(verified?.email ?? "").trim().toLowerCase() !== email ||
-        String(verified?.phone_number ?? "").trim() !== phone ||
-        String(verified?.customer_code ?? "").trim() !== username
+        Number(verified?.total_points) !== avopuntosBalance ||
+        String(verified?.email ?? "").trim().toLowerCase() !==
+          String(current?.email ?? "").trim().toLowerCase() ||
+        String(verified?.phone_number ?? "").trim() !==
+          String(current?.phone_number ?? "").trim() ||
+        String(verified?.customer_code ?? "").trim() !==
+          String(current?.customer_code ?? "").trim()
       ) {
         throw new Error(
-          "La verificación posterior a la actualización del cliente en Loyverse no coincide con los datos de AvoHouse.",
+          "La verificación posterior a la actualización de puntos en Loyverse detectó un cambio inesperado en los datos del cliente.",
         );
       }
     } else {
