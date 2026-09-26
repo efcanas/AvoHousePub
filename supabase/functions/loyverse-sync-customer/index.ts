@@ -318,6 +318,7 @@ async function syncCustomer(profileId: string) {
           country_code: current?.country_code ?? null,
           customer_code: username,
           note: current?.note ?? null,
+          total_points: current?.total_points ?? 0,
         }),
       });
 
