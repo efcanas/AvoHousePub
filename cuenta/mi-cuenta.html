@@ -150,10 +150,10 @@ function movementLabel(type){
     opening_balance:'Saldo inicial',
     earn:'Puntos ganados',
     redeem:'Puntos utilizados',
-    earn_reversal:'Reversión de puntos ganados',
-    redeem_reversal:'Reversión de puntos utilizados',
+    earn_reversal:'Puntos retirados por cancelación',
+    redeem_reversal:'Puntos devueltos por cancelación',
     expiration:'Puntos vencidos',
-    adjustment:'Ajuste de AvoPuntos'
+    adjustment:'Ajuste de puntos'
   };
   return labels[type]||'Movimiento de AvoPuntos';
 }
@@ -166,7 +166,8 @@ function movementMeta(movement){
   let meta=dateText;
   const receipt=movement.receipt_number || movement.related_receipt_number;
   if(receipt){
-    meta += (meta?' · ':'')+'Operación '+escapeHtml(receipt);
+    const cancellation=movement.movement_type==='earn_reversal'||movement.movement_type==='redeem_reversal';
+    meta += (meta?' · ':'')+(cancellation?'Ticket cancelado ':'Ticket ')+escapeHtml(receipt);
   }
   if(movement.eligible_amount!=null){
     const amount=Number(movement.eligible_amount);
@@ -254,8 +255,10 @@ loadAccount();
           .maybeSingle();
         const next=Number(result?.data?.balance);
         if(result?.error||!Number.isInteger(next))return;
+        pointsAccountBalanceForHistory=next;
         const pointsValue=document.getElementById('pointsValue');
         if(pointsValue)pointsValue.textContent=next+' AP';
+        await loadPointsHistory(currentUser.id);
       }catch(_){}
     };
 
@@ -271,8 +274,10 @@ loadAccount();
       },function(payload){
         const next=Number(payload?.new?.balance);
         if(!Number.isInteger(next))return;
+        pointsAccountBalanceForHistory=next;
         const pointsValue=document.getElementById('pointsValue');
         if(pointsValue)pointsValue.textContent=next+' AP';
+        loadPointsHistory(currentUser.id);
       })
       .subscribe();
   }catch(_){}
