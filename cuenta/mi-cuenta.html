@@ -15,459 +15,184 @@ body{
   color:#fff;
   background:url('../Fondo.png') center/cover fixed no-repeat;
 }
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.76);
-  z-index:-1;
-}
+body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:-1}
 .topbar{
-  position:fixed;
-  top:16px;
-  left:18px;
-  right:18px;
-  z-index:1000;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  pointer-events:none;
+  position:fixed;top:16px;left:18px;right:18px;z-index:1000;
+  display:flex;justify-content:flex-end;align-items:center;gap:8px
 }
-.topbar-left,.topbar-right{display:flex;align-items:center;gap:8px;pointer-events:auto}
-.topbar-link,.user-button{
-  min-height:38px;
-  padding:0 14px;
-  border-radius:21px;
+.topbar a{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:38px;padding:0 14px;border-radius:21px;
   border:1px solid rgba(255,255,255,.42);
-  background:rgba(0,0,0,.42);
-  backdrop-filter:blur(10px);
-  color:#fff;
-  font:inherit;
-  font-size:12px;
-  letter-spacing:1.2px;
-  text-decoration:none;
-  box-shadow:0 8px 24px rgba(0,0,0,.18);
+  background:rgba(0,0,0,.42);backdrop-filter:blur(10px);
+  color:#fff;text-decoration:none;font-size:12px;letter-spacing:1.2px;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)
 }
-.topbar-link:hover,.user-button:hover,.user-button.open{
-  background:rgba(255,255,255,.12);
-  border-color:rgba(255,255,255,.72);
-}
-.topbar-link{display:inline-flex;align-items:center;justify-content:center}
-.user-wrap{position:relative}
-.user-button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  cursor:pointer;
-  font-weight:700;
-  letter-spacing:.6px;
-}
-.user-arrow{font-size:10px;opacity:.72;transition:transform .18s ease}
-.user-button.open .user-arrow{transform:rotate(180deg)}
-.user-menu{
-  position:absolute;
-  top:46px;
-  right:0;
-  min-width:190px;
-  padding:7px;
-  border:1px solid rgba(255,255,255,.2);
-  border-radius:15px;
-  background:rgba(13,13,13,.95);
-  backdrop-filter:blur(14px);
-  box-shadow:0 18px 45px rgba(0,0,0,.35);
-  display:none;
-}
-.user-menu.show{display:block}
-.user-menu a,.user-menu button{
-  width:100%;
-  display:block;
-  text-align:left;
-  padding:10px 11px;
-  border:0;
-  border-radius:10px;
-  background:transparent;
-  color:#fff;
-  text-decoration:none;
-  font:inherit;
-  font-size:13px;
-  cursor:pointer;
-}
-.user-menu a:hover,.user-menu button:hover{background:rgba(255,255,255,.08)}
-.user-menu .logout{border-top:1px solid rgba(255,255,255,.1);border-radius:0 0 10px 10px}
-.page{
-  min-height:100vh;
-  padding:92px 18px 42px;
-}
-.account-shell{
-  width:100%;
-  max-width:900px;
-  margin:0 auto;
-}
-.brand-head{
-  text-align:center;
-  margin:0 auto 22px;
-}
-.logo{
-  display:block;
-  width:135px;
-  max-width:42%;
-  margin:0 auto 15px;
-}
-.kicker{
-  text-align:center;
-  text-transform:uppercase;
-  letter-spacing:3px;
-  font-size:11px;
-  opacity:.72;
-}
-h1{
-  text-align:center;
-  font-size:30px;
-  margin:8px 0 7px;
-}
-.subtitle{
-  text-align:center;
-  color:#c9c9c9;
-  line-height:1.5;
-  font-size:14px;
-  margin:0;
-}
+.topbar a:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.72)}
+.page{min-height:100vh;padding:92px 18px 34px}
+.account-shell{width:100%;max-width:900px;margin:0 auto}
+.brand-head{text-align:center;margin:0 auto 22px}
+.logo{display:block;width:135px;max-width:42%;margin:0 auto 15px}
+.kicker{text-align:center;text-transform:uppercase;letter-spacing:3px;font-size:11px;opacity:.72}
+h1{text-align:center;font-size:30px;margin:8px 0 7px}
+.subtitle{text-align:center;color:#c9c9c9;line-height:1.5;font-size:14px;margin:0}
 .notice{
-  display:none;
-  margin:0 0 18px;
-  padding:12px 14px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.07);
-  border-radius:12px;
-  font-size:13px;
-  line-height:1.5;
+  display:none;margin:0 0 18px;padding:12px 14px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);
+  font-size:13px;line-height:1.5
 }
 .notice.show{display:block}
-.notice.error{
-  color:#ffb7b7;
-  border-color:rgba(255,90,90,.4);
-  background:rgba(100,0,0,.14);
-}
-.panels{
-  display:grid;
-  grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
-  gap:18px;
-}
+.notice.error{color:#ffb7b7;border-color:rgba(255,90,90,.4);background:rgba(100,0,0,.14)}
+.panels{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:18px}
 .panel{
-  background:rgba(0,0,0,.48);
-  border:1px solid rgba(255,255,255,.17);
-  border-radius:20px;
-  padding:24px;
-  backdrop-filter:blur(7px);
-  box-shadow:0 18px 60px rgba(0,0,0,.24);
+  background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.17);
+  border-radius:20px;padding:24px;backdrop-filter:blur(7px);
+  box-shadow:0 18px 60px rgba(0,0,0,.24)
 }
 .panel.full{grid-column:1/-1}
 .panel-heading{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding-bottom:13px;
-  border-bottom:1px solid rgba(255,255,255,.12);
-  margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px
 }
-.panel-title{
-  margin:0;
-  font-size:13px;
-  text-transform:uppercase;
-  letter-spacing:2px;
-  color:#aaa;
-}
-.panel-tag{
-  font-size:10px;
-  color:#888;
-  text-transform:uppercase;
-  letter-spacing:1.2px;
-}
-.profile-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:0 18px;
-}
-.info{
-  padding:12px 0;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  min-width:0;
-}
-.info-label{
-  display:block;
-  color:#999;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  margin-bottom:4px;
-}
-.info-value{
-  display:block;
-  font-size:14px;
-  word-break:break-word;
-}
-.points-panel{
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  min-height:100%;
-  text-align:center;
-}
-.points-kicker{
-  color:#aaa;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:2.5px;
-}
-.points-value{
-  font-size:48px;
-  line-height:1;
-  font-weight:800;
-  margin:13px 0 8px;
-}
-.points-caption{
-  color:#aaa;
-  font-size:12px;
-}
-.history-list{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.history-empty,.history-loading{
-  padding:24px 6px;
-  text-align:center;
-  color:#999;
-  font-size:13px;
-}
-.history-item{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:12px 0;
-  border-bottom:1px solid rgba(255,255,255,.07);
-}
+.panel-title{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:2px;color:#aaa}
+.panel-tag{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.2px}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.info{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08);min-width:0}
+.info-label{display:block;color:#999;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.info-value{display:block;font-size:14px;word-break:break-word}
+.points-panel{display:flex;flex-direction:column;justify-content:center;min-height:100%;text-align:center}
+.points-kicker{color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:2.5px}
+.points-value{font-size:48px;line-height:1;font-weight:800;margin:13px 0 8px}
+.points-caption{color:#aaa;font-size:12px}
+.history-list{display:flex;flex-direction:column;gap:6px}
+.history-empty,.history-loading{padding:24px 6px;text-align:center;color:#999;font-size:13px}
+.history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .history-sign{
-  width:34px;
-  height:34px;
-  flex:0 0 34px;
-  display:grid;
-  place-items:center;
-  border:1px solid rgba(255,255,255,.18);
-  border-radius:50%;
-  font-size:16px;
-  font-weight:800;
+  width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.18);border-radius:50%;font-size:16px;font-weight:800
 }
 .history-sign.positive,.history-points.positive{color:#b8f5b8}
 .history-sign.negative,.history-points.negative{color:#ffb7b7}
 .history-main{min-width:0;flex:1}
 .history-type{font-size:13px;font-weight:700}
-.history-meta{
-  margin-top:3px;
-  color:#999;
-  font-size:11px;
-  line-height:1.45;
-}
-.history-balance{
-  margin-top:4px;
-  color:#777;
-  font-size:10px;
-}
+.history-meta{margin-top:3px;color:#999;font-size:11px;line-height:1.45}
+.history-balance{margin-top:4px;color:#777;font-size:10px}
 .history-balance strong{color:#aaa;font-weight:700}
-.history-points{
-  text-align:right;
-  font-size:14px;
-  font-weight:800;
-  white-space:nowrap;
+.history-points{text-align:right;font-size:14px;font-weight:800;white-space:nowrap}
+.history-note{margin-top:11px;color:#777;font-size:10px;text-align:center}
+.bottom-actions{display:flex;justify-content:flex-end;margin-top:18px}
+.bottom-actions button{
+  min-width:240px;text-align:center;border-radius:11px;padding:12px 16px;
+  font:inherit;font-weight:700;cursor:pointer
 }
-.history-note{
-  margin-top:11px;
-  color:#777;
-  font-size:10px;
-  text-align:center;
-}
-.bottom-actions{
-  display:flex;
-  gap:10px;
-  margin-top:18px;
-}
-.bottom-actions a,.bottom-actions button{
-  flex:1;
-  text-align:center;
-  text-decoration:none;
-  border-radius:11px;
-  padding:12px 16px;
-  font:inherit;
-  font-weight:700;
-  cursor:pointer;
-}
-.secondary{
-  border:1px solid rgba(255,255,255,.45);
-  background:transparent;
-  color:#fff;
-}
-.primary{
-  border:1px solid #fff;
-  background:#fff;
-  color:#111;
-}
-.status{
-  text-align:center;
-  color:#999;
-  font-size:12px;
-  padding:18px 0 0;
-}
-.hidden{display:none!important}
-@media(max-width:720px){
-  .panels{grid-template-columns:1fr}
-  .panel.full{grid-column:auto}
-}
+.primary{border:1px solid #fff;background:#fff;color:#111}
+.status{text-align:center;color:#999;font-size:12px;padding:16px 0 0;min-height:30px}
+@media(max-width:720px){.panels{grid-template-columns:1fr}.panel.full{grid-column:auto}}
 @media(max-width:520px){
-  .topbar{top:10px;left:10px;right:10px}
-  .topbar-link,.user-button{min-height:34px;padding:0 10px;font-size:10px;letter-spacing:.9px}
-  .user-menu{top:42px}
-  .page{padding:80px 12px 28px}
-  .panel{padding:20px 17px}
-  .logo{width:110px}
-  h1{font-size:27px}
-  .profile-grid{grid-template-columns:1fr}
-  .points-value{font-size:42px}
-  .bottom-actions{flex-direction:column}
+  .topbar{top:10px;right:10px;gap:6px}
+  .topbar a{min-height:34px;padding:0 10px;font-size:10px;letter-spacing:.9px}
+  .page{padding:78px 12px 28px}.panel{padding:20px 17px}
+  .logo{width:110px}h1{font-size:27px}.profile-grid{grid-template-columns:1fr}
+  .points-value{font-size:42px}.bottom-actions{justify-content:stretch}
+  .bottom-actions button{width:100%;min-width:0}
 }
 </style>
 </head>
 <body>
 
 <nav class="topbar" aria-label="Navegación AvoHouse">
-  <div class="topbar-left">
-    <a class="topbar-link" href="../ahtv/index.html">AHtv</a>
-  </div>
-  <div class="topbar-right">
-    <div class="user-wrap">
-      <button id="userButton" class="user-button" type="button" aria-expanded="false">
-        <span id="usernameLabel">Usuario</span>
-        <span class="user-arrow">▾</span>
-      </button>
-      <div id="userMenu" class="user-menu">
-        <a id="pointsMenuLink" href="#puntos">AvoPuntos: — AP</a>
-        <button id="logoutBtn" class="logout" type="button">Cerrar sesión</button>
-      </div>
-    </div>
-  </div>
+  <a href="../ahtv/index.html">AHtv</a>
+  <a href="../index.html">MENÚ</a>
 </nav>
 
 <main class="page">
-  <div class="account-shell">
+<div class="account-shell">
 
-    <header class="brand-head">
-      <img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
-      <div class="kicker">AvoHouse</div>
-      <h1>Mi cuenta</h1>
-      <p id="welcome" class="subtitle">Cargando información de tu cuenta…</p>
-    </header>
+<header class="brand-head">
+  <img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
+  <div class="kicker">AvoHouse</div>
+  <h1>Mi cuenta</h1>
+  <p id="welcome" class="subtitle">Cargando información de tu cuenta…</p>
+</header>
 
-    <div id="notice" class="notice" role="status"></div>
+<div id="notice" class="notice" role="status"></div>
 
-    <div class="panels">
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2 class="panel-title">Información del cliente</h2>
-          <span class="panel-tag">Cuenta AvoHouse</span>
-        </div>
-        <div id="profileGrid" class="profile-grid">
-          <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">Cargando…</span></div>
-          <div class="info"><span class="info-label">Nombre completo</span><span id="infoFullName" class="info-value">Cargando…</span></div>
-          <div class="info"><span class="info-label">Correo electrónico</span><span id="infoEmail" class="info-value">Cargando…</span></div>
-          <div class="info"><span class="info-label">Celular</span><span id="infoPhone" class="info-value">Cargando…</span></div>
-          <div class="info"><span class="info-label">WhatsApp</span><span id="infoWhatsapp" class="info-value">Cargando…</span></div>
-          <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">Cargando…</span></div>
-          <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">Cargando…</span></div>
-        </div>
-      </section>
-
-      <section id="puntos" class="panel points-panel">
-        <div class="points-kicker">AvoPuntos</div>
-        <div id="pointsValue" class="points-value">— AP</div>
-        <div class="points-caption">Saldo disponible</div>
-      </section>
-
-      <section class="panel full">
-        <div class="panel-heading">
-          <h2 class="panel-title">Actividad de AvoPuntos</h2>
-          <span class="panel-tag">Últimos movimientos</span>
-        </div>
-        <div id="pointsHistory" class="history-list">
-          <div class="history-loading">Cargando historial…</div>
-        </div>
-      </section>
-
-    </div>
-
-    <div class="bottom-actions">
-      <a class="secondary" href="../index.html">Volver a AvoHouse</a>
-      <button id="bottomLogoutBtn" class="primary" type="button">Cerrar sesión</button>
-    </div>
-
-    <div id="pageStatus" class="status">Comprobando sesión…</div>
+<div class="panels">
+<section class="panel">
+  <div class="panel-heading">
+    <h2 class="panel-title">Información del cliente</h2>
+    <span class="panel-tag">Cuenta AvoHouse</span>
   </div>
+  <div class="profile-grid">
+    <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">—</span></div>
+    <div class="info"><span class="info-label">Nombre completo</span><span id="infoFullName" class="info-value">—</span></div>
+    <div class="info"><span class="info-label">Correo electrónico</span><span id="infoEmail" class="info-value">—</span></div>
+    <div class="info"><span class="info-label">Celular</span><span id="infoPhone" class="info-value">—</span></div>
+    <div class="info"><span class="info-label">WhatsApp</span><span id="infoWhatsapp" class="info-value">—</span></div>
+    <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
+    <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
+  </div>
+</section>
+
+<section id="puntos" class="panel points-panel">
+  <div class="points-kicker">AvoPuntos</div>
+  <div id="pointsValue" class="points-value">— AP</div>
+  <div class="points-caption">Saldo disponible</div>
+</section>
+
+<section class="panel full">
+  <div class="panel-heading">
+    <h2 class="panel-title">Actividad de AvoPuntos</h2>
+    <span class="panel-tag">Últimos movimientos</span>
+  </div>
+  <div id="pointsHistory" class="history-list">
+    <div class="history-loading">Cargando historial…</div>
+  </div>
+</section>
+</div>
+
+<div class="bottom-actions">
+  <button id="logoutBtn" class="primary" type="button">Cerrar sesión</button>
+</div>
+<div id="pageStatus" class="status">Comprobando sesión…</div>
+</div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+'use strict';
+
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
-
-let supabase=null;
-let currentUserId=null;
-let pointsAccountBalance=0;
+const AUTH_STORAGE_KEY='sb-tjarildqqxtjmafpiyuz-auth-token';
+let session=null;
+let pointsBalance=0;
 
 const $=id=>document.getElementById(id);
-const notice=$('notice');
-const pageStatus=$('pageStatus');
-const pointsHistory=$('pointsHistory');
-const userButton=$('userButton');
-const userMenu=$('userMenu');
 
 function showNotice(message,error=false){
-  notice.textContent=message;
-  notice.classList.toggle('error',error);
-  notice.classList.add('show');
+  const el=$('notice');
+  el.textContent=message;
+  el.classList.toggle('error',error);
+  el.classList.add('show');
 }
-
 function hideNotice(){
-  notice.textContent='';
-  notice.classList.remove('show','error');
+  const el=$('notice');
+  el.textContent='';
+  el.classList.remove('show','error');
 }
-
-function setPageStatus(message){
-  pageStatus.textContent=message||'';
-}
-
-function text(id,value){
-  $(id).textContent=String(value??'—');
-}
-
-function escapeHtml(value){
-  return String(value??'').replace(/[&<>"']/g,c=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
-}
-
+function setStatus(message){$('pageStatus').textContent=message||''}
+function setText(id,value){$(id).textContent=String(value??'—')}
 function formatDate(value,withTime=false){
-  const date=new Date(value);
-  if(Number.isNaN(date.getTime()))return '—';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '—';
   return new Intl.DateTimeFormat('es-CO',withTime?{
     day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'
   }:{
     day:'2-digit',month:'long',year:'numeric'
-  }).format(date);
+  }).format(d);
 }
-
 function movementLabel(type){
-  const labels={
+  return ({
     opening_balance:'Saldo inicial',
     earn:'Puntos ganados',
     redeem:'Puntos utilizados',
@@ -475,47 +200,40 @@ function movementLabel(type){
     redeem_reversal:'Puntos devueltos por cancelación',
     expiration:'Puntos vencidos',
     adjustment:'Ajuste de puntos'
-  };
-  return labels[type]||'Movimiento de AvoPuntos';
+  })[type]||'Movimiento de AvoPuntos';
 }
-
-function movementMeta(movement){
-  let meta=formatDate(movement.created_at,true);
-  const receipt=movement.receipt_number||movement.related_receipt_number;
+function movementMeta(m){
+  let meta=formatDate(m.created_at,true);
+  const receipt=m.receipt_number||m.related_receipt_number;
   if(receipt){
-    const cancellation=movement.movement_type==='earn_reversal'||movement.movement_type==='redeem_reversal';
-    meta+=(meta?' · ':'')+(cancellation?'Ticket cancelado ':'Ticket ')+escapeHtml(receipt);
+    const cancelled=m.movement_type==='earn_reversal'||m.movement_type==='redeem_reversal';
+    meta+=(meta?' · ':'')+(cancelled?'Ticket cancelado ':'Ticket ')+receipt;
   }
-  if(movement.eligible_amount!=null){
-    const amount=Number(movement.eligible_amount);
-    if(Number.isFinite(amount)){
-      meta+=(meta?' · ':'')+'Compra elegible $'+amount.toLocaleString('es-CO');
-    }
+  if(m.eligible_amount!=null){
+    const amount=Number(m.eligible_amount);
+    if(Number.isFinite(amount))meta+=(meta?' · ':'')+'Compra elegible $'+amount.toLocaleString('es-CO');
   }
   return meta;
 }
-
 function renderHistory(movements){
-  if(!movements?.length){
-    pointsHistory.innerHTML='<div class="history-empty">Todavía no hay movimientos registrados.</div>';
+  const history=$('pointsHistory');
+  if(!movements.length){
+    history.innerHTML='<div class="history-empty">Todavía no hay movimientos registrados.</div>';
     return;
   }
-
-  let balanceAfter=pointsAccountBalance;
-
-  pointsHistory.innerHTML=movements.map(movement=>{
-    const delta=Number(movement.points_delta);
+  let balanceAfter=pointsBalance;
+  history.innerHTML=movements.map(m=>{
+    const delta=Number(m.points_delta);
     const positive=delta>0;
     const sign=positive?'+':'−';
     const value=Math.abs(delta);
     const balanceAfterThis=balanceAfter;
     balanceAfter-=delta;
-
     return '<div class="history-item">'+
       '<div class="history-sign '+(positive?'positive':'negative')+'">'+sign+'</div>'+
       '<div class="history-main">'+
-        '<div class="history-type">'+escapeHtml(movementLabel(movement.movement_type))+'</div>'+
-        '<div class="history-meta">'+movementMeta(movement)+'</div>'+
+        '<div class="history-type">'+movementLabel(m.movement_type)+'</div>'+
+        '<div class="history-meta">'+movementMeta(m)+'</div>'+
         '<div class="history-balance">Saldo después: <strong>'+balanceAfterThis+' AP</strong></div>'+
       '</div>'+
       '<div class="history-points '+(positive?'positive':'negative')+'">'+sign+value+' AP</div>'+
@@ -524,178 +242,175 @@ function renderHistory(movements){
   '<div class="history-note">Mostrando los últimos '+movements.length+' movimientos.</div>';
 }
 
-async function loadHistory(){
-  const {data,error}=await supabase
-    .from('avopuntos_movements')
-    .select('created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number')
-    .eq('profile_id',currentUserId)
-    .order('created_at',{ascending:false})
-    .limit(20);
+function readStoredSession(){
+  try{
+    const raw=localStorage.getItem(AUTH_STORAGE_KEY);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed?.access_token||!parsed?.user?.id)return null;
+    return parsed;
+  }catch(_){return null}
+}
 
-  if(error){
-    pointsHistory.innerHTML='<div class="history-empty">No fue posible cargar el historial en este momento.</div>';
-    return;
-  }
+async function refreshStoredSession(stored){
+  if(!stored?.refresh_token)return null;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:{
+        'apikey':SUPABASE_PUBLISHABLE_KEY,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({refresh_token:stored.refresh_token}),
+      signal:controller.signal
+    });
+    if(!response.ok)return null;
+    const data=await response.json();
+    if(!data.access_token||!data.user?.id)return null;
+    const next={
+      access_token:data.access_token,
+      token_type:data.token_type||'bearer',
+      expires_in:data.expires_in,
+      expires_at:Math.floor(Date.now()/1000)+(Number(data.expires_in)||3600),
+      refresh_token:data.refresh_token||stored.refresh_token,
+      user:data.user
+    };
+    try{localStorage.setItem(AUTH_STORAGE_KEY,JSON.stringify(next))}catch(_){}
+    return next;
+  }catch(_){return null}
+  finally{clearTimeout(timer)}
+}
 
-  renderHistory(data||[]);
+async function getUsableSession(){
+  let stored=readStoredSession();
+  if(!stored)return null;
+  const expiresAt=Number(stored.expires_at)||0;
+  if(expiresAt && expiresAt>Date.now()/1000+60)return stored;
+  const refreshed=await refreshStoredSession(stored);
+  return refreshed||stored;
+}
+
+async function restGet(path,accessToken){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  try{
+    const response=await fetch(SUPABASE_URL+path,{
+      headers:{
+        'apikey':SUPABASE_PUBLISHABLE_KEY,
+        'Authorization':'Bearer '+accessToken,
+        'Accept':'application/json'
+      },
+      signal:controller.signal
+    });
+    const body=await response.json().catch(()=>null);
+    if(!response.ok){
+      const error=new Error(body?.message||body?.error_description||('HTTP '+response.status));
+      error.status=response.status;
+      throw error;
+    }
+    return body;
+  }finally{clearTimeout(timer)}
 }
 
 async function loadAccount(){
   hideNotice();
-  setPageStatus('Cargando información…');
+  setStatus('Cargando información…');
 
-  if(!window.supabase?.createClient){
-    setPageStatus('No fue posible cargar el servicio de cuenta.');
-    showNotice('El servicio de cuenta no terminó de cargar. Recarga la página e inténtalo nuevamente.',true);
+  session=await getUsableSession();
+  if(!session){
+    window.location.href='ingresar.html';
     return;
   }
 
-  supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    auth:{
-      persistSession:true,
-      autoRefreshToken:true,
-      detectSessionInUrl:true
-    }
-  });
+  const userId=session.user.id;
 
-  let sessionResult;
+  let profile,account;
   try{
-    sessionResult=await Promise.race([
-      supabase.auth.getSession(),
-      new Promise(resolve=>setTimeout(()=>resolve({timeout:true}),8000))
+    [profile,account]=await Promise.all([
+      restGet('/rest/v1/profiles?select=username,full_name,document_type,document_number,email,phone,whatsapp,created_at&id=eq.'+encodeURIComponent(userId)+'&limit=1',session.access_token),
+      restGet('/rest/v1/avopuntos_accounts?select=balance&profile_id=eq.'+encodeURIComponent(userId)+'&limit=1',session.access_token)
     ]);
   }catch(error){
-    setPageStatus('No fue posible comprobar la sesión.');
-    showNotice('Ocurrió un problema al comprobar tu sesión. '+(error?.message||'Inténtalo nuevamente.'),true);
+    setStatus('No fue posible cargar la información.');
+    showNotice('No fue posible consultar tu cuenta en este momento. '+(error?.message||'Inténtalo nuevamente.'),true);
     return;
   }
 
-  if(sessionResult?.timeout){
-    setPageStatus('La comprobación de sesión está tardando demasiado.');
-    showNotice('No pudimos comprobar tu sesión. Recarga la página e inténtalo nuevamente.',true);
+  const p=Array.isArray(profile)?profile[0]:null;
+  const a=Array.isArray(account)?account[0]:null;
+
+  if(!p){
+    setStatus('No fue posible cargar el perfil.');
+    showNotice('La sesión está activa, pero no encontramos el perfil asociado.',true);
     return;
   }
 
-  if(sessionResult?.error){
-    setPageStatus('No fue posible comprobar la sesión.');
-    showNotice('No fue posible comprobar tu sesión. '+sessionResult.error.message,true);
-    return;
+  setText('infoUsername',p.username);
+  setText('infoFullName',p.full_name);
+  setText('infoEmail',p.email);
+  setText('infoPhone',p.phone);
+  setText('infoWhatsapp',p.whatsapp);
+  setText('infoDocument',[p.document_type,p.document_number].filter(Boolean).join(' · '));
+  setText('infoCreated',formatDate(p.created_at));
+  setText('welcome','Hola, '+(p.full_name||p.username||'Usuario')+'.');
+
+  pointsBalance=Number.isInteger(Number(a?.balance))?Number(a.balance):0;
+  setText('pointsValue',pointsBalance+' AP');
+
+  try{
+    const movements=await restGet(
+      '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number&profile_id=eq.'+
+      encodeURIComponent(userId)+'&order=created_at.desc&limit=20',
+      session.access_token
+    );
+    renderHistory(Array.isArray(movements)?movements:[]);
+  }catch(error){
+    $('pointsHistory').innerHTML='<div class="history-empty">No fue posible cargar el historial en este momento.</div>';
   }
 
-  const session=sessionResult?.data?.session;
-  if(!session?.user){
-    window.location.href='ingresar.html';
-    return;
-  }
-
-  currentUserId=session.user.id;
-
-  const [profileResult,pointsResult]=await Promise.all([
-    supabase
-      .from('profiles')
-      .select('username,full_name,document_type,document_number,email,phone,whatsapp,created_at')
-      .eq('id',currentUserId)
-      .maybeSingle(),
-    supabase
-      .from('avopuntos_accounts')
-      .select('balance')
-      .eq('profile_id',currentUserId)
-      .maybeSingle()
-  ]);
-
-  if(profileResult.error||!profileResult.data){
-    setPageStatus('No fue posible cargar el perfil.');
-    showNotice('La sesión está activa, pero no pudimos cargar la información del cliente. '+(profileResult.error?.message||''),true);
-    return;
-  }
-
-  const profile=profileResult.data;
-
-  text('usernameLabel',profile.username||'Usuario');
-  text('infoUsername',profile.username);
-  text('infoFullName',profile.full_name);
-  text('infoEmail',profile.email);
-  text('infoPhone',profile.phone);
-  text('infoWhatsapp',profile.whatsapp);
-  text('infoDocument',(profile.document_type||'')+' · '+(profile.document_number||''));
-  text('infoCreated',formatDate(profile.created_at,false));
-  text('welcome','Hola, '+(profile.full_name||profile.username||'Usuario')+'.');
-
-  pointsAccountBalance=Number.isInteger(pointsResult.data?.balance)?pointsResult.data.balance:0;
-  text('pointsValue',pointsAccountBalance+' AP');
-  $('pointsMenuLink').textContent='AvoPuntos: '+pointsAccountBalance+' AP';
-
-  if(pointsResult.error){
-    showNotice('No fue posible cargar el saldo de AvoPuntos en este momento.',true);
-  }
-
-  await loadHistory();
-  setPageStatus('');
+  setStatus('');
 }
-
-function toggleUserMenu(){
-  const open=!userMenu.classList.contains('show');
-  userMenu.classList.toggle('show',open);
-  userButton.classList.toggle('open',open);
-  userButton.setAttribute('aria-expanded',String(open));
-}
-
-userButton.addEventListener('click',event=>{
-  event.stopPropagation();
-  toggleUserMenu();
-});
-
-userMenu.addEventListener('click',event=>event.stopPropagation());
-
-document.addEventListener('click',()=>{
-  userMenu.classList.remove('show');
-  userButton.classList.remove('open');
-  userButton.setAttribute('aria-expanded','false');
-});
 
 async function logout(){
+  const current=session;
   try{
-    if(!supabase)return;
-    const {error}=await supabase.auth.signOut();
-    if(error){showNotice('No fue posible cerrar la sesión.',true);return;}
-    window.location.href='ingresar.html';
-  }catch(_){
-    showNotice('No fue posible cerrar la sesión.',true);
-  }
+    if(current?.access_token){
+      await fetch(SUPABASE_URL+'/auth/v1/logout',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+current.access_token}
+      });
+    }
+  }catch(_){}
+  try{localStorage.removeItem(AUTH_STORAGE_KEY)}catch(_){}
+  window.location.href='../index.html';
 }
 
 $('logoutBtn').addEventListener('click',logout);
-$('bottomLogoutBtn').addEventListener('click',logout);
-
-supabase=null;
 loadAccount();
 
 window.setInterval(async()=>{
-  if(!supabase||!currentUserId)return;
+  if(!session?.user?.id)return;
   try{
-    const result=await supabase
-      .from('avopuntos_accounts')
-      .select('balance')
-      .eq('profile_id',currentUserId)
-      .maybeSingle();
-    const next=Number(result.data?.balance);
-    if(result.error||!Number.isInteger(next))return;
-    if(next!==pointsAccountBalance){
-      pointsAccountBalance=next;
-      text('pointsValue',next+' AP');
-      $('pointsMenuLink').textContent='AvoPuntos: '+next+' AP';
-      await loadHistory();
+    const account=await restGet('/rest/v1/avopuntos_accounts?select=balance&profile_id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',session.access_token);
+    const next=Number(Array.isArray(account)?account[0]?.balance:NaN);
+    if(Number.isInteger(next)&&next!==pointsBalance){
+      pointsBalance=next;
+      setText('pointsValue',next+' AP');
+      const movements=await restGet(
+        '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number&profile_id=eq.'+
+        encodeURIComponent(session.user.id)+'&order=created_at.desc&limit=20',
+        session.access_token
+      );
+      renderHistory(Array.isArray(movements)?movements:[]);
     }
   }catch(_){}
 },10000);
-
-if(supabase===null){
-  // La inicialización real se realiza en loadAccount() después de cargar supabase-js.
-}
 </script>
 
 <script>
-if ('serviceWorker' in navigator) {
+if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{}));
 }
 </script>
