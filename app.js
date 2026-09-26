@@ -139,7 +139,15 @@ async function init(){
     if(!session){e.preventDefault();showMusicModal();}
   });
 
-  if((location.pathname===HOME_PATH||location.pathname==='/')&&new URLSearchParams(location.search).get('music')==='1'&&!session)showMusicModal();
+  if(location.pathname===HOME_PATH||location.pathname==='/'){
+    if(session&&!isAdmin){
+      document.querySelectorAll('a[href="ahtv/index.html"],a[href="/ahtv/index.html"]').forEach(function(link){
+        if(link.closest('#ahGlobalHeader'))return;
+        link.style.display='none';
+      });
+    }
+    if(new URLSearchParams(location.search).get('music')==='1'&&!session)showMusicModal();
+  }
 }
 
 window.addEventListener('DOMContentLoaded',init);
