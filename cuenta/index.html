@@ -211,10 +211,12 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <script>
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
-const {createClient}=window.supabase;
-const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
-});
+const supabaseLib=window.supabase;
+const supabase=supabaseLib?.createClient
+  ? supabaseLib.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+    })
+  : null;
 
 const ACCOUNT_URL=window.location.origin+window.location.pathname;
 const views=[...document.querySelectorAll('.view')];
@@ -294,6 +296,13 @@ registerForm.addEventListener('submit',async e=>{
   updateRegisterButton();
   if(registerBtn.disabled)return;
   registerBtn.disabled=true;
+
+  if(!supabase){
+    registerNotice.textContent='No fue posible conectar con el servicio de cuenta. Recarga la página e inténtalo nuevamente.';
+    registerNotice.classList.add('show');
+    registerBtn.disabled=false;
+    return;
+  }
 
   const fullName=field('nombre').value.trim();
   const documentType=field('tipo_documento').value;
@@ -377,6 +386,7 @@ document.getElementById('resetForm').addEventListener('submit',async e=>{
   setTimeout(()=>showView('loginView'),900);
 });
 
+if(supabase){
 supabase.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){
     showView('resetView');
@@ -389,6 +399,7 @@ supabase.auth.onAuthStateChange((event,session)=>{
     }
   }
 });
+}
 
 if(new URLSearchParams(window.location.search).get('recovery')==='1'){
   setTimeout(()=>showView('resetView'),300);
