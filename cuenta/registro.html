@@ -51,6 +51,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .notice.show{display:block}
 .small{font-size:11px;color:#aaa;line-height:1.45;margin-top:12px}
 .requirement-status{font-size:12px;line-height:1.45;color:#aaa;text-align:center;margin:10px 6px 0;min-height:18px}
+.username-status{font-size:12px;line-height:1.45;color:#aaa;margin-top:6px}.username-status.ok{color:#bfe8c8}.username-status.bad{color:#ffb7b7}
 .requirement-status.ready{color:#ddd}
 @media(max-width:480px){.card{padding:23px 19px}.row{grid-template-columns:1fr}.logo{width:105px}}
 </style>
@@ -69,6 +70,11 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <form id="registerForm" novalidate>
 <label class="field">Nombre completo *
 <input name="nombre" autocomplete="name" required>
+</label>
+
+<label class="field">Nickname público *
+<input id="username" name="username" maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="Ej. AvoLover82">
+<div id="usernameStatus" class="small">Será tu identidad pública en AvoHouse. Debe tener entre 3 y 20 caracteres, usar solo letras, números o guion bajo y no se podrá cambiar después.</div>
 </label>
 
 <div class="row">
@@ -143,13 +149,17 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const ACCOUNT_URL=new URL('index.html',window.location.href).href;
+const ACCOUNT_URL=new URL('../index.html',window.location.href).href;
 const registerForm=document.getElementById('registerForm');
 const registerBtn=document.getElementById('registerBtn');
 const status=document.getElementById('requirementStatus');
 const waWrap=document.getElementById('waWrap');
 const waInput=document.getElementById('whatsapp');
 const registerNotice=document.getElementById('registerNotice');
+const usernameInput=document.getElementById('username');
+const usernameStatus=document.getElementById('usernameStatus');
+let nicknameAvailable=false;
+let nicknameTimer=null;
 
 function field(name){return registerForm.elements[name]}
 function waChoice(){
@@ -162,7 +172,10 @@ function passwordChecks(){
 }
 function getMissing(){
   const missing=[];
-  [['nombre','nombre completo'],['tipo_documento','tipo de documento'],['documento','número de documento'],['correo','correo electrónico'],['telefono','número de celular']].forEach(([n,l])=>{if(!field(n).value.trim())missing.push(l)});
+  [['nombre','nombre completo'],['tipo_documento','tipo de documento'],['documento','número de documento'],['correo','correo electrónico'],['telefono','número de celular'],['username','nickname']].forEach(([n,l])=>{if(!field(n).value.trim())missing.push(l)});
+  const nick=field('username').value.trim();
+  if(nick && !/^[A-Za-z0-9_]{3,20}$/.test(nick))missing.push('un nickname válido');
+  else if(nick && !nicknameAvailable)missing.push('un nickname disponible');
   if(field('correo').value.trim()&&!field('correo').checkValidity())missing.push('un correo electrónico válido');
   const wa=waChoice();
   if(!wa)missing.push('seleccionar si el celular también es WhatsApp');
@@ -183,6 +196,33 @@ function updateRegisterButton(){
   else{status.classList.remove('ready');const first=missing.slice(0,2).join(' y ');const extra=missing.length>2?' y '+(missing.length-2)+' requisito'+(missing.length-2===1?'':'s')+' más':'';status.textContent='Falta: '+first+extra+'.'}
 }
 registerForm.querySelectorAll('input,select').forEach(el=>{el.addEventListener('input',updateRegisterButton);el.addEventListener('change',updateRegisterButton)});
+usernameInput.addEventListener('input',()=>{
+  nicknameAvailable=false;
+  clearTimeout(nicknameTimer);
+  const nick=usernameInput.value.trim();
+  usernameStatus.className='small username-status';
+  if(!nick){usernameStatus.textContent='Será tu identidad pública en AvoHouse. No se podrá cambiar después.';updateRegisterButton();return;}
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(nick)){
+    usernameStatus.classList.add('bad');
+    usernameStatus.textContent='Usa entre 3 y 20 caracteres: solo letras, números o guion bajo.';
+    updateRegisterButton();return;
+  }
+  usernameStatus.textContent='Comprobando disponibilidad…';
+  nicknameTimer=setTimeout(async()=>{
+    try{
+      const {data,error}=await supabaseClient.rpc('ahtv_nickname_disponible',{p_username:nick});
+      if(error)throw error;
+      nicknameAvailable=data===true;
+      usernameStatus.className='small username-status '+(nicknameAvailable?'ok':'bad');
+      usernameStatus.textContent=nicknameAvailable?'Nickname disponible.':'Ese nickname no está disponible. Elige otro.';
+    }catch(error){
+      nicknameAvailable=false;
+      usernameStatus.className='small username-status bad';
+      usernameStatus.textContent='No se pudo comprobar el nickname. Inténtalo nuevamente.';
+    }
+    updateRegisterButton();
+  },350);
+});
 registerForm.querySelectorAll('input[name="wa_mismo"]').forEach(radio=>radio.addEventListener('change',()=>{
   const same=waChoice()==='si';
   waWrap.classList.toggle('hidden',same);
@@ -219,6 +259,7 @@ registerForm.addEventListener('submit',async e=>{
   try{
 
   const fullName=field('nombre').value.trim();
+  const username=field('username').value.trim();
   const documentType=field('tipo_documento').value;
   const documentNumber=field('documento').value.trim();
   const email=field('correo').value.trim().toLowerCase();
@@ -228,6 +269,17 @@ registerForm.addEventListener('submit',async e=>{
   const password=field('password').value;
   const marketing=field('publicidad').checked;
 
+  const nickCheck=await supabaseClient.rpc('ahtv_nickname_disponible',{p_username:username});
+  if(nickCheck.error){throw nickCheck.error;}
+  if(nickCheck.data!==true){
+    nicknameAvailable=false;
+    usernameStatus.className='small username-status bad';
+    usernameStatus.textContent='Ese nickname no está disponible. Elige otro.';
+    registerBtn.disabled=false;
+    updateRegisterButton();
+    return;
+  }
+
   const {data,error}=await supabaseClient.auth.signUp({
     email,
     password,
@@ -235,6 +287,7 @@ registerForm.addEventListener('submit',async e=>{
       emailRedirectTo:ACCOUNT_URL,
       data:{
         full_name:fullName,
+        username,
         document_type:documentType,
         document_number:documentNumber,
         phone,
@@ -252,14 +305,18 @@ registerForm.addEventListener('submit',async e=>{
   });
 
   if(error){
-    registerNotice.textContent='No fue posible crear la cuenta. '+error.message;
+    const raw=String(error.message||'');
+    const friendly=raw.toLowerCase().includes('nickname ya está en uso')||raw.toLowerCase().includes('nickname no está disponible')
+      ? 'Ese nickname no está disponible. Elige otro.'
+      : 'No fue posible crear la cuenta. '+raw;
+    registerNotice.textContent=friendly;
     registerNotice.classList.add('show');
     registerBtn.disabled=false;
     return;
   }
 
   if(data.session){
-    window.location.href='mi-cuenta.html';
+    window.location.href='../index.html';
     return;
   }
 
