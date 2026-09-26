@@ -1,4 +1,4 @@
 project_id = "tjarildqqxtjmafpiyuz"
 
 [functions.loyverse-sync-customer]
-verify_jwt = false
+verify_jwt = false\n\n[functions.loyverse-sync-sales]\nverify_jwt = false\n
