@@ -145,7 +145,7 @@ function toReceiptRow(receipt: any, profileId: string | null) {
   };
 }
 
-async function processWebhookReceipts(receiptNumbers: string[]) {
+async function processWebhookReceipts(receiptNumbers: string[], webhookSecret: string) {
   const unique = [...new Set(receiptNumbers)].slice(0, MAX_RECEIPTS);
   if (!unique.length) return { received: 0, processed: 0, avopuntos: [] as any[] };
 
@@ -280,7 +280,7 @@ Deno.serve(async (req: Request) => {
           .filter(Boolean)
       : [];
 
-    const result = await processWebhookReceipts(receiptNumbers);
+    const result = await processWebhookReceipts(receiptNumbers, supplied);
     return json({ ok: true, ...result });
   } catch (error) {
     const message = cleanError(error);
