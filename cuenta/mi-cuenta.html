@@ -73,6 +73,7 @@ const {createClient}=window.supabase;
 const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const content=document.getElementById('content');
 const notice=document.getElementById('notice');
+let pointsAccountBalanceForHistory=0;
 
 function showNotice(message){
   notice.textContent=message;
