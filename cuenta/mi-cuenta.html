@@ -98,13 +98,13 @@ async function loadAccount(){
     if(sessionResult?.timeout){
       content.innerHTML='<div class="loading">La comprobación de sesión está tardando demasiado.</div>';
       showNotice('No pudimos comprobar tu sesión. Vuelve a ingresar e inténtalo nuevamente.');
-      return;
+      return null;
     }
 
     const session=sessionResult?.data?.session;
     if(!session?.user){
       window.location.href='ingresar.html';
-      return;
+      return null;
     }
 
     const user=session.user;
@@ -128,7 +128,7 @@ async function loadAccount(){
     if(profileError||!profile){
       content.innerHTML='<div class="loading">La sesión está activa, pero todavía no se pudo cargar el perfil.</div>';
       showNotice('No fue posible cargar los datos de tu cuenta. '+(profileError?.message||''));
-      return;
+      return null;
     }
 
     content.innerHTML=
@@ -151,9 +151,11 @@ async function loadAccount(){
       const pointsSection=document.getElementById('puntos');
       if(pointsSection)window.setTimeout(()=>pointsSection.scrollIntoView({behavior:'smooth',block:'center'}),50);
     }
+    return user.id;
   }catch(error){
     content.innerHTML='<div class="loading">No fue posible cargar tu cuenta.</div>';
     showNotice('Ocurrió un problema al comprobar la sesión. '+(error?.message||'Inténtalo nuevamente.'));
+    return null;
   }
 }
 
@@ -250,23 +252,10 @@ document.getElementById('logoutBtn').addEventListener('click',async()=>{
   window.location.href='ingresar.html';
 });
 
-async function startAccountPage(){
-  if(!initializeSupabase()){
-    content.innerHTML='<div class="loading">No fue posible cargar el servicio de cuenta.</div>';
-    showNotice('El servicio de cuenta no terminó de cargar. Recarga la página e inténtalo nuevamente.');
-    return;
-  }
-  await loadAccount();
-}
-
-startAccountPage();
-
-(async function subscribePoints(){
+async function subscribePoints(userId){
+  if(!supabase||!userId)return;
   try{
-    if(!initializeSupabase())return;
-    const sessionResult=await supabase.auth.getSession();
-    const currentUser=sessionResult?.data?.session?.user;
-    if(!currentUser)return;
+    const currentUser={id:userId};
 
     const refreshPointsBalance=async function(){
       try{
@@ -303,7 +292,19 @@ startAccountPage();
       })
       .subscribe();
   }catch(_){}
-})();
+}
+
+async function startAccountPage(){
+  if(!initializeSupabase()){
+    content.innerHTML='<div class="loading">No fue posible cargar el servicio de cuenta.</div>';
+    showNotice('El servicio de cuenta no terminó de cargar. Recarga la página e inténtalo nuevamente.');
+    return;
+  }
+  const userId=await loadAccount();
+  if(userId)await subscribePoints(userId);
+}
+
+startAccountPage();
 </script>
 
 <script>
