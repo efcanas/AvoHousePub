@@ -265,6 +265,26 @@ async function syncCustomer(profileId: string) {
     const phone = String(profile.phone ?? "").trim();
     const username = String(profile.username ?? "").trim();
 
+    const avopuntosAccounts = await supabaseRequest(
+      "/rest/v1/avopuntos_accounts?select=balance&profile_id=eq." +
+        encodeURIComponent(profileId) +
+        "&limit=1",
+      { method: "GET" },
+    );
+    const avopuntosAccount = Array.isArray(avopuntosAccounts)
+      ? avopuntosAccounts[0]
+      : null;
+    const avopuntosBalance = Number(avopuntosAccount?.balance ?? 0);
+
+    if (
+      !Number.isInteger(avopuntosBalance) ||
+      avopuntosBalance < 0
+    ) {
+      throw new Error(
+        "El saldo de AvoPuntos asociado al perfil no es válido.",
+      );
+    }
+
     if (!fullName || !email || !phone || !username) {
       throw new Error(
         "El perfil AvoHouse no tiene completos los datos necesarios para crear el cliente en Loyverse.",
@@ -318,7 +338,7 @@ async function syncCustomer(profileId: string) {
           country_code: current?.country_code ?? null,
           customer_code: username,
           note: current?.note ?? null,
-          total_points: current?.total_points ?? 0,
+          total_points: avopuntosBalance,
         }),
       });
 
