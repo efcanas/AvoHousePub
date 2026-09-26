@@ -353,14 +353,48 @@ registerForm.addEventListener('submit',async e=>{
   registerBtn.disabled=false;
 });
 
-document.getElementById('loginForm').addEventListener('submit',async e=>{
+const loginForm=document.getElementById('loginForm');
+const loginBtn=loginForm.querySelector('button[type="submit"]');
+loginForm.addEventListener('submit',async e=>{
   e.preventDefault();
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
   const password=document.getElementById('loginPassword').value;
   const notice=document.getElementById('loginNotice');
-  const {data,error}=await supabase.auth.signInWithPassword({email,password});
-  if(error){notice.textContent='No fue posible ingresar. Verifica el correo y la contraseña.';notice.classList.add('show');return}
-  if(data.session)window.location.href='mi-cuenta.html';
+  notice.classList.remove('show');
+  if(!supabase){
+    notice.textContent='No fue posible conectar con el servicio de cuenta. Recarga la página e inténtalo nuevamente.';
+    notice.classList.add('show');
+    return;
+  }
+  loginBtn.disabled=true;
+  loginBtn.textContent='Ingresando…';
+  try{
+    const {data,error}=await supabase.auth.signInWithPassword({email,password});
+    if(error){
+      const msg=(error.message||'').toLowerCase();
+      if(msg.includes('email not confirmed')){
+        notice.textContent='Tu correo todavía no ha sido confirmado. Revisa el mensaje de confirmación que te enviamos.';
+      }else if(msg.includes('invalid login credentials')){
+        notice.textContent='El correo o la contraseña no son correctos.';
+      }else{
+        notice.textContent='No fue posible ingresar. '+(error.message||'Inténtalo nuevamente.');
+      }
+      notice.classList.add('show');
+      return;
+    }
+    if(data.session){
+      window.location.href='mi-cuenta.html';
+      return;
+    }
+    notice.textContent='No se pudo iniciar la sesión. Inténtalo nuevamente.';
+    notice.classList.add('show');
+  }catch(error){
+    notice.textContent='No fue posible completar el ingreso. '+(error?.message||'Verifica tu conexión e inténtalo nuevamente.');
+    notice.classList.add('show');
+  }finally{
+    loginBtn.disabled=false;
+    loginBtn.textContent='Ingresar';
+  }
 });
 
 document.getElementById('recoverForm').addEventListener('submit',async e=>{
