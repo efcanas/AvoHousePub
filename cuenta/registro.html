@@ -262,9 +262,19 @@ registerForm.addEventListener('submit',async e=>{
     return;
   }
 
-  registerNotice.textContent='Cuenta creada. Revisa tu correo para confirmar la dirección y completar el acceso.';
+  registerNotice.innerHTML='Cuenta creada correctamente.<br><br>Te enviamos un correo para confirmar tu dirección. Revisa también la carpeta de spam si no lo ves.<br><br><span id="redirectCountdown">Volviendo al inicio en 4 segundos…</span>';
   registerNotice.classList.add('show');
-  registerBtn.disabled=false;
+  registerBtn.disabled=true;
+  let seconds=4;
+  const redirectTimer=setInterval(()=>{
+    seconds--;
+    const countdown=document.getElementById('redirectCountdown');
+    if(countdown)countdown.textContent='Volviendo al inicio en '+seconds+' segundo'+(seconds===1?'':'s')+'…';
+    if(seconds<=0){
+      clearInterval(redirectTimer);
+      window.location.href='../index.html';
+    }
+  },1000);
   }catch(error){
     registerNotice.textContent='No fue posible completar el registro. '+(error?.message||'Verifica tu conexión e inténtalo nuevamente.');
     registerNotice.classList.add('show');
