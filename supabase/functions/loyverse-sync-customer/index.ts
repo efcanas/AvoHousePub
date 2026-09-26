@@ -298,6 +298,12 @@ async function syncCustomer(profileId: string) {
     let customer: any;
 
     if (customerId) {
+      const current = existingCustomer ?? await loyverseRequest(
+        token,
+        "/customers/" + encodeURIComponent(customerId),
+        { method: "GET" },
+      );
+
       customer = await loyverseRequest(token, "/customers", {
         method: "POST",
         body: JSON.stringify({
@@ -305,8 +311,31 @@ async function syncCustomer(profileId: string) {
           name: fullName,
           email,
           phone_number: phone,
+          address: current?.address ?? null,
+          city: current?.city ?? null,
+          region: current?.region ?? null,
+          postal_code: current?.postal_code ?? null,
+          country_code: current?.country_code ?? null,
+          customer_code: username,
+          note: current?.note ?? null,
         }),
       });
+
+      const verified = await loyverseRequest(
+        token,
+        "/customers/" + encodeURIComponent(customerId),
+        { method: "GET" },
+      );
+
+      if (
+        String(verified?.email ?? "").trim().toLowerCase() !== email ||
+        String(verified?.phone_number ?? "").trim() !== phone ||
+        String(verified?.customer_code ?? "").trim() !== username
+      ) {
+        throw new Error(
+          "La verificación posterior a la actualización del cliente en Loyverse no coincide con los datos de AvoHouse.",
+        );
+      }
     } else {
       customer = await loyverseRequest(token, "/customers", {
         method: "POST",
