@@ -81,7 +81,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 </label>
 <label class="field password-row">Contraseña
 <input id="loginPassword" type="password" autocomplete="current-password" required>
-<button class="toggle-password" type="button" data-target="loginPassword">Mostrar</button>
+<button class="toggle-password" type="button" data-target="loginPassword" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <div class="actions"><a class="link" href="#recoverView" data-show="recoverView">¿Olvidaste tu contraseña?</a></div>
 <button id="loginBtn" class="primary" type="button" onclick="loginAccount()">Ingresar</button>
@@ -112,12 +112,12 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <form id="resetForm">
 <label class="field password-row">Nueva contraseña
 <input id="resetPassword" type="password" minlength="8" autocomplete="new-password" required>
-<button class="toggle-password" type="button" data-target="resetPassword">Mostrar</button>
+<button class="toggle-password" type="button" data-target="resetPassword" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
 <label class="field password-row">Confirmar contraseña
 <input id="resetPasswordConfirm" type="password" minlength="8" autocomplete="new-password" required>
-<button class="toggle-password" type="button" data-target="resetPasswordConfirm">Mostrar</button>
+<button class="toggle-password" type="button" data-target="resetPasswordConfirm" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <button class="primary" id="resetBtn" type="submit">Actualizar contraseña</button>
 <button class="secondary" type="button" data-show="loginView" style="margin-top:10px">Volver a ingresar</button>
@@ -172,13 +172,13 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 
 <label class="field password-row">Contraseña *
 <input id="regPassword" name="password" type="password" minlength="8" autocomplete="new-password" required>
-<button class="toggle-password" type="button" data-target="regPassword">Mostrar</button>
+<button class="toggle-password" type="button" data-target="regPassword" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <p class="small" style="margin-top:-7px;margin-bottom:14px">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
 
 <label class="field password-row">Confirmar contraseña *
 <input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
-<button class="toggle-password" type="button" data-target="regPasswordConfirm">Mostrar</button>
+<button class="toggle-password" type="button" data-target="regPasswordConfirm" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <div id="passError" class="error">La contraseña no cumple los requisitos o las contraseñas no coinciden.</div>
 
@@ -233,14 +233,15 @@ document.querySelectorAll('[data-show]').forEach(el=>{
   });
 });
 
+function togglePassword(button){
+  const input=document.getElementById(button.getAttribute('data-target'));
+  if(!input)return;
+  const visible=input.type==='text';
+  input.type=visible?'password':'text';
+  button.textContent=visible?'Mostrar':'Ocultar';
+}
 document.querySelectorAll('.toggle-password').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const input=document.getElementById(btn.dataset.target);
-    if(!input)return;
-    const visible=input.type==='text';
-    input.type=visible?'password':'text';
-    btn.textContent=visible?'Mostrar':'Ocultar';
-  });
+  btn.addEventListener('click',()=>togglePassword(btn));
 });
 
 const registerForm=document.getElementById('registerForm');
