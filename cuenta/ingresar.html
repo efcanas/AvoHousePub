@@ -39,7 +39,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .bottom{text-align:center;color:#cfcfcf;font-size:14px;margin-top:20px}
 .bottom a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px}
 .notice{display:none;margin:0 0 15px;padding:11px 12px;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);font-size:13px;line-height:1.5;color:#ddd}
-.notice.show{display:block}
+.notice.show{display:block}.notice.error{color:#ffb7b7;border-color:rgba(255,90,90,.4);background:rgba(100,0,0,.14)}
 .status{text-align:center;color:#aaa;font-size:11px;margin-top:14px;min-height:16px}
 @media(max-width:480px){.card{padding:23px 19px}.logo{width:105px}}
 </style>
@@ -119,11 +119,12 @@ const recoverNotice=document.getElementById('recoverNotice');
 const resetNotice=document.getElementById('resetNotice');
 let supabaseClient=null;
 
-function setNotice(el,message){
+function setNotice(el,message,error=false){
   el.textContent=message;
+  el.classList.toggle('error',error);
   el.classList.add('show');
 }
-function clearNotice(el){el.textContent='';el.classList.remove('show')}
+function clearNotice(el){el.textContent='';el.classList.remove('show','error')}
 function showView(id){
   ['loginView','recoverView','resetView'].forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
   window.scrollTo({top:0,behavior:'smooth'});
@@ -149,8 +150,8 @@ async function loginAccount(){
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
   const password=document.getElementById('loginPassword').value;
   clearNotice(loginNotice);
-  if(!email||!password){setNotice(loginNotice,'Introduce tu correo y contraseña.');return}
-  if(!supabaseClient){setNotice(loginNotice,'No fue posible conectar con AvoHouse. Recarga la página e inténtalo nuevamente.');return}
+  if(!email||!password){setNotice(loginNotice,'Introduce tu correo y contraseña.',true);return}
+  if(!supabaseClient){setNotice(loginNotice,'No fue posible conectar con AvoHouse. Recarga la página e inténtalo nuevamente.',true);return}
   const btn=document.getElementById('loginBtn');
   btn.disabled=true;btn.textContent='Ingresando…';
   try{
@@ -158,15 +159,15 @@ async function loginAccount(){
     const error=result.error,data=result.data;
     if(error){
       const msg=(error.message||'').toLowerCase();
-      if(msg.includes('email not confirmed'))setNotice(loginNotice,'Tu correo todavía no ha sido confirmado. Revisa el correo de confirmación.');
-      else if(msg.includes('invalid login credentials'))setNotice(loginNotice,'El correo o la contraseña no son correctos.');
-      else setNotice(loginNotice,'No fue posible ingresar. '+(error.message||'Inténtalo nuevamente.'));
+      if(msg.includes('email not confirmed'))setNotice(loginNotice,'Tu correo todavía no ha sido confirmado. Revisa el correo de confirmación.',true);
+      else if(msg.includes('invalid login credentials'))setNotice(loginNotice,'El correo o la contraseña no son correctos.',true);
+      else setNotice(loginNotice,'No fue posible ingresar. '+(error.message||'Inténtalo nuevamente.'),true);
       return;
     }
     if(data?.session){window.location.href='mi-cuenta.html';return}
-    setNotice(loginNotice,'No se pudo iniciar la sesión. Inténtalo nuevamente.');
+    setNotice(loginNotice,'No se pudo iniciar la sesión. Inténtalo nuevamente.',true);
   }catch(error){
-    setNotice(loginNotice,'No fue posible completar el ingreso. '+(error?.message||'Verifica tu conexión.'));
+    setNotice(loginNotice,'No fue posible completar el ingreso. '+(error?.message||'Verifica tu conexión.'),true);
   }finally{
     btn.disabled=false;btn.textContent='Ingresar';
   }
