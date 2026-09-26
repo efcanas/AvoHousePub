@@ -195,9 +195,17 @@ function maxBirthDateIso(){
 function todayIsoFromDate(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function isAdultFromBirthDate(value){
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;
+function isValidDateValue(value){
+  if(value.length!==10||value[4]!=='-'||value[7]!=='-')return false;
   const [y,m,d]=value.split('-').map(Number);
+  if(!Number.isInteger(y)||!Number.isInteger(m)||!Number.isInteger(d))return false;
+  const date=new Date(y,m-1,d);
+  return !Number.isNaN(date.getTime())&&date.getFullYear()===y&&date.getMonth()===m-1&&date.getDate()===d;
+}
+function isAdultFromBirthDate(value){
+  if(value.length!==10||value[4]!=='-'||value[7]!=='-')return false;
+  const [y,m,d]=value.split('-').map(Number);
+  if(!Number.isInteger(y)||!Number.isInteger(m)||!Number.isInteger(d))return false;
   const birth=new Date(y,m-1,d);
   if(Number.isNaN(birth.getTime())||birth.getFullYear()!==y||birth.getMonth()!==m-1||birth.getDate()!==d)return false;
   const today=new Date();
@@ -219,7 +227,7 @@ function getMissing(){
   if(field('correo').value.trim()&&!field('correo').checkValidity())missing.push('un correo electrónico válido');
   const birthDate=field('fecha_nacimiento').value;
   if(birthDate){
-    if(!/^^\\d{4}-\\d{2}-\\d{2}$/.test(birthDate))missing.push('una fecha de nacimiento válida');
+    if(!isValidDateValue(birthDate))missing.push('una fecha de nacimiento válida');
     else if(!isAdultFromBirthDate(birthDate))missing.push('tener al menos 18 años');
   }
   const wa=waChoice();
