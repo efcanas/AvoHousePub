@@ -198,5 +198,9 @@ async function init(){
   }
 }
 
-window.addEventListener('DOMContentLoaded',init);
+window.AHAuthReady=new Promise(function(resolve){
+  const start=function(){Promise.resolve(init()).then(function(){resolve(window.AHAuthState||null);}).catch(function(error){console.error(error);resolve(null);});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
+});
 })();
