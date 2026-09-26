@@ -591,6 +591,15 @@
     requestsEnabledBtn.disabled = true;
   }
 
+  async function isCurrentUserAdmin() {
+    const { data, error } = await db
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", (await db.auth.getUser()).data.user?.id || "")
+      .maybeSingle();
+    return !error && !!data;
+  }
+
   async function login() {
     loginBtn.disabled = true;
     loginStatus.className = "muted";
@@ -610,6 +619,12 @@
     }
 
     loginStatus.textContent = "";
+    if (!(await isCurrentUserAdmin())) {
+      await db.auth.signOut();
+      showLogin();
+      showError(loginStatus, "Esta cuenta no tiene acceso al panel de administración.");
+      return;
+    }
     showAdmin();
     await loadRequestMode();
     await loadNowPlaying();
@@ -811,7 +826,7 @@
 
     const { data, count, error } = await db
       .from("playback_history")
-      .select("id,artist,title,source,played_at,outcome", { count: "exact" })
+      .select("id,artist,title,source,played_at,outcome,username_snapshot", { count: "exact" })
       .gte("played_at", jornadaStart)
       .order("played_at", { ascending: false })
       .limit(1000);
@@ -879,6 +894,12 @@
         badge.textContent = item.source === "Request" ? "REQUEST" : "PLAYLIST";
       }
 
+      if (item.username_snapshot) {
+        const user = document.createElement("div");
+        user.className = "request-user";
+        user.textContent = item.username_snapshot;
+        main.append(user);
+      }
       main.append(artist, title, badge);
 
       const time = document.createElement("div");
@@ -896,7 +917,7 @@
 
     const { data, error } = await db
       .from("requests")
-      .select("id,status,requested_at,accepted_at,started_at,queue_position,song_id,songs(artist,title)")
+      .select("id,status,requested_at,accepted_at,started_at,queue_position,song_id,user_id,username_snapshot,songs(artist,title)")
       .in("status", ["pending", "accepted", "playing"])
       .order("requested_at", { ascending: true });
 
@@ -959,6 +980,10 @@
         title.className = "song-title";
         title.textContent = song?.title ?? "Canción desconocida";
 
+        const user = document.createElement("div");
+        user.className = "request-user";
+        user.textContent = request.username_snapshot || "Usuario no identificado";
+
         const meta = document.createElement("div");
         meta.className = "meta";
         meta.textContent = `Solicitada: ${new Date(request.requested_at).toLocaleString()}`;
@@ -973,7 +998,7 @@
         reject.textContent = "RECHAZAR";
         reject.onclick = () => updateRequest(request.id, "rejected", approve, reject);
 
-        card.append(artist, title, meta, document.createElement("br"), approve, reject);
+        card.append(user, artist, title, meta, document.createElement("br"), approve, reject);
         requestsEl.appendChild(card);
       }
     }
@@ -996,11 +1021,15 @@
         title.className = "song-title";
         title.textContent = song?.title ?? "Canción desconocida";
 
+        const user = document.createElement("div");
+        user.className = "request-user";
+        user.textContent = request.username_snapshot || "Usuario no identificado";
+
         const meta = document.createElement("div");
         meta.className = "ok";
         meta.textContent = "▶ REPRODUCIENDO AHORA";
 
-        card.append(artist, title, meta);
+        card.append(user, artist, title, meta);
         queueEl.appendChild(card);
       }
 
@@ -1017,6 +1046,10 @@
         const title = document.createElement("div");
         title.className = "song-title";
         title.textContent = song?.title ?? "Canción desconocida";
+
+        const user = document.createElement("div");
+        user.className = "request-user";
+        user.textContent = request.username_snapshot || "Usuario no identificado";
 
         const meta = document.createElement("div");
         meta.className = "meta";
@@ -1048,7 +1081,7 @@
         remove.onclick = () => cancelQueueRequest(request.id);
 
         actions.append(up, down, remove);
-        card.append(artist, title, meta, actions);
+        card.append(user, artist, title, meta, actions);
         queueEl.appendChild(card);
       });
     }
@@ -1269,6 +1302,12 @@
     const { data } = await db.auth.getSession();
 
     if (data.session) {
+      if (!(await isCurrentUserAdmin())) {
+        await db.auth.signOut();
+        showLogin();
+        showError(loginStatus, "Esta cuenta no tiene acceso al panel de administración.");
+        return;
+      }
       showAdmin();
       await loadRequestMode();
       await loadNowPlaying();
