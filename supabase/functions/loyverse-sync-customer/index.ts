@@ -381,20 +381,17 @@ Deno.serve(async (req: Request) => {
     body = {};
   }
 
-  if (body?.mode === "pending") {
+  try {
+    if (body?.mode === "pending") {
     const now = new Date().toISOString();
 
-    const { data: pending, error } = await admin
-      .from("loyverse_customers")
-      .select("profile_id")
-      .in("sync_status", ["pending", "error"])
-      .lte("next_attempt_at", now)
-      .order("last_attempt_at", { ascending: true, nullsFirst: true })
-      .limit(MAX_BATCH);
-
-    if (error) {
-      return json({ error: error.message }, 500);
-    }
+    const pending = await supabaseRequest(
+      "/rest/v1/loyverse_customers?select=profile_id&sync_status=in.(pending,error)&next_attempt_at=lte." +
+        encodeURIComponent(now) +
+        "&order=last_attempt_at.asc.nullsfirst&limit=" +
+        MAX_BATCH,
+      { method: "GET" },
+    );
 
     const results: any[] = [];
 
@@ -418,6 +415,18 @@ Deno.serve(async (req: Request) => {
       processed: results.length,
       results,
     });
+  }
+
+    }
+  } catch (error) {
+    console.error(
+      "[loyverse-sync-customer]",
+      cleanError(error instanceof Error ? error.message : error),
+    );
+    return json(
+      { error: cleanError(error instanceof Error ? error.message : error) },
+      500,
+    );
   }
 
   const profileId =
