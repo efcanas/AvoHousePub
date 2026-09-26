@@ -329,7 +329,18 @@ async function syncCustomer(profileId: string) {
         throw new Error("El saldo actual de puntos de Loyverse no es válido.");
       }
 
-      if (currentPoints === avopuntosBalance) {
+      const expectedName = String(current?.name ?? fullName).trim() || fullName;
+      const expectedEmail = email;
+      const expectedPhone = phone;
+      const expectedCustomerCode = username;
+
+      const identityMatches =
+        String(current?.name ?? "").trim() === expectedName &&
+        String(current?.email ?? "").trim().toLowerCase() === expectedEmail &&
+        String(current?.phone_number ?? "").trim() === expectedPhone &&
+        String(current?.customer_code ?? "").trim() === expectedCustomerCode;
+
+      if (currentPoints === avopuntosBalance && identityMatches) {
         return {
           profileId,
           synced: true,
@@ -343,7 +354,16 @@ async function syncCustomer(profileId: string) {
         method: "POST",
         body: JSON.stringify({
           id: customerId,
-          name: String(current?.name ?? fullName).trim() || fullName,
+          name: expectedName,
+          email: expectedEmail,
+          phone_number: expectedPhone,
+          address: current?.address ?? null,
+          city: current?.city ?? null,
+          region: current?.region ?? null,
+          postal_code: current?.postal_code ?? null,
+          country_code: current?.country_code ?? null,
+          customer_code: expectedCustomerCode,
+          note: current?.note ?? null,
           total_points: avopuntosBalance,
         }),
       });
@@ -356,15 +376,13 @@ async function syncCustomer(profileId: string) {
 
       if (
         Number(verified?.total_points) !== avopuntosBalance ||
-        String(verified?.email ?? "").trim().toLowerCase() !==
-          String(current?.email ?? "").trim().toLowerCase() ||
-        String(verified?.phone_number ?? "").trim() !==
-          String(current?.phone_number ?? "").trim() ||
-        String(verified?.customer_code ?? "").trim() !==
-          String(current?.customer_code ?? "").trim()
+        String(verified?.name ?? "").trim() !== expectedName ||
+        String(verified?.email ?? "").trim().toLowerCase() !== expectedEmail ||
+        String(verified?.phone_number ?? "").trim() !== expectedPhone ||
+        String(verified?.customer_code ?? "").trim() !== expectedCustomerCode
       ) {
         throw new Error(
-          "La verificación posterior a la actualización de puntos en Loyverse detectó un cambio inesperado en los datos del cliente.",
+          "La verificación posterior a la actualización del cliente en Loyverse detectó un cambio inesperado en los datos del cliente.",
         );
       }
     } else {
