@@ -9,7 +9,7 @@ const AHTV_PATH=SITE_ROOT+'ahtv/index.html';
 const LOGIN_PATH=SITE_ROOT+'cuenta/ingresar.html';
 const REGISTER_PATH=SITE_ROOT+'cuenta/registro.html';
 
-function isAhtvPage(){return location.pathname===AHTV_PATH||location.pathname==='/ahtv/';}
+function isAhtvPage(){return location.pathname===AHTV_PATH||location.pathname===SITE_ROOT+'ahtv/';}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
 function installStyle(){
@@ -91,7 +91,7 @@ function injectHeader(session,isAdmin,username,pointsBalance){
     const dropdown=document.createElement('div');
     dropdown.className='ah-global-dropdown';
     const pointsText=Number.isInteger(pointsBalance)?pointsBalance+' AP':'— AP';
-    dropdown.innerHTML='<a class="ah-global-points" href="/cuenta/mi-cuenta.html#puntos">'+pointsText+'</a><button type="button" id="ahLogoutButton">Cerrar sesión</button>';
+    dropdown.innerHTML='<a class="ah-global-points" href="'+SITE_ROOT+'cuenta/mi-cuenta.html#puntos">'+pointsText+'</a><button type="button" id="ahLogoutButton">Cerrar sesión</button>';
 
     button.addEventListener('click',function(e){e.stopPropagation();const open=!dropdown.classList.contains('show');dropdown.classList.toggle('show',open);button.classList.toggle('open',open);});
     dropdown.addEventListener('click',function(e){e.stopPropagation();});
@@ -173,7 +173,7 @@ async function init(){
       .subscribe();
   }
 
-  if(isAhtvPage()&&isAdmin){location.replace('/ahtv/admin/index.html');return;}
+  if(isAhtvPage()&&isAdmin){location.replace(SITE_ROOT+'ahtv/admin/index.html');return;}
   if(isAhtvPage()&&!session){location.replace('/index.html?music=1');return;}
 
   document.addEventListener('click',function(e){
