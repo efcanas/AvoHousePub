@@ -5,3 +5,6 @@ verify_jwt = false\n\n[functions.loyverse-sync-sales]\nverify_jwt = false\n
 
 [functions.avopuntos-process-receipts]
 verify_jwt = false
+
+[functions.loyverse-webhook-receipts]
+verify_jwt = false
