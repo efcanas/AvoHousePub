@@ -72,6 +72,14 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <div class="bottom">¿Aún no tienes una cuenta? <a href="registro.html">Regístrate</a></div>
 </section>
 
+<section id="welcomeView" class="view hidden">
+<div class="kicker">AVOHOUSE</div>
+<h1>¡Bienvenido!</h1>
+<p class="subtitle">Tu cuenta ha sido confirmada correctamente.</p>
+<p class="subtitle">Ya haces parte de la comunidad AvoHouse.</p>
+<a id="welcomeButton" class="primary" href="mi-cuenta.html">IR A MI CUENTA</a>
+</section>
+
 <section id="recoverView" class="view hidden">
 <div class="kicker">Cuenta AvoHouse</div>
 <h1>Recuperar contraseña</h1>
@@ -126,7 +134,7 @@ function setNotice(el,message,error=false){
 }
 function clearNotice(el){el.textContent='';el.classList.remove('show','error')}
 function showView(id){
-  ['loginView','recoverView','resetView'].forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
+  ['loginView','welcomeView','recoverView','resetView'].forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function safeReturnTo(value){
@@ -172,6 +180,14 @@ async function loginAccount(){
       return;
     }
     if(data?.session){
+      const welcomeKey='ah_welcome_shown_'+data.session.user.id;
+      let welcomeShown=false;
+      try{welcomeShown=localStorage.getItem(welcomeKey)==='1';}catch(_){}
+      if(!welcomeShown){
+        try{localStorage.setItem(welcomeKey,'1');}catch(_){}
+        showView('welcomeView');
+        return;
+      }
       const requested=new URLSearchParams(window.location.search).get('returnTo');
       const destination=requested?safeReturnTo(requested):'../index.html';
       window.location.href=destination;
@@ -239,6 +255,7 @@ document.getElementById('recoverLink').addEventListener('click',e=>{
 });
 document.getElementById('backLoginFromRecover').addEventListener('click',()=>showView('loginView'));
 document.getElementById('backLoginFromReset').addEventListener('click',()=>showView('loginView'));
+
 
 if(new URLSearchParams(window.location.search).get('recovery')==='1'){
   showView('resetView');
