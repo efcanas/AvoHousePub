@@ -66,6 +66,7 @@ button,a.btn{flex:1;text-align:center;text-decoration:none;border-radius:11px;pa
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../app.js"></script>
 <script>
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
@@ -74,34 +75,34 @@ const notice=document.getElementById('notice');
 let pointsAccountBalanceForHistory=0;
 let supabase=null;
 
-function initializeSupabase(){
-  if(supabase)return true;
-  if(!window.supabase?.createClient)return false;
-  supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
-  });
-  return true;
-}
-
 function showNotice(message){
   notice.textContent=message;
   notice.classList.add('show');
 }
 
+async function waitForAuthState(){
+  try{
+    if(window.AHAuthReady){
+      await window.AHAuthReady;
+    }
+    supabase=window.ahSupabase||null;
+    return window.AHAuthState||null;
+  }catch(error){
+    return null;
+  }
+}
+
 async function loadAccount(){
   content.textContent='Comprobando sesión…';
   try{
-    const sessionResult=await Promise.race([
-      supabase.auth.getSession(),
-      new Promise(resolve=>setTimeout(()=>resolve({timeout:true}),8000))
-    ]);
-    if(sessionResult?.timeout){
-      content.innerHTML='<div class="loading">La comprobación de sesión está tardando demasiado.</div>';
-      showNotice('No pudimos comprobar tu sesión. Vuelve a ingresar e inténtalo nuevamente.');
+    const authState=await waitForAuthState();
+    if(!supabase||!authState){
+      content.innerHTML='<div class="loading">No fue posible cargar el servicio de cuenta.</div>';
+      showNotice('No fue posible inicializar la cuenta de AvoHouse. Recarga la página e inténtalo nuevamente.');
       return null;
     }
 
-    const session=sessionResult?.data?.session;
+    const session=authState.session;
     if(!session?.user){
       window.location.href='ingresar.html';
       return null;
@@ -150,7 +151,7 @@ async function loadAccount(){
     return user.id;
   }catch(error){
     content.innerHTML='<div class="loading">No fue posible cargar tu cuenta.</div>';
-    showNotice('Ocurrió un problema al comprobar la sesión. '+(error?.message||'Inténtalo nuevamente.'));
+    showNotice('Ocurrió un problema al cargar tu cuenta. '+(error?.message||'Inténtalo nuevamente.'));
     return null;
   }
 }
@@ -207,7 +208,7 @@ function renderPointsHistory(movements,currentBalance){
     balanceAfter -= delta;
 
     return '<div class="history-item">'+
-      '<div class="history-sign '+(positive?'positive':'negative')+'>'+sign+'</div>'+
+      '<div class="history-sign '+(positive?'positive':'negative')+'">'+sign+'</div>'+
       '<div class="history-main">'+
         '<div class="history-type">'+movementLabel(movement.movement_type)+'</div>'+
         '<div class="history-meta">'+movementMeta(movement)+'</div>'+
@@ -218,9 +219,10 @@ function renderPointsHistory(movements,currentBalance){
   }).join('')+
   '<div class="history-note">Mostrando los últimos '+movements.length+' movimientos.</div>';
 }
+
 async function loadPointsHistory(userId){
   const history=document.getElementById('pointsHistory');
-  if(!history)return;
+  if(!history||!supabase)return;
   try{
     const {data,error}=await supabase
       .from('avopuntos_movements')
@@ -243,66 +245,64 @@ function escapeHtml(value){
 }
 
 document.getElementById('logoutBtn').addEventListener('click',async()=>{
-  const {error}=await supabase.auth.signOut();
-  if(error){showNotice('No fue posible cerrar la sesión.');return}
-  window.location.href='ingresar.html';
+  try{
+    if(!supabase)supabase=window.ahSupabase||null;
+    const {error}=await supabase.auth.signOut();
+    if(error){showNotice('No fue posible cerrar la sesión.');return}
+    window.location.href='ingresar.html';
+  }catch(_){
+    showNotice('No fue posible cerrar la sesión.');
+  }
 });
 
 async function subscribePoints(userId){
   if(!supabase||!userId)return;
-  try{
-    const currentUser={id:userId};
 
+  try{
     const refreshPointsBalance=async function(){
       try{
         const result=await supabase
           .from('avopuntos_accounts')
           .select('balance')
-          .eq('profile_id',currentUser.id)
+          .eq('profile_id',userId)
           .maybeSingle();
         const next=Number(result?.data?.balance);
         if(result?.error||!Number.isInteger(next))return;
         pointsAccountBalanceForHistory=next;
         const pointsValue=document.getElementById('pointsValue');
         if(pointsValue)pointsValue.textContent=next+' AP';
-        await loadPointsHistory(currentUser.id);
+        await loadPointsHistory(userId);
       }catch(_){}
     };
 
     window.setInterval(refreshPointsBalance,10000);
 
     supabase
-      .channel('ah-account-avopuntos-'+currentUser.id)
+      .channel('ah-account-avopuntos-'+userId)
       .on('postgres_changes',{
         event:'UPDATE',
         schema:'public',
         table:'avopuntos_accounts',
-        filter:'profile_id=eq.'+currentUser.id
+        filter:'profile_id=eq.'+userId
       },function(payload){
         const next=Number(payload?.new?.balance);
         if(!Number.isInteger(next))return;
         pointsAccountBalanceForHistory=next;
         const pointsValue=document.getElementById('pointsValue');
         if(pointsValue)pointsValue.textContent=next+' AP';
-        loadPointsHistory(currentUser.id);
+        loadPointsHistory(userId);
       })
       .subscribe();
   }catch(_){}
 }
 
 async function startAccountPage(){
-  if(!initializeSupabase()){
-    content.innerHTML='<div class="loading">No fue posible cargar el servicio de cuenta.</div>';
-    showNotice('El servicio de cuenta no terminó de cargar. Recarga la página e inténtalo nuevamente.');
-    return;
-  }
   const userId=await loadAccount();
   if(userId)await subscribePoints(userId);
 }
 
 startAccountPage();
 </script>
-
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('../sw.js').catch(() => {}));
