@@ -91,7 +91,7 @@ function injectHeader(session,isAdmin,username,pointsBalance){
     const dropdown=document.createElement('div');
     dropdown.className='ah-global-dropdown';
     const pointsText=Number.isInteger(pointsBalance)?pointsBalance+' AP':'— AP';
-    dropdown.innerHTML='<a class="ah-global-points" href="'+SITE_ROOT+'cuenta/mi-cuenta.html#puntos">'+pointsText+'</a><button type="button" id="ahLogoutButton">Cerrar sesión</button>';
+    dropdown.innerHTML='<a class="ah-global-points" href="'+SITE_ROOT+'cuenta/mi-cuenta.html?from=points&v=20260926#puntos">'+pointsText+'</a><button type="button" id="ahLogoutButton">Cerrar sesión</button>';
 
     button.addEventListener('click',function(e){e.stopPropagation();const open=!dropdown.classList.contains('show');dropdown.classList.toggle('show',open);button.classList.toggle('open',open);});
     dropdown.addEventListener('click',function(e){e.stopPropagation();});
