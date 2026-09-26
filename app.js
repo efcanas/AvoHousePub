@@ -73,7 +73,13 @@ function injectHeader(session,isAdmin,username){
   primary.textContent=isAhtvPage()?'MENÚ':'AHtv';
   header.appendChild(primary);
 
-  if(session&&!isAdmin){
+  if(!session&&!isAdmin){
+    const login=document.createElement('a');
+    login.className='ah-global-link';
+    login.href=LOGIN_PATH;
+    login.textContent='INGRESAR / REGISTRARSE';
+    header.appendChild(login);
+  }else if(session&&!isAdmin){
     const wrap=document.createElement('div');
     wrap.style.position='relative';
     const button=document.createElement('button');
