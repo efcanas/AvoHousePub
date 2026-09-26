@@ -75,7 +75,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <h1>Ingresar</h1>
 <p class="subtitle">Accede a tu cuenta, consulta tus Puntos AH y utiliza las funcionalidades disponibles.</p>
 <div id="loginNotice" class="notice"></div>
-<form id="loginForm">
+<form id="loginForm" onsubmit="return false;">
 <label class="field">Correo electrónico
 <input id="loginEmail" type="email" autocomplete="email" required>
 </label>
@@ -84,7 +84,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <button class="toggle-password" type="button" data-target="loginPassword">Mostrar</button>
 </label>
 <div class="actions"><a class="link" href="#recoverView" data-show="recoverView">¿Olvidaste tu contraseña?</a></div>
-<button class="primary" type="submit">Ingresar</button>
+<button id="loginBtn" class="primary" type="button" onclick="loginAccount()">Ingresar</button>
 </form>
 <div class="divider">o</div>
 <div class="bottom">¿Aún no tienes una cuenta? <a href="registro.html">Regístrate</a></div>
@@ -353,14 +353,17 @@ registerForm.addEventListener('submit',async e=>{
   registerBtn.disabled=false;
 });
 
-const loginForm=document.getElementById('loginForm');
-const loginBtn=loginForm.querySelector('button[type="submit"]');
-loginForm.addEventListener('submit',async e=>{
-  e.preventDefault();
+const loginBtn=document.getElementById('loginBtn');
+async function loginAccount(){
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
   const password=document.getElementById('loginPassword').value;
   const notice=document.getElementById('loginNotice');
   notice.classList.remove('show');
+  if(!email||!password){
+    notice.textContent='Introduce tu correo y contraseña.';
+    notice.classList.add('show');
+    return;
+  }
   if(!supabase){
     notice.textContent='No fue posible conectar con el servicio de cuenta. Recarga la página e inténtalo nuevamente.';
     notice.classList.add('show');
@@ -382,7 +385,7 @@ loginForm.addEventListener('submit',async e=>{
       notice.classList.add('show');
       return;
     }
-    if(data.session){
+    if(data?.session){
       window.location.href='mi-cuenta.html';
       return;
     }
@@ -395,7 +398,7 @@ loginForm.addEventListener('submit',async e=>{
     loginBtn.disabled=false;
     loginBtn.textContent='Ingresar';
   }
-});
+}
 
 document.getElementById('recoverForm').addEventListener('submit',async e=>{
   e.preventDefault();
