@@ -297,11 +297,9 @@ async function syncAccountToLoyverse(token: string, profileId: string) {
 }
 
 async function syncPendingAccounts(token: string) {
-  const accounts = await supabaseRequest(
-    "/rest/v1/avopuntos_accounts?select=profile_id,balance,last_loyverse_points&or=(last_loyverse_points.is.null,balance.neq.last_loyverse_points)&order=updated_at.asc&limit=" +
-      MAX_ACCOUNTS,
-    { method: "GET" },
-  );
+  const accounts = await supabaseRpc("avopuntos_cuentas_pendientes_sync", {
+    p_limit: MAX_ACCOUNTS,
+  });
 
   const results: any[] = [];
 
