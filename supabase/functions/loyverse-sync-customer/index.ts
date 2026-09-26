@@ -407,13 +407,31 @@ async function syncCustomer(profileId: string) {
       );
     }
 
+    const syncedAt = new Date().toISOString();
+
     await saveState(profileId, {
       loyverse_customer_id: resultingId,
       sync_status: "synced",
-      last_synced_at: new Date().toISOString(),
+      last_synced_at: syncedAt,
       last_error: null,
       next_attempt_at: null,
     });
+
+    await supabaseRequest(
+      "/rest/v1/avopuntos_accounts?profile_id=eq." +
+        encodeURIComponent(profileId),
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          last_loyverse_points: avopuntosBalance,
+          last_loyverse_sync_at: syncedAt,
+          last_loyverse_sync_attempt_at: syncedAt,
+          last_loyverse_sync_error: null,
+          updated_at: syncedAt,
+        }),
+      },
+    );
 
     return {
       profileId,
