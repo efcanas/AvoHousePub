@@ -85,6 +85,13 @@ async function loadAccount(){
       .eq('id',user.id)
       .single();
 
+    const {data:pointsAccount,error:pointsError}=await supabase
+      .from('avopuntos_accounts')
+      .select('balance')
+      .eq('profile_id',user.id)
+      .maybeSingle();
+
+    const pointsBalance=Number.isInteger(pointsAccount?.balance)?pointsAccount.balance:0;
     const name=profile?.full_name || user.user_metadata?.full_name || 'Usuario';
     document.getElementById('welcome').textContent='Hola, '+escapeHtml(name)+'.';
 
@@ -102,7 +109,8 @@ async function loadAccount(){
         '<div class="item"><span>WhatsApp</span><span>'+escapeHtml(profile.whatsapp)+'</span></div>'+
         '<div class="item"><span>Documento</span><span>'+escapeHtml(profile.document_type)+' · '+escapeHtml(profile.document_number)+'</span></div>'+
       '</div>'+
-      '<div id="puntos" class="points"><div class="points-label">Puntos AH</div><div class="points-value">0</div><div class="small" style="color:#aaa;font-size:11px;margin-top:5px">El saldo real se conectará cuando incorporemos el módulo de puntos.</div></div>';
+      '<div id="puntos" class="points"><div class="points-label">AvoPuntos</div><div id="pointsValue" class="points-value">'+pointsBalance+' AP</div><div class="small" style="color:#aaa;font-size:11px;margin-top:5px">Saldo disponible</div></div>';
+    if(pointsError)showNotice('No fue posible cargar el saldo de AvoPuntos en este momento.');
   }catch(error){
     content.innerHTML='<div class="loading">No fue posible cargar tu cuenta.</div>';
     showNotice('Ocurrió un problema al comprobar la sesión. '+(error?.message||'Inténtalo nuevamente.'));
@@ -120,6 +128,28 @@ document.getElementById('logoutBtn').addEventListener('click',async()=>{
 });
 
 loadAccount();
+
+(async function subscribePoints(){
+  try{
+    const sessionResult=await supabase.auth.getSession();
+    const currentUser=sessionResult?.data?.session?.user;
+    if(!currentUser)return;
+    supabase
+      .channel('ah-account-avopuntos-'+currentUser.id)
+      .on('postgres_changes',{
+        event:'UPDATE',
+        schema:'public',
+        table:'avopuntos_accounts',
+        filter:'profile_id=eq.'+currentUser.id
+      },function(payload){
+        const next=Number(payload?.new?.balance);
+        if(!Number.isInteger(next))return;
+        const pointsValue=document.getElementById('pointsValue');
+        if(pointsValue)pointsValue.textContent=next+' AP';
+      })
+      .subscribe();
+  }catch(_){}
+})();
 </script>
 
 <script>
