@@ -151,9 +151,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-
-const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
+<script>const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const supabaseLib=window.supabase;
 const supabase=supabaseLib?.createClient
@@ -186,6 +184,9 @@ document.querySelectorAll('.toggle-password').forEach(btn=>{
     btn.textContent=visible?'Mostrar':'Ocultar';
   });
 });
+
+
+const ACCOUNT_URL=window.location.origin+'/cuenta/index.html';
 
 
 const ACCOUNT_URL=window.location.origin+'/cuenta/index.html';
@@ -300,11 +301,6 @@ registerForm.addEventListener('submit',async e=>{
   registerBtn.disabled=false;
 });
 
-
-
-if(supabase){
-  document.getElementById('backToLogin').addEventListener('click',e=>{});
-}
 
 </script>
 <script>
