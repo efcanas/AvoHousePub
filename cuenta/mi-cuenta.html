@@ -10,7 +10,7 @@
 body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#fff;background:url('../Fondo.png') center/cover fixed no-repeat}
 body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:-1}
 .page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px}
-.card{width:100%;max-width:520px;background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.17);border-radius:22px;padding:30px;backdrop-filter:blur(7px);box-shadow:0 18px 60px rgba(0,0,0,.24)}
+.card{width:100%;max-width:620px;background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.17);border-radius:22px;padding:30px;backdrop-filter:blur(7px);box-shadow:0 18px 60px rgba(0,0,0,.24)}
 .logo{display:block;width:125px;max-width:45%;margin:0 auto 18px}
 .kicker{text-align:center;text-transform:uppercase;letter-spacing:3px;font-size:11px;opacity:.72}
 h1{text-align:center;font-size:28px;margin:8px 0}.subtitle{text-align:center;color:#c9c9c9;line-height:1.5;font-size:14px}
@@ -21,10 +21,29 @@ h1{text-align:center;font-size:28px;margin:8px 0}.subtitle{text-align:center;col
 .item span:first-child{color:#aaa}.item span:last-child{text-align:right}
 .points{margin-top:24px;padding:18px;border-radius:14px;background:rgba(255,255,255,.06);text-align:center}
 .points-label{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#aaa}.points-value{font-size:32px;font-weight:800;margin-top:5px}
+.history{margin-top:24px;border-top:1px solid rgba(255,255,255,.13);padding-top:22px}
+.history-title{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:12px}
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-empty{padding:18px 0;text-align:center;color:#aaa;font-size:13px}
+.history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.history-sign{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;font-size:16px;font-weight:800}
+.history-sign.positive{color:#b8f5b8}.history-sign.negative{color:#ffb7b7}
+.history-main{min-width:0;flex:1}
+.history-type{font-size:13px;font-weight:700}
+.history-meta{margin-top:3px;color:#999;font-size:11px;line-height:1.45}
+.history-points{text-align:right;font-size:14px;font-weight:800;white-space:nowrap}
+.history-points.positive{color:#b8f5b8}.history-points.negative{color:#ffb7b7}
+.history-note{margin-top:10px;color:#777;font-size:10px;text-align:center}
 .actions{display:flex;gap:10px;margin-top:24px}
 button,a.btn{flex:1;text-align:center;text-decoration:none;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer}
 .primary{border:1px solid #fff;background:#fff;color:#111}.secondary{border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff}
 .loading{text-align:center;color:#aaa;padding:30px 0}
+@media (max-width:520px){
+  .page{padding:18px 12px}
+  .card{padding:24px 18px}
+  .item{gap:12px;font-size:13px}
+  .history-item{gap:9px}
+}
 </style>
 </head>
 <body>
@@ -93,7 +112,7 @@ async function loadAccount(){
 
     const pointsBalance=Number.isInteger(pointsAccount?.balance)?pointsAccount.balance:0;
     const name=profile?.full_name || user.user_metadata?.full_name || 'Usuario';
-    document.getElementById('welcome').textContent='Hola, '+escapeHtml(name)+'.';
+    document.getElementById('welcome').textContent='Hola, '+name+'.';
 
     if(profileError||!profile){
       content.innerHTML='<div class="loading">La sesión está activa, pero todavía no se pudo cargar el perfil.</div>';
@@ -109,11 +128,93 @@ async function loadAccount(){
         '<div class="item"><span>WhatsApp</span><span>'+escapeHtml(profile.whatsapp)+'</span></div>'+
         '<div class="item"><span>Documento</span><span>'+escapeHtml(profile.document_type)+' · '+escapeHtml(profile.document_number)+'</span></div>'+
       '</div>'+
-      '<div id="puntos" class="points"><div class="points-label">AvoPuntos</div><div id="pointsValue" class="points-value">'+pointsBalance+' AP</div><div class="small" style="color:#aaa;font-size:11px;margin-top:5px">Saldo disponible</div></div>';
+      '<div id="puntos" class="points"><div class="points-label">AvoPuntos</div><div id="pointsValue" class="points-value">'+pointsBalance+' AP</div><div class="small" style="color:#aaa;font-size:11px;margin-top:5px">Saldo disponible</div></div>'+
+      '<section class="history" aria-labelledby="historyTitle">'+
+        '<div id="historyTitle" class="history-title">Actividad de AvoPuntos</div>'+
+        '<div id="pointsHistory" class="history-list"><div class="loading" style="padding:18px 0">Cargando movimientos…</div></div>'+
+      '</section>';
+
     if(pointsError)showNotice('No fue posible cargar el saldo de AvoPuntos en este momento.');
+    await loadPointsHistory(user.id);
   }catch(error){
     content.innerHTML='<div class="loading">No fue posible cargar tu cuenta.</div>';
     showNotice('Ocurrió un problema al comprobar la sesión. '+(error?.message||'Inténtalo nuevamente.'));
+  }
+}
+
+function movementLabel(type){
+  const labels={
+    opening_balance:'Saldo inicial',
+    earn:'Puntos ganados',
+    redeem:'Puntos utilizados',
+    earn_reversal:'Reversión de puntos ganados',
+    redeem_reversal:'Reversión de puntos utilizados',
+    expiration:'Puntos vencidos',
+    adjustment:'Ajuste de AvoPuntos'
+  };
+  return labels[type]||'Movimiento de AvoPuntos';
+}
+
+function movementMeta(movement){
+  const date=new Date(movement.created_at);
+  const dateText=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('es-CO',{
+    day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'
+  }).format(date);
+  let meta=dateText;
+  const receipt=movement.receipt_number || movement.related_receipt_number;
+  if(receipt){
+    meta += (meta?' · ':'')+'Operación '+escapeHtml(receipt);
+  }
+  if(movement.eligible_amount!=null){
+    const amount=Number(movement.eligible_amount);
+    if(Number.isFinite(amount)){
+      meta += (meta?' · ':'')+'Compra elegible $'+amount.toLocaleString('es-CO');
+    }
+  }
+  return meta;
+}
+
+function renderPointsHistory(movements){
+  const history=document.getElementById('pointsHistory');
+  if(!history)return;
+  if(!movements?.length){
+    history.innerHTML='<div class="history-empty">Todavía no hay movimientos registrados.</div>';
+    return;
+  }
+  history.innerHTML=movements.map(movement=>{
+    const delta=Number(movement.points_delta);
+    const positive=delta>0;
+    const sign=positive?'+':'−';
+    const value=Math.abs(delta);
+    return '<div class="history-item">'+
+      '<div class="history-sign '+(positive?'positive':'negative')+'>'+sign+'</div>'+
+      '<div class="history-main">'+
+        '<div class="history-type">'+movementLabel(movement.movement_type)+'</div>'+
+        '<div class="history-meta">'+movementMeta(movement)+'</div>'+
+      '</div>'+
+      '<div class="history-points '+(positive?'positive':'negative')+'">'+sign+value+' AP</div>'+
+    '</div>';
+  }).join('')+
+  '<div class="history-note">Mostrando los últimos '+movements.length+' movimientos.</div>';
+}
+
+async function loadPointsHistory(userId){
+  const history=document.getElementById('pointsHistory');
+  if(!history)return;
+  try{
+    const {data,error}=await supabase
+      .from('avopuntos_movements')
+      .select('created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number')
+      .eq('profile_id',userId)
+      .order('created_at',{ascending:false})
+      .limit(20);
+    if(error){
+      history.innerHTML='<div class="history-empty">No fue posible cargar el historial en este momento.</div>';
+      return;
+    }
+    renderPointsHistory(data||[]);
+  }catch(_){
+    history.innerHTML='<div class="history-empty">No fue posible cargar el historial en este momento.</div>';
   }
 }
 
@@ -166,7 +267,8 @@ loadAccount();
       })
       .subscribe();
   }catch(_){}
-})();</script>
+})();
+</script>
 
 <script>
 if ('serviceWorker' in navigator) {
