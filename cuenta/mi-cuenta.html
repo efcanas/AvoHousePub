@@ -134,6 +134,23 @@ loadAccount();
     const sessionResult=await supabase.auth.getSession();
     const currentUser=sessionResult?.data?.session?.user;
     if(!currentUser)return;
+
+    const refreshPointsBalance=async function(){
+      try{
+        const result=await supabase
+          .from('avopuntos_accounts')
+          .select('balance')
+          .eq('profile_id',currentUser.id)
+          .maybeSingle();
+        const next=Number(result?.data?.balance);
+        if(result?.error||!Number.isInteger(next))return;
+        const pointsValue=document.getElementById('pointsValue');
+        if(pointsValue)pointsValue.textContent=next+' AP';
+      }catch(_){}
+    };
+
+    window.setInterval(refreshPointsBalance,10000);
+
     supabase
       .channel('ah-account-avopuntos-'+currentUser.id)
       .on('postgres_changes',{
@@ -149,8 +166,7 @@ loadAccount();
       })
       .subscribe();
   }catch(_){}
-})();
-</script>
+})();</script>
 
 <script>
 if ('serviceWorker' in navigator) {
