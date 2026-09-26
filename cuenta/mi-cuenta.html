@@ -81,7 +81,7 @@ async function loadAccount(){
     const user=session.user;
     const {data:profile,error:profileError}=await supabase
       .from('profiles')
-      .select('full_name,document_type,document_number,email,phone,whatsapp,created_at')
+      .select('username,full_name,document_type,document_number,email,phone,whatsapp,created_at')
       .eq('id',user.id)
       .single();
 
@@ -96,12 +96,13 @@ async function loadAccount(){
 
     content.innerHTML=
       '<div class="profile">'+
+        '<div class="item"><span>Nickname</span><span>'+escapeHtml(profile.username)+'</span></div>'+
         '<div class="item"><span>Correo</span><span>'+escapeHtml(profile.email)+'</span></div>'+
         '<div class="item"><span>Celular</span><span>'+escapeHtml(profile.phone)+'</span></div>'+
         '<div class="item"><span>WhatsApp</span><span>'+escapeHtml(profile.whatsapp)+'</span></div>'+
         '<div class="item"><span>Documento</span><span>'+escapeHtml(profile.document_type)+' · '+escapeHtml(profile.document_number)+'</span></div>'+
       '</div>'+
-      '<div class="points"><div class="points-label">Puntos AH</div><div class="points-value">0</div><div class="small" style="color:#aaa;font-size:11px;margin-top:5px">El saldo real se conectará cuando incorporemos el módulo de puntos.</div></div>';
+      '<div id="puntos" class="points"><div class="points-label">Puntos AH</div><div class="points-value">0</div><div class="small" style="color:#aaa;font-size:11px;margin-top:5px">El saldo real se conectará cuando incorporemos el módulo de puntos.</div></div>';
   }catch(error){
     content.innerHTML='<div class="loading">No fue posible cargar tu cuenta.</div>';
     showNotice('Ocurrió un problema al comprobar la sesión. '+(error?.message||'Inténtalo nuevamente.'));
