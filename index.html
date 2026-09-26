@@ -70,7 +70,7 @@ body::before{content:"";position:fixed;top:0;left:0;width:100%;height:100%;backg
 <body>
 
 <section class="hero">
-<div class="top-register"><a href="cuenta/ingresar.html">INGRESAR / REGISTRARSE</a></div>
+
 
 <img src="LogoPrincipal.png">
 <h1>AvoHouse Pub</h1>
@@ -97,6 +97,8 @@ body::before{content:"";position:fixed;top:0;left:0;width:100%;height:100%;backg
 </section>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
