@@ -381,52 +381,50 @@ Deno.serve(async (req: Request) => {
     body = {};
   }
 
-  try {
-    if (body?.mode === "pending") {
-    const now = new Date().toISOString();
+  if (body?.mode === "pending") {
+    try {
+      const now = new Date().toISOString();
 
-    const pending = await supabaseRequest(
-      "/rest/v1/loyverse_customers?select=profile_id&sync_status=in.(pending,error)&next_attempt_at=lte." +
-        encodeURIComponent(now) +
-        "&order=last_attempt_at.asc.nullsfirst&limit=" +
-        MAX_BATCH,
-      { method: "GET" },
-    );
+      const pending = await supabaseRequest(
+        "/rest/v1/loyverse_customers?select=profile_id&sync_status=in.(pending,error)&next_attempt_at=lte." +
+          encodeURIComponent(now) +
+          "&order=last_attempt_at.asc.nullsfirst&limit=" +
+          MAX_BATCH,
+        { method: "GET" },
+      );
 
-    const results: any[] = [];
+      const results: any[] = [];
 
-    for (const row of pending ?? []) {
-      try {
-        results.push(await syncCustomer(row.profile_id));
-      } catch (error) {
-        results.push({
-          profileId: row.profile_id,
-          synced: false,
-          error: cleanError(
-            error instanceof Error ? error.message : error,
-          ),
-        });
+      for (const row of pending ?? []) {
+        try {
+          results.push(await syncCustomer(row.profile_id));
+        } catch (error) {
+          results.push({
+            profileId: row.profile_id,
+            synced: false,
+            error: cleanError(
+              error instanceof Error ? error.message : error,
+            ),
+          });
+        }
       }
-    }
 
-    return json({
-      ok: true,
-      mode: "pending",
-      processed: results.length,
-      results,
-    });
-  }
-
+      return json({
+        ok: true,
+        mode: "pending",
+        processed: results.length,
+        results,
+      });
+    } catch (error) {
+      console.error(
+        "[loyverse-sync-customer]",
+        cleanError(error instanceof Error ? error.message : error),
+      );
+      return json(
+        { error: cleanError(error instanceof Error ? error.message : error) },
+        500,
+      );
     }
-  } catch (error) {
-    console.error(
-      "[loyverse-sync-customer]",
-      cleanError(error instanceof Error ? error.message : error),
-    );
-    return json(
-      { error: cleanError(error instanceof Error ? error.message : error) },
-      500,
-    );
   }
 
   const profileId =
