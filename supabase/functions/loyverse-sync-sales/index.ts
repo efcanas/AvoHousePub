@@ -348,7 +348,37 @@ async function fetchReceiptPage(
   return loyverseRequest(token, "/receipts?" + params.toString());
 }
 
-async function runSync() {
+async function triggerAvopuntosProcessing(webhookSecret: string) {
+  const response = await fetch(
+    SUPABASE_URL + "/functions/v1/avopuntos-process-receipts",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-avohouse-loyverse-webhook-secret": webhookSecret,
+      },
+      body: JSON.stringify({ mode: "process" }),
+    },
+  );
+
+  const responseText = await response.text();
+  let body: any = null;
+  try {
+    body = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    body = responseText;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Procesamiento de AvoPuntos falló (${response.status}): ${cleanError(body)}`,
+    );
+  }
+
+  return body;
+}
+
+async function runSync(webhookSecret: string) {
   const startedAt = new Date().toISOString();
   await saveState({
     last_run_at: startedAt,
@@ -421,6 +451,8 @@ async function runSync() {
         last_error: null,
       });
 
+      const avopuntos = await triggerAvopuntosProcessing(webhookSecret);
+
       return {
         mode: "sync",
         ok: true,
@@ -428,6 +460,7 @@ async function runSync() {
         processed,
         last_updated_at: maxUpdatedAt ?? state.last_updated_at ?? INITIAL_SYNC_AT,
         finished: true,
+        avopuntos,
       };
     }
 
@@ -463,12 +496,13 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Method not allowed" }, 405);
   }
 
+  const webhookSecret = req.headers.get("x-avohouse-loyverse-webhook-secret");
   if (!(await validateInternalSecret(req))) {
     return json({ error: "Unauthorized" }, 401);
   }
 
   try {
-    const result = await runSync();
+    const result = await runSync(webhookSecret!);
     return json(result);
   } catch (error) {
     const message = cleanError(error);
