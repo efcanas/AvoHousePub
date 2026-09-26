@@ -53,6 +53,12 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .requirement-status{font-size:12px;line-height:1.45;color:#aaa;text-align:center;margin:10px 6px 0;min-height:18px}
 .username-status{font-size:12px;line-height:1.45;color:#aaa;margin-top:6px}.username-status.ok{color:#bfe8c8}.username-status.bad{color:#ffb7b7}
 .requirement-status.ready{color:#ddd}
+.success-state{display:none;text-align:center}
+.success-state.show{display:block}
+.success-state p{color:#ddd;line-height:1.6;font-size:15px;margin:0 0 15px}
+.success-state .email{color:#fff;font-weight:700;word-break:break-word}
+.success-state .hint{font-size:13px;color:#aaa;margin-top:4px}
+.success-state .success-button{display:block;width:100%;margin-top:24px;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;text-align:center;text-decoration:none;background:#fff;color:#111;border:1px solid #fff}
 @media(max-width:480px){.card{padding:23px 19px}.row{grid-template-columns:1fr}.logo{width:105px}}
 </style>
 </head>
@@ -62,10 +68,19 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <a class="back" href="ingresar.html">← Volver a ingresar</a>
 <div class="card">
 <img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
-<div class="kicker">Puntos AH</div>
-<h1>Crear cuenta</h1>
-<p class="subtitle">Completa tus datos para crear tu cuenta de AvoHouse.</p>
+<div id="registerKicker" class="kicker">Puntos AH</div>
+<h1 id="registerTitle">Crear cuenta</h1>
+<p id="registerSubtitle" class="subtitle">Completa tus datos para crear tu cuenta de AvoHouse.</p>
 <div id="registerNotice" class="notice"></div>
+
+<div id="registerSuccess" class="success-state" aria-live="polite">
+  <p>Tu cuenta fue creada correctamente.</p>
+  <p>Te enviamos un correo de confirmación a:</p>
+  <p class="email" id="successEmail"></p>
+  <p>Busca el mensaje en tu <strong>bandeja de entrada</strong> para confirmar tu cuenta.</p>
+  <p class="hint">Si no lo encuentras, revisa también la carpeta de <strong>Spam / Correo no deseado</strong>. El correo puede llegar allí.</p>
+  <a class="success-button" href="ingresar.html">Ir a iniciar sesión</a>
+</div>
 
 <form id="registerForm" novalidate>
 <label class="field">Nombre completo *
@@ -320,19 +335,13 @@ registerForm.addEventListener('submit',async e=>{
     return;
   }
 
-  registerNotice.innerHTML='Cuenta creada correctamente.<br><br>Te enviamos un correo para confirmar tu dirección. Revisa también la carpeta de spam si no lo ves.<br><br><span id="redirectCountdown">Volviendo al inicio en 4 segundos…</span>';
-  registerNotice.classList.add('show');
-  registerBtn.disabled=true;
-  let seconds=4;
-  const redirectTimer=setInterval(()=>{
-    seconds--;
-    const countdown=document.getElementById('redirectCountdown');
-    if(countdown)countdown.textContent='Volviendo al inicio en '+seconds+' segundo'+(seconds===1?'':'s')+'…';
-    if(seconds<=0){
-      clearInterval(redirectTimer);
-      window.location.href='../index.html';
-    }
-  },1000);
+  document.getElementById('registerKicker').textContent='AVOHOUSE';
+  document.getElementById('registerTitle').textContent='Verifica tu correo';
+  document.getElementById('registerSubtitle').textContent='Un último paso antes de iniciar sesión.';
+  document.getElementById('successEmail').textContent=email;
+  registerForm.style.display='none';
+  registerNotice.classList.remove('show');
+  document.getElementById('registerSuccess').classList.add('show');
   }catch(error){
     registerNotice.textContent='No fue posible completar el registro. '+(error?.message||'Verifica tu conexión e inténtalo nuevamente.');
     registerNotice.classList.add('show');
