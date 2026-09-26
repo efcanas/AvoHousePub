@@ -138,7 +138,24 @@ async function init(){
   injectHeader(session,isAdmin,profile?.username,pointsBalance);
 
   if(session?.user && !isAdmin){
-    const pointsChannel=window.ahSupabase
+    const refreshPointsBalance=async function(){
+      try{
+        const result=await window.ahSupabase
+          .from('avopuntos_accounts')
+          .select('balance')
+          .eq('profile_id',session.user.id)
+          .maybeSingle();
+        const next=Number(result?.data?.balance);
+        if(result?.error||!Number.isInteger(next))return;
+        window.AHAuthState.pointsBalance=next;
+        const pointsLink=document.querySelector('.ah-global-points');
+        if(pointsLink)pointsLink.textContent=next+' AP';
+      }catch(_){}
+    };
+
+    window.setInterval(refreshPointsBalance,10000);
+
+    window.ahSupabase
       .channel('ah-avopuntos-'+session.user.id)
       .on('postgres_changes',{
         event:'UPDATE',
