@@ -96,6 +96,36 @@ async function validateSecret(req: Request) {
   }
 }
 
+async function syncPendingCustomerAccounts(webhookSecret: string) {
+  const accounts = await supabaseRpc("avopuntos_cuentas_pendientes_sync", {
+    p_limit: 25,
+  });
+
+  const results: any[] = [];
+
+  for (const account of accounts ?? []) {
+    try {
+      results.push(
+        await requestCustomerSync(
+          webhookSecret,
+          String(account.profile_id),
+        ),
+      );
+    } catch (error) {
+      results.push({
+        ok: false,
+        status: "sync_error",
+        profile_id: String(account.profile_id),
+        balance: Number(account.balance ?? 0),
+        last_loyverse_points: Number(account.last_loyverse_points ?? 0),
+        error: cleanError(error),
+      });
+    }
+  }
+
+  return results;
+}
+
 async function requestCustomerSync(webhookSecret: string, profileId: string) {
   const response = await fetch(
     SUPABASE_URL + "/functions/v1/loyverse-sync-customer",
@@ -203,15 +233,18 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const processed = await processPendingReceipts(
-      req.headers.get("x-avohouse-loyverse-webhook-secret")!,
-    );
+    const webhookSecret = req.headers.get("x-avohouse-loyverse-webhook-secret")!;
+    const processed = await processPendingReceipts(webhookSecret);
+    const pendingCustomerSync = await syncPendingCustomerAccounts(webhookSecret);
 
     return json({
       ok: true,
       receipts_processed: processed.results.length,
       receipts: processed.results,
-      customer_sync: processed.sync_results,
+      customer_sync: [
+        ...processed.sync_results,
+        ...pendingCustomerSync,
+      ],
     });
   } catch (error) {
     const message = cleanError(error);
