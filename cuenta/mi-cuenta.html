@@ -31,6 +31,7 @@ h1{text-align:center;font-size:28px;margin:8px 0}.subtitle{text-align:center;col
 .history-main{min-width:0;flex:1}
 .history-type{font-size:13px;font-weight:700}
 .history-meta{margin-top:3px;color:#999;font-size:11px;line-height:1.45}
+.history-balance{margin-top:4px;color:#777;font-size:10px}.history-balance strong{color:#aaa;font-weight:700}
 .history-points{text-align:right;font-size:14px;font-weight:800;white-space:nowrap}
 .history-points.positive{color:#b8f5b8}.history-points.negative{color:#ffb7b7}
 .history-note{margin-top:10px;color:#777;font-size:10px;text-align:center}
@@ -111,6 +112,7 @@ async function loadAccount(){
       .maybeSingle();
 
     const pointsBalance=Number.isInteger(pointsAccount?.balance)?pointsAccount.balance:0;
+    pointsAccountBalanceForHistory=pointsBalance;
     const name=profile?.full_name || user.user_metadata?.full_name || 'Usuario';
     document.getElementById('welcome').textContent='Hola, '+name+'.';
 
@@ -174,30 +176,36 @@ function movementMeta(movement){
   return meta;
 }
 
-function renderPointsHistory(movements){
+function renderPointsHistory(movements,currentBalance){
   const history=document.getElementById('pointsHistory');
   if(!history)return;
   if(!movements?.length){
     history.innerHTML='<div class="history-empty">Todavía no hay movimientos registrados.</div>';
     return;
   }
+
+  let balanceAfter=Number.isInteger(currentBalance)?currentBalance:0;
+
   history.innerHTML=movements.map(movement=>{
     const delta=Number(movement.points_delta);
     const positive=delta>0;
     const sign=positive?'+':'−';
     const value=Math.abs(delta);
+    const balanceAfterThis=balanceAfter;
+    balanceAfter -= delta;
+
     return '<div class="history-item">'+
       '<div class="history-sign '+(positive?'positive':'negative')+'>'+sign+'</div>'+
       '<div class="history-main">'+
         '<div class="history-type">'+movementLabel(movement.movement_type)+'</div>'+
         '<div class="history-meta">'+movementMeta(movement)+'</div>'+
+        '<div class="history-balance">Saldo después: <strong>'+balanceAfterThis+' AP</strong></div>'+
       '</div>'+
       '<div class="history-points '+(positive?'positive':'negative')+'">'+sign+value+' AP</div>'+
     '</div>';
   }).join('')+
   '<div class="history-note">Mostrando los últimos '+movements.length+' movimientos.</div>';
 }
-
 async function loadPointsHistory(userId){
   const history=document.getElementById('pointsHistory');
   if(!history)return;
@@ -212,7 +220,7 @@ async function loadPointsHistory(userId){
       history.innerHTML='<div class="history-empty">No fue posible cargar el historial en este momento.</div>';
       return;
     }
-    renderPointsHistory(data||[]);
+    renderPointsHistory(data||[], pointsAccountBalanceForHistory);
   }catch(_){
     history.innerHTML='<div class="history-empty">No fue posible cargar el historial en este momento.</div>';
   }
