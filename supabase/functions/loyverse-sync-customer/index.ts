@@ -1,27 +1,46 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
-
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SERVICE_KEY =
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-  (() => {
+
+type SupabaseAuth = {
+  key: string;
+  isNewSecret: boolean;
+};
+
+function getSupabaseAuth(): SupabaseAuth | null {
+  const rawSecretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
+
+  if (rawSecretKeys) {
     try {
-      const keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
-      return keys?.default ?? null;
+      const keys = JSON.parse(rawSecretKeys);
+      const defaultKey =
+        typeof keys?.default === "string" ? keys.default.trim() : "";
+
+      if (defaultKey) {
+        return {
+          key: defaultKey,
+          isNewSecret: defaultKey.startsWith("sb_secret_"),
+        };
+      }
     } catch {
-      return null;
+      // Fall through to the legacy service_role key.
     }
-  })();
+  }
 
-const LOYVERSE_BASE_URL = "https://api.loyverse.com/v1.0";
-const MAX_BATCH = 25;
+  const legacyKey =
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ?? "";
 
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  throw new Error("Missing Supabase service credentials");
+  if (legacyKey) {
+    return {
+      key: legacyKey,
+      isNewSecret: false,
+    };
+  }
+
+  return null;
 }
 
-const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+const SUPABASE_AUTH = getSupabaseAuth();
+const LOYVERSE_BASE_URL = "https://api.loyverse.com/v1.0";
+const MAX_BATCH = 25;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -35,24 +54,79 @@ function cleanError(value: unknown): string {
   return text.slice(0, 1000);
 }
 
+async function supabaseRequest(
+  path: string,
+  init: RequestInit = {},
+): Promise<any> {
+  if (!SUPABASE_URL || !SUPABASE_AUTH) {
+    throw new Error(
+      "Faltan las credenciales internas de Supabase para la Edge Function.",
+    );
+  }
+
+  const headers = new Headers(init.headers);
+  headers.set("apikey", SUPABASE_AUTH.key);
+  headers.set("Content-Type", "application/json");
+
+  if (!SUPABASE_AUTH.isNewSecret) {
+    headers.set("Authorization", "Bearer " + SUPABASE_AUTH.key);
+  }
+
+  const response = await fetch(SUPABASE_URL + path, {
+    ...init,
+    headers,
+  });
+
+  const responseText = await response.text();
+  let body: any = null;
+
+  if (responseText) {
+    try {
+      body = JSON.parse(responseText);
+    } catch {
+      body = responseText;
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      "Supabase respondió " + response.status + ": " + cleanError(body),
+    );
+  }
+
+  return body;
+}
+
+async function supabaseRpc(
+  functionName: string,
+  args: Record<string, unknown>,
+): Promise<any> {
+  return supabaseRequest(
+    "/rest/v1/rpc/" + encodeURIComponent(functionName),
+    {
+      method: "POST",
+      body: JSON.stringify(args),
+    },
+  );
+}
+
 async function validateWebhookSecret(req: Request): Promise<boolean> {
   const supplied = req.headers.get("x-avohouse-loyverse-webhook-secret");
   if (!supplied) return false;
 
-  const { data, error } = await admin.rpc(
-    "avohouse_validate_loyverse_webhook",
-    { p_secret: supplied },
-  );
-
-  return !error && data === true;
+  try {
+    const data = await supabaseRpc(
+      "avohouse_validate_loyverse_webhook",
+      { p_secret: supplied },
+    );
+    return data === true;
+  } catch {
+    return false;
+  }
 }
 
 async function getLoyverseToken(): Promise<string> {
-  const { data, error } = await admin.rpc("avohouse_get_loyverse_api_token");
-  if (error) {
-    throw new Error("No se pudo leer el token de Loyverse: " + error.message);
-  }
-
+  const data = await supabaseRpc("avohouse_get_loyverse_api_token", {});
   const token = typeof data === "string" ? data.trim() : "";
   if (!token) {
     throw new Error(
@@ -128,43 +202,43 @@ async function saveState(
   profileId: string,
   patch: Record<string, unknown>,
 ) {
-  const { error } = await admin
-    .from("loyverse_customers")
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("profile_id", profileId);
-
-  if (error) {
-    throw new Error("No se pudo actualizar el estado: " + error.message);
-  }
+  await supabaseRequest(
+    "/rest/v1/loyverse_customers?profile_id=eq." +
+      encodeURIComponent(profileId),
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        ...patch,
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
 }
 
 async function syncCustomer(profileId: string) {
-  const { data: profile, error: profileError } = await admin
-    .from("profiles")
-    .select("id,full_name,username,email,phone")
-    .eq("id", profileId)
-    .single();
+  const profiles = await supabaseRequest(
+    "/rest/v1/profiles?select=id,full_name,username,email,phone&id=eq." +
+      encodeURIComponent(profileId),
+    { method: "GET" },
+  );
 
-  if (profileError || !profile) {
-    throw new Error(
-      "No se encontró el perfil AvoHouse: " +
-        (profileError?.message ?? "sin datos"),
-    );
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+
+  if (!profile) {
+    throw new Error("No se encontró el perfil AvoHouse.");
   }
 
-  const { data: link, error: linkError } = await admin
-    .from("loyverse_customers")
-    .select(
-      "profile_id,loyverse_customer_id,sync_status,attempts,last_attempt_at",
-    )
-    .eq("profile_id", profileId)
-    .single();
+  const links = await supabaseRequest(
+    "/rest/v1/loyverse_customers?select=profile_id,loyverse_customer_id,sync_status,attempts,last_attempt_at&profile_id=eq." +
+      encodeURIComponent(profileId),
+    { method: "GET" },
+  );
 
-  if (linkError || !link) {
-    throw new Error(
-      "No se encontró el registro de integración: " +
-        (linkError?.message ?? "sin datos"),
-    );
+  const link = Array.isArray(links) ? links[0] : null;
+
+  if (!link) {
+    throw new Error("No se encontró el registro de integración.");
   }
 
   if (
