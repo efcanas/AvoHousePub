@@ -114,6 +114,10 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <input name="telefono" inputmode="tel" autocomplete="tel" required>
 </label>
 
+<label class="field">Fecha de nacimiento *
+<input id="birthDate" name="fecha_nacimiento" type="date" autocomplete="bday" required>
+</label>
+
 <label class="field">¿Este número también corresponde a tu WhatsApp? *
 <span class="radio-group">
 <label class="radio-option"><input type="radio" name="wa_mismo" value="si" required> Sí</label>
@@ -137,10 +141,6 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <input id="regPasswordConfirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
 <button class="toggle-password" type="button" data-target="regPasswordConfirm" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
-
-<div class="consent">
-<label class="check"><input type="checkbox" name="mayor_18" required><span>Declaro que soy mayor de 18 años.</span></label>
-</div>
 
 <div class="legal-box">
 <div class="legal-heading"><div class="legal-icon">✓</div><h2>Términos y condiciones</h2></div>
@@ -172,6 +172,7 @@ const waWrap=document.getElementById('waWrap');
 const waInput=document.getElementById('whatsapp');
 const registerNotice=document.getElementById('registerNotice');
 const usernameInput=document.getElementById('username');
+const birthDateInput=document.getElementById('birthDate');
 const usernameStatus=document.getElementById('usernameStatus');
 let nicknameAvailable=false;
 let nicknameTimer=null;
@@ -181,17 +182,46 @@ function waChoice(){
   const selected=registerForm.querySelector('input[name="wa_mismo"]:checked');
   return selected?selected.value:'';
 }
+function todayIso(){
+  const d=new Date();
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function maxBirthDateIso(){
+  const d=new Date();
+  d.setFullYear(d.getFullYear()-18);
+  return todayIsoFromDate(d);
+}
+function todayIsoFromDate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function isAdultFromBirthDate(value){
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;
+  const [y,m,d]=value.split('-').map(Number);
+  const birth=new Date(y,m-1,d);
+  if(Number.isNaN(birth.getTime())||birth.getFullYear()!==y||birth.getMonth()!==m-1||birth.getDate()!==d)return false;
+  const today=new Date();
+  let age=today.getFullYear()-y;
+  const birthdayPassed=(today.getMonth()+1>m)||(today.getMonth()+1===m&&today.getDate()>=d);
+  if(!birthdayPassed)age--;
+  return age>=18;
+}
 function passwordChecks(){
   const p=field('password').value;
   return {length:p.length>=8,upper:/[A-ZÁÉÍÓÚÜÑ]/.test(p),lower:/[a-záéíóúüñ]/.test(p),number:/\d/.test(p),match:p.length>0&&p===field('password_confirm').value};
 }
 function getMissing(){
   const missing=[];
-  [['nombre','nombre completo'],['tipo_documento','tipo de documento'],['documento','número de documento'],['correo','correo electrónico'],['telefono','número de celular'],['username','nickname']].forEach(([n,l])=>{if(!field(n).value.trim())missing.push(l)});
+  [['nombre','nombre completo'],['tipo_documento','tipo de documento'],['documento','número de documento'],['correo','correo electrónico'],['telefono','número de celular'],['username','nickname'],['fecha_nacimiento','fecha de nacimiento']].forEach(([n,l])=>{if(!field(n).value.trim())missing.push(l)});
   const nick=field('username').value.trim();
   if(nick && !/^[A-Za-z0-9_]{3,20}$/.test(nick))missing.push('un nickname válido');
   else if(nick && !nicknameAvailable)missing.push('un nickname disponible');
   if(field('correo').value.trim()&&!field('correo').checkValidity())missing.push('un correo electrónico válido');
+  const birthDate=field('fecha_nacimiento').value;
+  if(birthDate){
+    if(!/^^\\d{4}-\\d{2}-\\d{2}$/.test(birthDate))missing.push('una fecha de nacimiento válida');
+    else if(!isAdultFromBirthDate(birthDate))missing.push('tener al menos 18 años');
+  }
   const wa=waChoice();
   if(!wa)missing.push('seleccionar si el celular también es WhatsApp');
   if(wa==='no'&&!waInput.value.trim())missing.push('número de WhatsApp');
@@ -199,7 +229,6 @@ function getMissing(){
   if(!p.length)missing.push('una contraseña de mínimo 8 caracteres');
   else{if(!p.upper)missing.push('una mayúscula en la contraseña');if(!p.lower)missing.push('una minúscula en la contraseña');if(!p.number)missing.push('un número en la contraseña')}
   if(field('password_confirm').value&&!p.match)missing.push('que las contraseñas coincidan');
-  if(!field('mayor_18').checked)missing.push('aceptar mayoría de edad');
   if(!field('terminos').checked)missing.push('aceptar los Términos y Condiciones');
   return missing;
 }
@@ -308,7 +337,7 @@ registerForm.addEventListener('submit',async e=>{
         phone,
         whatsapp,
         whatsapp_same:same,
-        age_confirmed:true,
+        birth_date:field('fecha_nacimiento').value,
         terms_accepted:true,
         data_authorized:true,
         marketing_authorized:marketing,
@@ -348,6 +377,7 @@ registerForm.addEventListener('submit',async e=>{
     registerBtn.disabled=false;
   }
 });
+birthDateInput.max=maxBirthDateIso();
 updateRegisterButton();
 </script>
 <script>
