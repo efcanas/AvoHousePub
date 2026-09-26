@@ -147,10 +147,6 @@ async function loadAccount(){
 
     if(pointsError)showNotice('No fue posible cargar el saldo de AvoPuntos en este momento.');
     await loadPointsHistory(user.id);
-    if(window.location.hash==='#puntos'){
-      const pointsSection=document.getElementById('puntos');
-      if(pointsSection)window.setTimeout(()=>pointsSection.scrollIntoView({behavior:'smooth',block:'center'}),50);
-    }
     return user.id;
   }catch(error){
     content.innerHTML='<div class="loading">No fue posible cargar tu cuenta.</div>';
