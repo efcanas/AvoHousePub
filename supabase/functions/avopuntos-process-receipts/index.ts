@@ -96,7 +96,37 @@ async function validateSecret(req: Request) {
   }
 }
 
-async function processPendingReceipts() {
+async function requestCustomerSync(webhookSecret: string, profileId: string) {
+  const response = await fetch(
+    SUPABASE_URL + "/functions/v1/loyverse-sync-customer",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-avohouse-loyverse-webhook-secret": webhookSecret,
+      },
+      body: JSON.stringify({ user_id: profileId }),
+    },
+  );
+
+  const responseText = await response.text();
+  let body: any = null;
+  try {
+    body = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    body = responseText;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Sincronización de cliente falló (${response.status}): ${cleanError(body)}`,
+    );
+  }
+
+  return body;
+}
+
+async function processPendingReceipts(webhookSecret: string) {
   const rows = await supabaseRequest(
     "/rest/v1/loyverse_receipts?select=receipt_number,profile_id,avopuntos_status,updated_at&profile_id=not.is.null&avopuntos_status=eq.pending&order=updated_at.asc&limit=" +
       MAX_RECEIPTS,
@@ -138,7 +168,29 @@ async function processPendingReceipts() {
     }
   }
 
-  return results;
+  const profileIds = [
+    ...new Set(
+      results
+        .filter((result) => result?.ok && result?.profile_id)
+        .map((result) => String(result.profile_id)),
+    ),
+  ];
+
+  const sync_results: any[] = [];
+  for (const profileId of profileIds) {
+    try {
+      sync_results.push(await requestCustomerSync(webhookSecret, profileId));
+    } catch (error) {
+      sync_results.push({
+        ok: false,
+        status: "sync_error",
+        profile_id: profileId,
+        error: cleanError(error),
+      });
+    }
+  }
+
+  return { results, sync_results };
 }
 
 Deno.serve(async (req: Request) => {
@@ -151,12 +203,15 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const receipts = await processPendingReceipts();
+    const processed = await processPendingReceipts(
+      req.headers.get("x-avohouse-loyverse-webhook-secret")!,
+    );
 
     return json({
       ok: true,
-      receipts_processed: receipts.length,
-      receipts,
+      receipts_processed: processed.results.length,
+      receipts: processed.results,
+      customer_sync: processed.sync_results,
     });
   } catch (error) {
     const message = cleanError(error);
