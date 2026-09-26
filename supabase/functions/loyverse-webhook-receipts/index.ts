@@ -219,7 +219,7 @@ async function processWebhookReceipts(receiptNumbers: string[], webhookSecret: s
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-avohouse-loyverse-webhook-secret": supplied,
+            "x-avohouse-loyverse-webhook-secret": webhookSecret,
           },
           body: JSON.stringify({ user_id: profileId }),
         },
