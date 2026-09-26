@@ -3,10 +3,11 @@
 
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
-const HOME_PATH='/index.html';
-const AHTV_PATH='/ahtv/index.html';
-const LOGIN_PATH='/cuenta/ingresar.html';
-const REGISTER_PATH='/cuenta/registro.html';
+const SITE_ROOT=new URL('.',document.currentScript?.src||new URL('./app.js',window.location.href)).pathname;
+const HOME_PATH=SITE_ROOT+'index.html';
+const AHTV_PATH=SITE_ROOT+'ahtv/index.html';
+const LOGIN_PATH=SITE_ROOT+'cuenta/ingresar.html';
+const REGISTER_PATH=SITE_ROOT+'cuenta/registro.html';
 
 function isAhtvPage(){return location.pathname===AHTV_PATH||location.pathname==='/ahtv/';}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
