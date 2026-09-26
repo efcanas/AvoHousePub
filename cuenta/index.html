@@ -396,5 +396,11 @@ if(new URLSearchParams(window.location.search).get('recovery')==='1'){
 
 updateRegisterButton();
 </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('../sw.js').catch(() => {}));
+}
+</script>
 </body>
 </html>
