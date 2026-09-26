@@ -69,11 +69,19 @@ button,a.btn{flex:1;text-align:center;text-decoration:none;border-radius:11px;pa
 <script>
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
-const {createClient}=window.supabase;
-const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const content=document.getElementById('content');
 const notice=document.getElementById('notice');
 let pointsAccountBalanceForHistory=0;
+let supabase=null;
+
+function initializeSupabase(){
+  if(supabase)return true;
+  if(!window.supabase?.createClient)return false;
+  supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+  return true;
+}
 
 function showNotice(message){
   notice.textContent=message;
@@ -139,6 +147,10 @@ async function loadAccount(){
 
     if(pointsError)showNotice('No fue posible cargar el saldo de AvoPuntos en este momento.');
     await loadPointsHistory(user.id);
+    if(window.location.hash==='#puntos'){
+      const pointsSection=document.getElementById('puntos');
+      if(pointsSection)window.setTimeout(()=>pointsSection.scrollIntoView({behavior:'smooth',block:'center'}),50);
+    }
   }catch(error){
     content.innerHTML='<div class="loading">No fue posible cargar tu cuenta.</div>';
     showNotice('Ocurrió un problema al comprobar la sesión. '+(error?.message||'Inténtalo nuevamente.'));
@@ -238,10 +250,20 @@ document.getElementById('logoutBtn').addEventListener('click',async()=>{
   window.location.href='ingresar.html';
 });
 
-loadAccount();
+async function startAccountPage(){
+  if(!initializeSupabase()){
+    content.innerHTML='<div class="loading">No fue posible cargar el servicio de cuenta.</div>';
+    showNotice('El servicio de cuenta no terminó de cargar. Recarga la página e inténtalo nuevamente.');
+    return;
+  }
+  await loadAccount();
+}
+
+startAccountPage();
 
 (async function subscribePoints(){
   try{
+    if(!initializeSupabase())return;
     const sessionResult=await supabase.auth.getSession();
     const currentUser=sessionResult?.data?.session?.user;
     if(!currentUser)return;
