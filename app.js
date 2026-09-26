@@ -60,7 +60,7 @@ function createMusicModal(){
 }
 function showMusicModal(){createMusicModal().hidden=false;}
 
-function injectHeader(session,isAdmin,username){
+function injectHeader(session,isAdmin,username,pointsBalance){
   const old=document.getElementById('ahGlobalHeader');
   if(old)old.remove();
   const header=document.createElement('nav');
@@ -89,7 +89,8 @@ function injectHeader(session,isAdmin,username){
 
     const dropdown=document.createElement('div');
     dropdown.className='ah-global-dropdown';
-    dropdown.innerHTML='<a href="/cuenta/mi-cuenta.html#puntos">Puntos AH</a><button type="button" id="ahLogoutButton">Cerrar sesión</button>';
+    const pointsText=Number.isInteger(pointsBalance)?pointsBalance+' AP':'— AP';
+    dropdown.innerHTML='<a class="ah-global-points" href="/cuenta/mi-cuenta.html#puntos">'+pointsText+'</a><button type="button" id="ahLogoutButton">Cerrar sesión</button>';
 
     button.addEventListener('click',function(e){e.stopPropagation();const open=!dropdown.classList.contains('show');dropdown.classList.toggle('show',open);button.classList.toggle('open',open);});
     dropdown.addEventListener('click',function(e){e.stopPropagation();});
@@ -113,6 +114,7 @@ async function init(){
 
   let isAdmin=false;
   let profile=null;
+  let pointsBalance=null;
 
   if(session?.user){
     try{
@@ -125,11 +127,33 @@ async function init(){
         const profileResult=await window.ahSupabase.from('profiles').select('username,full_name').eq('id',session.user.id).maybeSingle();
         profile=profileResult.data||null;
       }catch(e){console.error(e);}
+      try{
+        const pointsResult=await window.ahSupabase.from('avopuntos_accounts').select('balance').eq('profile_id',session.user.id).maybeSingle();
+        if(!pointsResult.error && Number.isInteger(pointsResult.data?.balance)) pointsBalance=pointsResult.data.balance;
+      }catch(e){console.error(e);}
     }
   }
 
-  window.AHAuthState={session:session,isAdmin:isAdmin,profile:profile};
-  injectHeader(session,isAdmin,profile?.username);
+  window.AHAuthState={session:session,isAdmin:isAdmin,profile:profile,pointsBalance:pointsBalance};
+  injectHeader(session,isAdmin,profile?.username,pointsBalance);
+
+  if(session?.user && !isAdmin){
+    const pointsChannel=window.ahSupabase
+      .channel('ah-avopuntos-'+session.user.id)
+      .on('postgres_changes',{
+        event:'UPDATE',
+        schema:'public',
+        table:'avopuntos_accounts',
+        filter:'profile_id=eq.'+session.user.id
+      },function(payload){
+        const next=Number(payload?.new?.balance);
+        if(!Number.isInteger(next))return;
+        window.AHAuthState.pointsBalance=next;
+        const pointsLink=document.querySelector('.ah-global-points');
+        if(pointsLink)pointsLink.textContent=next+' AP';
+      })
+      .subscribe();
+  }
 
   if(isAhtvPage()&&isAdmin){location.replace('/ahtv/admin/index.html');return;}
   if(isAhtvPage()&&!session){location.replace('/index.html?music=1');return;}
