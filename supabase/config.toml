@@ -1,0 +1,4 @@
+project_id = "tjarildqqxtjmafpiyuz"
+
+[functions.loyverse-sync-customer]
+verify_jwt = false
