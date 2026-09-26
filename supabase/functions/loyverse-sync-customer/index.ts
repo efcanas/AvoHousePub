@@ -2,14 +2,15 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_KEY =
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
   (() => {
     try {
       const keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
       return keys?.default ?? null;
     } catch {
-      return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? null;
+      return null;
     }
-  })() ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  })();
 
 const LOYVERSE_BASE_URL = "https://api.loyverse.com/v1.0";
 const MAX_BATCH = 25;
