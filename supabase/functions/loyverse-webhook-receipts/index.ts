@@ -219,24 +219,27 @@ async function processWebhookReceipts(receiptNumbers: string[]) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-avohouse-loyverse-webhook-secret":
-              (await supabaseRequest(
-                "/rest/v1/rpc/avohouse_validate_loyverse_webhook",
-                {
-                  method: "POST",
-                  body: JSON.stringify({ p_secret: "invalid" }),
-                },
-              ).catch(() => null)) as any,
+            "x-avohouse-loyverse-webhook-secret": supplied,
           },
+          body: JSON.stringify({ user_id: profileId }),
         },
       );
-      // The customer sync is also run by its own cron; do not depend on this call.
-      // This endpoint intentionally ignores its response.
-      syncResults.push({ profile_id: profileId, requested: response.ok });
+
+      const responseText = await response.text();
+      let body: any = null;
+      try { body = responseText ? JSON.parse(responseText) : null; } catch { body = responseText; }
+
+      if (!response.ok) {
+        throw new Error(
+          `Sincronización de saldo Loyverse falló (${response.status}): ${cleanError(body)}`,
+        );
+      }
+
+      syncResults.push({ profile_id: profileId, synced: true });
     } catch (error) {
       syncResults.push({
         profile_id: profileId,
-        requested: false,
+        synced: false,
         error: cleanError(error),
       });
     }
