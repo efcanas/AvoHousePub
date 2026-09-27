@@ -231,7 +231,14 @@ button:disabled{opacity:.45;cursor:default}
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const { createClient } = supabase;
-const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+// Misma configuración de sesión que AHtv. La sesión queda persistida en el mismo origen.
+const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+  auth:{
+    persistSession:true,
+    autoRefreshToken:true,
+    detectSessionInUrl:true
+  }
+});
 
 let session=null;
 let selectedProfile=null;
@@ -575,31 +582,81 @@ async function openReceipt(receiptNumber){
     '</div>';
 }
 
+async function checkCurrentUserAdmin(){
+  const {data:userData,error:userError}=await db.auth.getUser();
+  if(userError) return {isAdmin:false,user:null,error:userError};
+  const user=userData?.user;
+  if(!user) return {isAdmin:false,user:null,error:null};
+
+  const {data:admin,error:adminError}=await db
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id',user.id)
+    .maybeSingle();
+
+  if(adminError) return {isAdmin:false,user,error:adminError};
+  return {isAdmin:!!admin,user,error:null};
+}
+
 async function isCurrentUserAdmin(){
-  const {data}=await db.auth.getUser();
-  const userId=data?.user?.id;
-  if(!userId)return false;
-  const {data:admin,error}=await db.from('admin_users').select('user_id').eq('user_id',userId).maybeSingle();
-  return !error&&!!admin;
+  const result=await checkCurrentUserAdmin();
+  return result.isAdmin;
+}
+
+async function enterWithExistingSession(){
+  const {data,error}=await db.auth.getSession();
+  if(error){
+    $('loginStatus').className='status error';
+    $('loginStatus').textContent='No se pudo recuperar la sesión: '+error.message;
+    showLogin();
+    return false;
+  }
+
+  if(!data?.session){
+    showLogin();
+    return false;
+  }
+
+  const check=await checkCurrentUserAdmin();
+  if(check.error){
+    $('loginStatus').className='status error';
+    $('loginStatus').textContent='No se pudo verificar el acceso administrativo: '+check.error.message;
+    showLogin();
+    return false;
+  }
+
+  if(!check.isAdmin){
+    $('loginStatus').className='status error';
+    $('loginStatus').textContent='La sesión activa ('+(check.user?.email||'correo no disponible')+') no está autorizada para el Centro de Control.';
+    showLogin();
+    return false;
+  }
+
+  session=data.session;
+  $('loginStatus').textContent='';
+  showAdmin();
+  return true;
 }
 
 async function login(){
   $('loginBtn').disabled=true;
   $('loginStatus').className='status';
   $('loginStatus').textContent='Iniciando sesión…';
-  const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+
+  const {error}=await db.auth.signInWithPassword({
+    email:$('email').value.trim(),
+    password:$('password').value
+  });
+
   $('loginBtn').disabled=false;
-  if(error){$('loginStatus').textContent=error.message;return}
-  if(!(await isCurrentUserAdmin())){
-    await db.auth.signOut();
+
+  if(error){
     $('loginStatus').className='status error';
-    $('loginStatus').textContent='Esta cuenta no tiene acceso al Centro de Control.';
-    showLogin();
+    $('loginStatus').textContent=error.message;
     return;
   }
-  session=(await db.auth.getSession()).data.session;
-  $('loginStatus').textContent='';
-  showAdmin();
+
+  await enterWithExistingSession();
 }
 
 async function logout(){
@@ -626,15 +683,20 @@ $('receiptModal').addEventListener('click',e=>{if(e.target===$('receiptModal'))$
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('receiptModal').hidden=true});
 
 async function init(){
-  const {data}=await db.auth.getSession();
-  if(data?.session && await isCurrentUserAdmin()){
-    session=data.session;showAdmin();
-  }else{
-    if(data?.session)await db.auth.signOut();
-    showLogin();
-  }
+  await enterWithExistingSession();
 }
 init();
+
+db.auth.onAuthStateChange((_event, nextSession)=>{
+  if(nextSession){
+    session=nextSession;
+    enterWithExistingSession();
+  }else{
+    session=null;
+    selectedProfile=null;
+    showLogin();
+  }
+});
 </script>
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../../sw.js').catch(()=>{}))}
