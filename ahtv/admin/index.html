@@ -444,7 +444,11 @@
     <h2>Acceso</h2>
     <input id="email" type="email" placeholder="Correo" autocomplete="username">
     <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
-    <button id="loginBtn" class="primary">ENTRAR</button>
+    <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0 10px;font-size:13px;color:#aaa">
+      <input id="rememberEmail" type="checkbox" style="width:auto;margin:0">
+      Recordar mi correo en este dispositivo
+    </label>
+    <button id="loginBtn" class="primary" type="button">ENTRAR</button>
     <div id="loginStatus" class="muted"></div>
   </section>
 
@@ -520,6 +524,7 @@
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      storage: window.localStorage,
       storageKey: "sb-tjarildqqxtjmafpiyuz-auth-token"
     }
   });
@@ -562,6 +567,35 @@
   let liveNeedsRequests = false;
   let liveNeedsNowPlaying = false;
   let liveNeedsMode = false;
+
+  function restoreAdminEmail() {
+    try {
+      const email = localStorage.getItem("ah_admin_login_email");
+      if (email) {
+        emailEl.value = email;
+        document.getElementById("rememberEmail").checked = true;
+      }
+    } catch (_) {}
+  }
+
+  function rememberAdminEmail() {
+    try {
+      const remember = document.getElementById("rememberEmail").checked;
+      const email = emailEl.value.trim().toLowerCase();
+      if (remember && email) localStorage.setItem("ah_admin_login_email", email);
+      else localStorage.removeItem("ah_admin_login_email");
+    } catch (_) {}
+  }
+
+  function safeReturnTo(value) {
+    try {
+      const url = new URL(value, window.location.origin);
+      if (url.origin !== window.location.origin) return null;
+      return url.pathname + url.search + url.hash;
+    } catch (_) {
+      return null;
+    }
+  }
 
   function showError(el, message) {
     el.textContent = message;
@@ -627,6 +661,7 @@
     }
 
     loginStatus.textContent = "";
+    rememberAdminEmail();
     if (!(await isCurrentUserAdmin())) {
       await db.auth.signOut();
       showLogin();
@@ -634,6 +669,12 @@
       return;
     }
     showAdmin();
+    const returnTo=new URLSearchParams(window.location.search).get("returnTo");
+    const destination=returnTo?safeReturnTo(returnTo):null;
+    if(destination){
+      window.location.href=destination;
+      return;
+    }
     await loadRequestMode();
     await loadNowPlaying();
     await loadRequests();
@@ -1307,6 +1348,7 @@
   }
 
   async function init() {
+    restoreAdminEmail();
     const { data } = await db.auth.getSession();
 
     if (data.session) {
@@ -1317,6 +1359,12 @@
         return;
       }
       showAdmin();
+      const returnTo=new URLSearchParams(window.location.search).get("returnTo");
+      const destination=returnTo?safeReturnTo(returnTo):null;
+      if(destination){
+        window.location.href=destination;
+        return;
+      }
       await loadRequestMode();
       await loadNowPlaying();
       await loadRequests();
@@ -1326,7 +1374,8 @@
     }
   }
 
-  loginBtn.addEventListener("click", login);
+  loginBtn.addEventListener("click", () => login());
+
   refreshBtn.addEventListener("click", async () => {
     await loadNowPlaying();
     await loadRequests();
@@ -1336,7 +1385,10 @@
   requestsEnabledBtn.addEventListener("click", toggleRequestsEnabled);
 
   passwordEl.addEventListener("keydown", e => {
-    if (e.key === "Enter") login();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      login();
+    }
   });
 
   init();
