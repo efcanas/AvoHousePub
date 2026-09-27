@@ -47,6 +47,17 @@ h1{text-align:center;font-size:30px;margin:8px 0 7px}
 .info{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08);min-width:0}
 .info-label{display:block;color:#999;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
 .info-value{display:block;font-size:14px;word-break:break-word}
+
+.customer-events{display:flex;flex-direction:column;gap:0}
+.customer-event{padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
+.customer-event:first-child{border-top:0;padding-top:0}
+.customer-event:last-child{padding-bottom:0}
+.customer-event-title{font-size:14px;font-weight:800;margin-bottom:5px}
+.customer-event-description{font-size:13px;color:#c7c7c7;line-height:1.45}
+.customer-event-date{font-size:11px;color:#8f8f8f;margin-top:6px}
+.customer-event-type{display:inline-block;margin-top:7px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.customer-event.empty{color:#999;font-size:13px;padding:4px 0}
+
 .points-panel{display:flex;flex-direction:column;justify-content:center;min-height:100%;text-align:center}
 .points-kicker{color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:2.5px}
 .points-value{font-size:48px;line-height:1;font-weight:800;margin:13px 0 8px}
@@ -153,6 +164,19 @@ h1{text-align:center;font-size:30px;margin:8px 0 7px}
   </div>
 </section>
 
+<section class="panel full">
+  <div class="panel-heading">
+    <div>
+      <h2 class="panel-title">Actividad de tu cuenta</h2>
+      <div id="activitySummary" class="history-summary">Cargando actividad…</div>
+    </div>
+    <span class="panel-tag">Recientes</span>
+  </div>
+  <div id="customerActivity" class="customer-events">
+    <div class="customer-event empty">Cargando actividad…</div>
+  </div>
+</section>
+
 <section id="puntos" class="panel points-panel">
   <div class="points-kicker">AvoPuntos</div>
   <div id="pointsValue" class="points-value">— AP</div>
@@ -211,6 +235,7 @@ const AUTH_STORAGE_KEY='sb-tjarildqqxtjmafpiyuz-auth-token';
 let session=null;
 let pointsBalance=0;
 let historyMode='recent';
+let activityLoadedAt=null;
 
 const $=id=>document.getElementById(id);
 
@@ -243,6 +268,46 @@ function formatMoney(value){
   const n=Number(value);
   return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
 }
+
+function activityEventLabel(type){
+  return ({
+    purchase:'Compra',
+    purchase_cancelled:'Cancelación de compra',
+    refund:'Reembolso',
+    refund_cancelled:'Cancelación de reembolso'
+  })[type]||'Actividad';
+}
+async function loadCustomerActivity(){
+  if(!session?.access_token||!session?.user?.id)return;
+  try{
+    const events=await restGet(
+      '/rest/v1/customer_activity_events?select=event_type,receipt_number,related_receipt_number,title,description,amount,points_delta,points_balance,event_at&profile_id=eq.'+
+      encodeURIComponent(session.user.id)+'&order=event_at.desc&limit=20',
+      session.access_token
+    );
+    const list=Array.isArray(events)?events:[];
+    const el=$('customerActivity');
+    if(!list.length){
+      el.innerHTML='<div class="customer-event empty">Todavía no hay actividad registrada.</div>';
+      $('activitySummary').textContent='Sin actividad registrada';
+      return;
+    }
+    el.innerHTML=list.map(item=>{
+      return '<div class="customer-event">'+
+        '<div class="customer-event-title">'+escapeHtml(item.title||'Actividad')+'</div>'+
+        '<div class="customer-event-description">'+escapeHtml(item.description||'')+'</div>'+
+        '<div class="customer-event-type">'+escapeHtml(activityEventLabel(item.event_type))+'</div>'+
+        '<div class="customer-event-date">'+escapeHtml(formatDate(item.event_at,true))+'</div>'+
+      '</div>';
+    }).join('');
+    $('activitySummary').textContent='Últimos '+list.length+' eventos';
+    activityLoadedAt=new Date();
+  }catch(error){
+    $('customerActivity').innerHTML='<div class="customer-event empty">No fue posible cargar la actividad en este momento.</div>';
+    $('activitySummary').textContent='No fue posible cargar la actividad';
+  }
+}
+
 function movementLabel(type){
   return ({
     opening_balance:'Saldo inicial',
@@ -581,6 +646,7 @@ async function loadAccount(){
     if(account?.length===0){}
     populateHistoryFilters();
     await loadHistoryRecent();
+    await loadCustomerActivity();
     setStatus('');
   }catch(error){
     setStatus('No fue posible cargar la información.');
@@ -620,6 +686,7 @@ loadAccount();
 
 window.setInterval(async()=>{
   if(!session?.user?.id)return;
+  if(!activityLoadedAt||Date.now()-activityLoadedAt.getTime()>10000){await loadCustomerActivity();}
   try{
     const account=await restGet('/rest/v1/avopuntos_accounts?select=balance&profile_id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',session.access_token);
     const next=Number(Array.isArray(account)?account[0]?.balance:NaN);
