@@ -435,7 +435,7 @@
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
       <a href="../index.html" class="home-button">← AHtv</a>
-      <a href="../../cuenta/admin/" class="home-button">Centro de Control</a>
+      <a href="../../cuenta/admin/?v=20260927-2" class="home-button">Centro de Control</a>
       <button id="logoutBtn" class="danger hidden">CERRAR SESIÓN</button>
     </div>
   </header>
@@ -515,7 +515,14 @@
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT";
 
   const { createClient } = supabase;
-  const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: "sb-tjarildqqxtjmafpiyuz-auth-token"
+    }
+  });
 
   const loginCard = document.getElementById("loginCard");
   const adminArea = document.getElementById("adminArea");
