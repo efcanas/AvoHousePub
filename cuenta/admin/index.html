@@ -130,10 +130,12 @@ button:disabled{opacity:.45;cursor:default}
 
 <section id="loginCard" class="card auth-card">
   <div class="panel-heading"><h2 class="panel-title">Acceso administrativo</h2><span class="panel-tag">AvoPuntos</span></div>
-  <input id="email" type="email" placeholder="Correo" autocomplete="username">
-  <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" style="margin-top:8px">
-  <button id="loginBtn" class="primary" style="width:100%;margin-top:10px">ENTRAR</button>
-  <div id="loginStatus" class="status"></div>
+  <form id="loginForm" onsubmit="return false;">
+    <input id="email" type="email" placeholder="Correo" autocomplete="username" required>
+    <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" style="margin-top:8px" required>
+    <button id="loginBtn" class="primary" type="submit" style="width:100%;margin-top:10px">ENTRAR</button>
+  </form>
+  <div id="loginStatus" class="status">Verificando la sesión…</div>
 </section>
 
 <section id="adminArea" class="hidden">
@@ -231,12 +233,13 @@ button:disabled{opacity:.45;cursor:default}
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const { createClient } = supabase;
-// Misma configuración de sesión que AHtv. La sesión queda persistida en el mismo origen.
+// Misma clave de almacenamiento de sesión en todas las áreas administrativas de AvoHouse.
 const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
   auth:{
     persistSession:true,
     autoRefreshToken:true,
-    detectSessionInUrl:true
+    detectSessionInUrl:true,
+    storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'
   }
 });
 
@@ -599,12 +602,15 @@ async function checkCurrentUserAdmin(){
 }
 
 async function isCurrentUserAdmin(){
-  const result=await checkCurrentUserAdmin();
-  return result.isAdmin;
+  return (await checkCurrentUserAdmin()).isAdmin;
 }
 
 async function enterWithExistingSession(){
+  $('loginStatus').className='status';
+  $('loginStatus').textContent='Verificando la sesión…';
+
   const {data,error}=await db.auth.getSession();
+
   if(error){
     $('loginStatus').className='status error';
     $('loginStatus').textContent='No se pudo recuperar la sesión: '+error.message;
@@ -613,21 +619,23 @@ async function enterWithExistingSession(){
   }
 
   if(!data?.session){
+    $('loginStatus').textContent='Inicia sesión con la cuenta administrativa de AHtv.';
     showLogin();
     return false;
   }
 
   const check=await checkCurrentUserAdmin();
+
   if(check.error){
     $('loginStatus').className='status error';
-    $('loginStatus').textContent='No se pudo verificar el acceso administrativo: '+check.error.message;
+    $('loginStatus').textContent='No se pudo verificar la autorización administrativa: '+check.error.message;
     showLogin();
     return false;
   }
 
   if(!check.isAdmin){
     $('loginStatus').className='status error';
-    $('loginStatus').textContent='La sesión activa ('+(check.user?.email||'correo no disponible')+') no está autorizada para el Centro de Control.';
+    $('loginStatus').textContent='La sesión activa ('+(check.user?.email||'correo no disponible')+') no tiene permisos de administración.';
     showLogin();
     return false;
   }
@@ -638,25 +646,40 @@ async function enterWithExistingSession(){
   return true;
 }
 
-async function login(){
-  $('loginBtn').disabled=true;
+async function login(event){
+  if(event) event.preventDefault();
+  const email=$('email').value.trim();
+  const password=$('password').value;
+
+  if(!email||!password){
+    $('loginStatus').className='status error';
+    $('loginStatus').textContent='Introduce el correo y la contraseña.';
+    return false;
+  }
+
+  const btn=$('loginBtn');
+  btn.disabled=true;
   $('loginStatus').className='status';
   $('loginStatus').textContent='Iniciando sesión…';
 
-  const {error}=await db.auth.signInWithPassword({
-    email:$('email').value.trim(),
-    password:$('password').value
-  });
+  try{
+    const {error}=await db.auth.signInWithPassword({email,password});
 
-  $('loginBtn').disabled=false;
+    if(error){
+      $('loginStatus').className='status error';
+      $('loginStatus').textContent=error.message||'No fue posible iniciar sesión.';
+      return false;
+    }
 
-  if(error){
+    await enterWithExistingSession();
+    return true;
+  }catch(error){
     $('loginStatus').className='status error';
-    $('loginStatus').textContent=error.message;
-    return;
+    $('loginStatus').textContent='No fue posible completar el ingreso: '+(error?.message||'verifica tu conexión.');
+    return false;
+  }finally{
+    btn.disabled=false;
   }
-
-  await enterWithExistingSession();
 }
 
 async function logout(){
@@ -669,7 +692,7 @@ async function logout(){
   showLogin();
 }
 
-$('loginBtn').addEventListener('click',login);
+$('loginForm').addEventListener('submit',login);
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('searchBtn').addEventListener('click',searchClients);
