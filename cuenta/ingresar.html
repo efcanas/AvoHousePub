@@ -276,10 +276,6 @@ async function resetPassword(){
   }
 }
 
-document.getElementById('loginForm').addEventListener('submit',e=>{
-  e.preventDefault();
-  loginAccount();
-});
 
 document.getElementById('recoverBtn').addEventListener('click',recoverAccount);
 document.getElementById('resetBtn').addEventListener('click',resetPassword);
