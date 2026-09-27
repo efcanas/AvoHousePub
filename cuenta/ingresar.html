@@ -59,7 +59,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <h1>Ingresar</h1>
 <p class="subtitle">Accede a tu cuenta y a las funcionalidades disponibles.</p>
 <div id="loginNotice" class="notice"></div>
-<form id="loginForm" onsubmit="return false;">
+<form id="loginForm" onsubmit="return loginAccount();">
 <label class="field">Correo electrónico
 <input id="loginEmail" type="email" autocomplete="email">
 </label>
@@ -68,7 +68,11 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <button class="toggle-password" type="button" data-target="loginPassword" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <div class="actions"><a id="recoverLink" class="link" href="#">¿Olvidaste tu contraseña?</a></div>
-<button id="loginBtn" class="primary" type="button">Ingresar</button>
+<label style="display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:13px;color:#777">
+<input id="rememberLoginEmail" type="checkbox" style="width:auto;margin:0">
+Recordar mi correo en este dispositivo
+</label>
+<button id="loginBtn" class="primary" type="submit">Ingresar</button>
 </form>
 <div class="status" id="loginStatus">Conectando con AvoHouse…</div>
 <div class="divider">o</div>
@@ -168,12 +172,32 @@ if(window.supabase?.createClient){
   loginStatus.textContent='No fue posible cargar el servicio de cuenta.';
 }
 
+function restoreLoginEmail(){
+  try{
+    const email=localStorage.getItem('ah_client_login_email');
+    if(email){
+      document.getElementById('loginEmail').value=email;
+      const cb=document.getElementById('rememberLoginEmail');
+      if(cb)cb.checked=true;
+    }
+  }catch(_){}
+}
+function rememberLoginEmail(){
+  try{
+    const cb=document.getElementById('rememberLoginEmail');
+    const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+    if(cb?.checked&&email)localStorage.setItem('ah_client_login_email',email);
+    else localStorage.removeItem('ah_client_login_email');
+  }catch(_){}
+}
+
 async function loginAccount(){
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
   const password=document.getElementById('loginPassword').value;
   clearNotice(loginNotice);
   if(!email||!password){setNotice(loginNotice,'Introduce tu correo y contraseña.',true);return}
   if(!supabaseClient){setNotice(loginNotice,'No fue posible conectar con AvoHouse. Recarga la página e inténtalo nuevamente.',true);return}
+  rememberLoginEmail();
   const btn=document.getElementById('loginBtn');
   btn.disabled=true;btn.textContent='Ingresando…';
   try{
@@ -266,6 +290,7 @@ document.getElementById('recoverLink').addEventListener('click',e=>{
 });
 document.getElementById('backLoginFromRecover').addEventListener('click',()=>showView('loginView'));
 document.getElementById('backLoginFromReset').addEventListener('click',()=>showView('loginView'));
+restoreLoginEmail();
 
 
 if(new URLSearchParams(window.location.search).get('recovery')==='1'){
