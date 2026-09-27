@@ -288,6 +288,20 @@ document.getElementById('backLoginFromRecover').addEventListener('click',()=>sho
 document.getElementById('backLoginFromReset').addEventListener('click',()=>showView('loginView'));
 restoreLoginEmail();
 
+async function redirectIfAlreadyAuthenticated(){
+  if(new URLSearchParams(window.location.search).get('recovery')==='1')return;
+  if(!supabaseClient)return;
+  try{
+    const {data}=await supabaseClient.auth.getSession();
+    if(data?.session){
+      const requested=new URLSearchParams(window.location.search).get('returnTo');
+      const destination=requested?safeReturnTo(requested):'../index.html';
+      window.location.href=destination;
+    }
+  }catch(_){}
+}
+redirectIfAlreadyAuthenticated();
+
 
 if(new URLSearchParams(window.location.search).get('recovery')==='1'){
   showView('resetView');
