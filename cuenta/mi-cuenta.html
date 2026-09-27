@@ -429,22 +429,54 @@ function formatMonthYear(year,month){
 }
 function populateHistoryFilters(){
   const yearSelect=$('historyYear');
-  const monthSelect=$('historyMonth');
-  const now=new Date();
-  const currentYear=now.getFullYear();
-  const currentMonth=now.getMonth()+1;
+  const currentYear=new Date().getFullYear();
+  const firstYear=2026;
+
   yearSelect.innerHTML='';
-  for(let year=currentYear;year>=2026;year--){
+  for(let year=currentYear;year>=firstYear;year--){
     const option=document.createElement('option');
     option.value=String(year);
     option.textContent=String(year);
     yearSelect.appendChild(option);
   }
-  const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  monthSelect.innerHTML=months.map((name,index)=>'<option value="'+(index+1)+'">'+name+'</option>').join('');
+
   yearSelect.value=String(currentYear);
-  monthSelect.value=String(currentMonth);
+  updateHistoryMonthOptions();
 }
+
+function updateHistoryMonthOptions(){
+  const yearSelect=$('historyYear');
+  const monthSelect=$('historyMonth');
+  const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const now=new Date();
+  const currentYear=now.getFullYear();
+  const currentMonth=now.getMonth()+1;
+  const selectedYear=Number(yearSelect.value);
+
+  const maxMonth=selectedYear<currentYear?12:currentMonth;
+  monthSelect.innerHTML='';
+
+  months.forEach((name,index)=>{
+    const month=index+1;
+    const option=document.createElement('option');
+    option.value=String(month);
+    option.textContent=name;
+
+    if(month>maxMonth){
+      option.disabled=true;
+      option.textContent=name+' · No disponible';
+    }
+
+    monthSelect.appendChild(option);
+  });
+
+  const previousValue=Number(monthSelect.value);
+  if(!previousValue||previousValue>maxMonth){
+    monthSelect.value=String(maxMonth);
+  }
+}
+
+$('historyYear').addEventListener('change',updateHistoryMonthOptions);
 async function loadHistoryRecent(){
   historyMode='recent';
   $('historyMode').textContent='Recientes';
