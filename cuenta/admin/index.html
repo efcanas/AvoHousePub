@@ -527,7 +527,7 @@ async function searchClients(){
     const secondary=[p.email,p.phone,[p.document_type,p.document_number].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
     return '<div class="result-item" data-id="'+p.id+'">'+
       '<div class="result-main"><div class="result-user">'+(p.username||p.full_name||'Sin nickname')+'</div><div class="result-sub">'+(p.full_name||'')+(secondary?' · '+secondary:'')+'</div></div>'+
-      '<div class="result-balance">'+balanceMap.get(p.id)||0+' AP</div>'+
+      '<div class="result-balance">'+(balanceMap.get(p.id)||0)+' AP</div>'+
     '</div>';
   }).join('');
 
