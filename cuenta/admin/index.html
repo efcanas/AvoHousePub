@@ -130,11 +130,16 @@ button:disabled{opacity:.45;cursor:default}
 
 <section id="loginCard" class="card auth-card">
   <div class="panel-heading"><h2 class="panel-title">Acceso administrativo</h2><span class="panel-tag">AvoPuntos</span></div>
-  <form id="loginForm" onsubmit="return false;">
+  <form id="loginForm" onsubmit="return login(event);">
     <input id="email" type="email" placeholder="Correo" autocomplete="username" required>
     <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" style="margin-top:8px" required>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:#aaa">
+      <input id="rememberEmail" type="checkbox" style="width:auto;margin:0">
+      Recordar mi correo en este dispositivo
+    </label>
     <button id="loginBtn" class="primary" type="submit" style="width:100%;margin-top:10px">ENTRAR</button>
   </form>
+  <button id="ahTvLoginBtn" class="secondary" type="button" style="width:100%;margin-top:10px">ABRIR ADMINISTRACIÓN AHtv</button>
   <div id="loginStatus" class="status">Verificando la sesión…</div>
 </section>
 
@@ -239,6 +244,7 @@ const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
     persistSession:true,
     autoRefreshToken:true,
     detectSessionInUrl:true,
+    storage:window.localStorage,
     storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'
   }
 });
@@ -619,7 +625,7 @@ async function enterWithExistingSession(){
   }
 
   if(!data?.session){
-    $('loginStatus').textContent='Inicia sesión con la cuenta administrativa de AHtv.';
+    $('loginStatus').textContent='No hay una sesión administrativa disponible. Puedes entrar desde AHtv.';
     showLogin();
     return false;
   }
@@ -657,6 +663,7 @@ async function login(event){
     return false;
   }
 
+  rememberAdminEmail();
   const btn=$('loginBtn');
   btn.disabled=true;
   $('loginStatus').className='status';
@@ -688,11 +695,13 @@ async function logout(){
   pointsBalance=0;
   $('results').innerHTML='';
   $('clientArea').classList.add('hidden');
+  $('password').value='';
   hideNotice();
   showLogin();
 }
 
 $('loginForm').addEventListener('submit',login);
+$('ahTvLoginBtn').addEventListener('click',openAhTvAdmin);
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('searchBtn').addEventListener('click',searchClients);
@@ -705,8 +714,47 @@ $('receiptClose').addEventListener('click',()=>{$('receiptModal').hidden=true});
 $('receiptModal').addEventListener('click',e=>{if(e.target===$('receiptModal'))$('receiptModal').hidden=true});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('receiptModal').hidden=true});
 
+function safeReturnTo(value){
+  try{
+    const url=new URL(value,window.location.origin);
+    if(url.origin!==window.location.origin)return '/cuenta/admin/?v=20260927-3';
+    return url.pathname+url.search+url.hash;
+  }catch(_){
+    return '/cuenta/admin/?v=20260927-3';
+  }
+}
+
+function rememberAdminEmail(){
+  const remember=$('rememberEmail').checked;
+  const email=$('email').value.trim().toLowerCase();
+  try{
+    if(remember&&email)localStorage.setItem('ah_admin_login_email',email);
+    else localStorage.removeItem('ah_admin_login_email');
+  }catch(_){}
+}
+
+function restoreAdminEmail(){
+  try{
+    const email=localStorage.getItem('ah_admin_login_email');
+    if(email){
+      $('email').value=email;
+      $('rememberEmail').checked=true;
+    }
+  }catch(_){}
+}
+
+function openAhTvAdmin(){
+  const returnTo=encodeURIComponent(window.location.pathname+'?v=20260927-3');
+  window.location.href='../../ahtv/admin/?returnTo='+returnTo;
+}
+
 async function init(){
-  await enterWithExistingSession();
+  restoreAdminEmail();
+  const ok=await enterWithExistingSession();
+  if(ok){
+    const returnTo=new URLSearchParams(window.location.search).get('fromAhTv');
+    if(returnTo) window.history.replaceState({},'',window.location.pathname);
+  }
 }
 init();
 
