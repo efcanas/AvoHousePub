@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AvoHouse · Centro de Control del Cliente</title>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#fff;background:url('../../Fondo.png') center/cover fixed no-repeat}
+body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:-1}
+.topbar{position:fixed;top:16px;right:16px;z-index:10000;display:flex;align-items:center;gap:8px}
+.topbar a,.topbar button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 13px;border-radius:20px;border:1px solid rgba(255,255,255,.42);background:rgba(0,0,0,.42);backdrop-filter:blur(8px);color:#fff;text-decoration:none;font-size:12px;letter-spacing:1.2px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}
+.topbar a:hover,.topbar button:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.72)}
+.page{min-height:100vh;padding:92px 18px 40px}
+.shell{width:100%;max-width:1000px;margin:0 auto}
+.brand-head{text-align:center;margin:0 auto 22px}
+.logo{display:block;width:135px;max-width:42%;margin:0 auto 15px}
+.kicker{text-align:center;text-transform:uppercase;letter-spacing:3px;font-size:11px;opacity:.72}
+h1{text-align:center;font-size:30px;margin:8px 0 7px}
+.subtitle{text-align:center;color:#c9c9c9;line-height:1.5;font-size:14px;margin:0}
+.notice{display:none;margin:0 0 18px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);font-size:13px;line-height:1.5}
+.notice.show{display:block}
+.notice.error{color:#ffb7b7;border-color:rgba(255,90,90,.4);background:rgba(100,0,0,.14)}
+.card{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.17);border-radius:20px;padding:22px;backdrop-filter:blur(7px);box-shadow:0 18px 60px rgba(0,0,0,.24);margin-bottom:18px}
+.card h2,.card h3{margin:0}
+.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
+.panel-title{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:2px;color:#aaa}
+.panel-tag{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.2px}
+.auth-card{max-width:470px;margin-left:auto;margin-right:auto}
+input,select{width:100%;min-height:42px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.32);color:#fff;outline:none;font:inherit;font-size:13px}
+input:focus,select:focus{border-color:rgba(255,255,255,.65)}
+button{font:inherit}
+.primary{border:1px solid #fff;background:#fff;color:#111;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}
+.ghost{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);color:#fff;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}
+.primary:hover,.ghost:hover{filter:brightness(.95)}
+button:disabled{opacity:.45;cursor:default}
+.search-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.helper{margin-top:8px;color:#777;font-size:10px;line-height:1.5}
+.results{display:flex;flex-direction:column;gap:8px}
+.result-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:rgba(255,255,255,.035);cursor:pointer}
+.result-item:hover{background:rgba(255,255,255,.07)}
+.result-main{min-width:0}
+.result-user{font-size:14px;font-weight:800}
+.result-sub{margin-top:3px;color:#999;font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+.result-balance{white-space:nowrap;font-size:14px;font-weight:800}
+.muted{color:#999}
+.error{color:#ffb7b7}
+.ok{color:#b8f5b8}
+.hidden{display:none}
+.client-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.info{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08);min-width:0}
+.info-label{display:block;color:#999;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.info-value{display:block;font-size:13px;word-break:break-word}
+.balance-card{text-align:center;display:flex;flex-direction:column;justify-content:center}
+.balance-kicker{color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:2.5px}
+.balance-value{font-size:48px;line-height:1;font-weight:800;margin:13px 0 8px}
+.balance-caption{color:#aaa;font-size:12px}
+.account-meta{margin-top:15px;color:#888;font-size:10px;line-height:1.6}
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.035);text-align:center}
+.stat-label{color:#888;font-size:9px;text-transform:uppercase;letter-spacing:1px}
+.stat-value{margin-top:5px;font-size:19px;font-weight:800}
+.history-search{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;margin-bottom:14px}
+.history-list{display:flex;flex-direction:column;gap:5px}
+.history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.history-sign{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;font-size:16px;font-weight:800}
+.history-sign.positive,.history-points.positive{color:#b8f5b8}
+.history-sign.negative,.history-points.negative{color:#ffb7b7}
+.history-sign.neutral,.history-points.neutral{color:#bdbdbd}
+.history-main{min-width:0;flex:1}
+.history-type{font-size:13px;font-weight:700}
+.history-meta{margin-top:3px;color:#999;font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+.history-balance{margin-top:4px;color:#777;font-size:10px}
+.history-balance strong{color:#aaa}
+.history-points{border:0;background:transparent;text-align:right;padding:5px 0;font-size:14px;font-weight:800;white-space:nowrap;cursor:pointer}
+.history-points:hover{text-decoration:underline;text-underline-offset:3px}
+.empty{padding:24px 6px;text-align:center;color:#888;font-size:13px}
+.receipt-modal{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.72);backdrop-filter:blur(6px)}
+.receipt-modal[hidden]{display:none}
+.receipt-card{width:min(560px,100%);max-height:min(82vh,720px);overflow:auto;background:rgba(12,12,12,.97);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:22px;box-shadow:0 22px 70px rgba(0,0,0,.5)}
+.receipt-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,.12)}
+.receipt-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#999}
+.receipt-title{margin:4px 0 0;font-size:21px}
+.receipt-close{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;font-size:18px;cursor:pointer}
+.receipt-meta{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08);color:#aaa;font-size:12px;line-height:1.7}
+.receipt-items{padding:8px 0}
+.receipt-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px}
+.receipt-item-name{min-width:0}
+.receipt-item-qty{color:#aaa;white-space:nowrap}
+.receipt-item-price{text-align:right;font-weight:700;white-space:nowrap}
+.receipt-summary{padding-top:12px}
+.receipt-row{display:flex;justify-content:space-between;gap:16px;padding:6px 0;color:#aaa;font-size:12px}
+.receipt-row.total{padding-top:12px;margin-top:5px;border-top:1px solid rgba(255,255,255,.12);color:#fff;font-size:15px;font-weight:800}
+.status{text-align:center;color:#777;font-size:11px;padding-top:5px;min-height:26px}
+@media(max-width:820px){.client-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){
+  .topbar{top:10px;right:10px;gap:6px}
+  .topbar a,.topbar button{min-height:34px;padding:0 10px;font-size:10px;letter-spacing:.9px}
+  .page{padding:80px 12px 28px}
+  .card{padding:19px 16px}
+  .logo{width:110px}h1{font-size:27px}
+  .info-grid{grid-template-columns:1fr}
+  .search-row{grid-template-columns:1fr}
+  .history-search{grid-template-columns:1fr 1fr}
+  .history-search .primary,.history-search .ghost{width:100%}
+  .history-item{gap:8px}
+  .receipt-item{grid-template-columns:1fr auto}
+  .receipt-item-price{grid-column:2;grid-row:1}
+  .receipt-item-qty{grid-column:1;grid-row:2}
+}
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <a href="../../index.html">MENÚ</a>
+  <a href="../mi-cuenta.html">MI CUENTA</a>
+  <button id="logoutBtn" class="hidden">SALIR</button>
+</nav>
+
+<main class="page">
+<div class="shell">
+<header class="brand-head">
+  <img class="logo" src="../../LogoPrincipal.png" alt="AvoHouse">
+  <div class="kicker">AvoHouse</div>
+  <h1>Centro de Control del Cliente</h1>
+  <p class="subtitle">Consulta administrativa de cuentas, AvoPuntos y movimientos.</p>
+</header>
+
+<section id="loginCard" class="card auth-card">
+  <div class="panel-heading"><h2 class="panel-title">Acceso administrativo</h2><span class="panel-tag">AvoPuntos</span></div>
+  <input id="email" type="email" placeholder="Correo" autocomplete="username">
+  <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" style="margin-top:8px">
+  <button id="loginBtn" class="primary" style="width:100%;margin-top:10px">ENTRAR</button>
+  <div id="loginStatus" class="status"></div>
+</section>
+
+<section id="adminArea" class="hidden">
+  <div id="notice" class="notice" role="status"></div>
+
+  <section class="card">
+    <div class="panel-heading">
+      <h2 class="panel-title">Buscar cliente</h2>
+      <span id="searchStatus" class="panel-tag">Admin</span>
+    </div>
+    <div class="search-row">
+      <input id="searchInput" type="search" placeholder="Nickname, nombre, correo, documento o celular" autocomplete="off">
+      <button id="searchBtn" class="primary">BUSCAR</button>
+    </div>
+    <div class="helper">La búsqueda requiere al menos 2 caracteres. Selecciona un cliente para abrir su información.</div>
+    <div id="results" class="results" style="margin-top:14px"></div>
+  </section>
+
+  <section id="clientArea" class="hidden">
+    <div class="client-grid">
+      <section class="card">
+        <div class="panel-heading">
+          <h2 class="panel-title">Información del cliente</h2>
+          <span id="clientStatus" class="panel-tag">—</span>
+        </div>
+        <div class="info-grid">
+          <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Nombre completo</span><span id="infoFullName" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Correo electrónico</span><span id="infoEmail" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Celular</span><span id="infoPhone" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">WhatsApp</span><span id="infoWhatsapp" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Fecha de nacimiento</span><span id="infoBirth" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
+        </div>
+      </section>
+
+      <section class="card balance-card">
+        <div class="balance-kicker">AvoPuntos</div>
+        <div id="balanceValue" class="balance-value">—</div>
+        <div class="balance-caption">Saldo actual</div>
+        <div id="accountMeta" class="account-meta">—</div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="panel-heading">
+        <h2 class="panel-title">Resumen</h2>
+        <span id="summaryTag" class="panel-tag">—</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">Movimientos</div><div id="statMovements" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">Ganados</div><div id="statEarned" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">Utilizados</div><div id="statUsed" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">Tickets</div><div id="statTickets" class="stat-value">0</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="panel-heading">
+        <div>
+          <h2 class="panel-title">Actividad de AvoPuntos</h2>
+          <div id="historySummary" class="history-summary">—</div>
+        </div>
+        <span id="historyMode" class="panel-tag">Recientes</span>
+      </div>
+      <div class="history-search">
+        <select id="historyYear" aria-label="Año"></select>
+        <select id="historyMonth" aria-label="Mes"></select>
+        <button id="historySearchBtn" class="primary">CONSULTAR</button>
+        <button id="historyRecentBtn" class="ghost">ÚLTIMOS 50</button>
+      </div>
+      <div id="pointsHistory" class="history-list">
+        <div class="empty">Selecciona un cliente.</div>
+      </div>
+    </section>
+  </section>
+</section>
+</div>
+</main>
+
+<div id="receiptModal" class="receipt-modal" hidden>
+  <div class="receipt-card" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+    <div class="receipt-head">
+      <div><div class="receipt-eyebrow">Detalle de ticket</div><h2 id="receiptTitle" class="receipt-title">Ticket</h2></div>
+      <button id="receiptClose" class="receipt-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div id="receiptBody"><div class="empty">Cargando…</div></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
+const { createClient } = supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+
+let session=null;
+let selectedProfile=null;
+let pointsBalance=0;
+let historyMode='recent';
+let historyMovements=[];
+
+const $=id=>document.getElementById(id);
+
+function showNotice(message,error=false){
+  const el=$('notice');
+  el.textContent=message;
+  el.classList.toggle('error',error);
+  el.classList.add('show');
+}
+function hideNotice(){
+  const el=$('notice');
+  el.textContent='';
+  el.classList.remove('show','error');
+}
+function showLogin(){
+  $('loginCard').classList.remove('hidden');
+  $('adminArea').classList.add('hidden');
+  $('logoutBtn').classList.add('hidden');
+}
+function showAdmin(){
+  $('loginCard').classList.add('hidden');
+  $('adminArea').classList.remove('hidden');
+  $('logoutBtn').classList.remove('hidden');
+}
+function setText(id,value){$(id).textContent=String(value??'—')}
+function formatMoney(value){
+  const n=Number(value);
+  return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
+}
+function formatDate(value,withTime=false){
+  if(!value)return '—';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '—';
+  return new Intl.DateTimeFormat('es-CO',withTime?{
+    day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'
+  }:{
+    day:'2-digit',month:'long',year:'numeric'
+  }).format(d);
+}
+function formatDateInput(value){
+  if(!value)return '—';
+  const d=new Date(value+'T00:00:00');
+  if(Number.isNaN(d.getTime()))return value;
+  return new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(d);
+}
+function movementLabel(type){
+  return ({
+    opening_balance:'Saldo inicial',
+    earn:'Puntos ganados',
+    redeem:'Puntos utilizados',
+    earn_reversal:'Puntos retirados por cancelación',
+    redeem_reversal:'Puntos devueltos por cancelación',
+    expiration:'Puntos vencidos',
+    adjustment:'Ajuste de puntos',
+    purchase:'Compra registrada',
+    purchase_cancelled:'Compra cancelada',
+    refund:'Reembolso registrado',
+    refund_cancelled:'Reembolso cancelado'
+  })[type]||'Movimiento de AvoPuntos';
+}
+function movementMeta(m){
+  let meta=formatDate(m.created_at,true);
+  const receipt=m.receipt_number||m.related_receipt_number;
+  const type=m.movement_type;
+  const details=m.details||{};
+  if(type==='purchase'||type==='purchase_cancelled'||type==='refund'||type==='refund_cancelled'){
+    const amount=Number(details.total_money);
+    if(Number.isFinite(amount))meta+=(meta?' · ':'')+formatMoney(amount);
+    const payments=Array.isArray(details.payment_names)?details.payment_names.filter(Boolean):[];
+    if(payments.length)meta+=(meta?' · ':'')+'Pago con '+payments.join(' + ');
+    if(receipt)meta+=(meta?' · ':'')+'Ticket '+receipt;
+    if(type==='refund' && details.refund_for)meta+=(meta?' · ':'')+'Origen '+details.refund_for;
+    if(type==='refund_cancelled' && details.refund_for)meta+=(meta?' · ':'')+'Origen '+details.refund_for;
+  }else if(receipt){
+    const cancelled=type==='earn_reversal'||type==='redeem_reversal';
+    meta+=(meta?' · ':'')+(cancelled?'Ticket cancelado ':'Ticket ')+receipt;
+  }
+  if(m.eligible_amount!=null){
+    const amount=Number(m.eligible_amount);
+    if(Number.isFinite(amount))meta+=(meta?' · ':'')+'Compra elegible '+formatMoney(amount);
+  }
+  return meta;
+}
+function detailsForMovement(m){
+  return m?.receipt_number||m?.related_receipt_number ? m : null;
+}
+
+function renderHistory(movements){
+  const history=$('pointsHistory');
+  if(!movements.length){
+    history.innerHTML='<div class="empty">'+(historyMode==='recent'?'Todavía no hay movimientos registrados.':'No hay movimientos registrados para el período seleccionado.')+'</div>';
+    $('historySummary').textContent=historyMode==='recent'?'Últimos 50 movimientos':'Sin movimientos en el período';
+    $('historyMode').textContent=historyMode==='recent'?'Recientes':'Búsqueda mensual';
+    return;
+  }
+
+  let balanceAfter=pointsBalance;
+  const rows=movements.map(m=>{
+    const delta=Number(m.points_delta);
+    const positive=delta>0;
+    const negative=delta<0;
+    const sign=positive?'+':negative?'−':'';
+    const value=Math.abs(delta);
+    const balanceAfterThis=balanceAfter;
+    balanceAfter-=delta;
+    return {m,positive,negative,sign,value,balanceAfterThis};
+  });
+
+  history.innerHTML=rows.map(({m,positive,negative,sign,value,balanceAfterThis})=>{
+    const neutral=!positive&&!negative;
+    const receipt=detailsForMovement(m);
+    return '<div class="history-item">'+
+      '<div class="history-sign '+(positive?'positive':negative?'negative':'neutral')+'">'+(sign||'•')+'</div>'+
+      '<div class="history-main">'+
+        '<div class="history-type">'+movementLabel(m.movement_type)+'</div>'+
+        '<div class="history-meta">'+movementMeta(m)+'</div>'+
+        '<div class="history-balance">Saldo después: <strong>'+Number(balanceAfterThis).toLocaleString('es-CO')+' AP</strong></div>'+
+      '</div>'+
+      '<button class="history-points '+(positive?'positive':negative?'negative':'neutral')+(receipt?'':' no-detail')+'" type="button" '+(receipt?'':'disabled')+'>'+
+        (neutral?'0 AP':sign+Number(value).toLocaleString('es-CO')+' AP')+
+      '</button>'+
+    '</div>';
+  }).join('');
+
+  history.querySelectorAll('.history-item').forEach((el,index)=>{
+    const row=rows[index];
+    const btn=el.querySelector('.history-points');
+    if(row.m.receipt_number||row.m.related_receipt_number){
+      btn.addEventListener('click',()=>openReceipt(row.m.receipt_number||row.m.related_receipt_number));
+    }
+  });
+
+  const ticketSet=new Set(movements.map(m=>m.receipt_number||m.related_receipt_number).filter(Boolean));
+  $('historySummary').textContent=historyMode==='recent'
+    ? 'Últimos '+movements.length+' movimientos · '+ticketSet.size+' tickets relacionados'
+    : movements.length+' movimientos · '+ticketSet.size+' tickets relacionados';
+  $('historyMode').textContent=historyMode==='recent'?'Recientes':'Búsqueda mensual';
+}
+
+function populateHistoryYears(movements){
+  const yearEl=$('historyYear');
+  const current=new Date().getFullYear();
+  const years=new Set(movements.map(m=>{
+    const d=new Date(m.created_at);
+    return Number.isNaN(d.getTime())?null:d.getFullYear();
+  }).filter(Boolean));
+  years.add(current);
+  const sorted=[...years].sort((a,b)=>b-a);
+  yearEl.innerHTML=sorted.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  populateHistoryMonths();
+}
+function populateHistoryMonths(){
+  const year=Number($('historyYear').value)||new Date().getFullYear();
+  const current=new Date();
+  const currentYear=current.getFullYear();
+  const currentMonth=current.getMonth()+1;
+  const monthEl=$('historyMonth');
+  const labels=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const end=year===currentYear?currentMonth:12;
+  monthEl.innerHTML='<option value="">Todos los meses</option>'+labels.slice(0,end).map((name,i)=>'<option value="'+(i+1)+'">'+name+'</option>').join('');
+}
+async function loadHistoryForSelected(){
+  if(!selectedProfile)return;
+  const yearEl=$('historyYear');
+  const monthEl=$('historyMonth');
+  const year=Number(yearEl.value);
+  const month=Number(monthEl.value);
+  let query=db.from('avopuntos_movements')
+    .select('id,profile_id,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number,details,created_at')
+    .eq('profile_id',selectedProfile.id)
+    .order('created_at',{ascending:false})
+    .limit(1000);
+
+  if(year && month){
+    const from=new Date(year,month-1,1);
+    const to=new Date(year,month,1);
+    query=query.gte('created_at',from.toISOString()).lt('created_at',to.toISOString());
+  }else if(year){
+    const from=new Date(year,0,1);
+    const to=new Date(year+1,0,1);
+    query=query.gte('created_at',from.toISOString()).lt('created_at',to.toISOString());
+  }
+  const {data,error}=await query;
+  if(error){showNotice('No se pudo consultar el historial: '+error.message,true);return}
+  historyMode=(year&&month)?'month':(year?'year':'recent');
+  historyMovements=data||[];
+  renderHistory(historyMovements);
+}
+async function loadRecentHistory(){
+  if(!selectedProfile)return;
+  const {data,error}=await db.from('avopuntos_movements')
+    .select('id,profile_id,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number,details,created_at')
+    .eq('profile_id',selectedProfile.id)
+    .order('created_at',{ascending:false})
+    .limit(50);
+  if(error){showNotice('No se pudo cargar el historial: '+error.message,true);return}
+  historyMode='recent';
+  historyMovements=data||[];
+  if(!historyMovements.length)populateHistoryYears([]);
+  renderHistory(historyMovements);
+}
+
+async function loadClient(profile){
+  hideNotice();
+  selectedProfile=profile;
+  $('clientArea').classList.remove('hidden');
+
+  setText('infoUsername',profile.username||'—');
+  setText('infoFullName',profile.full_name||'—');
+  setText('infoEmail',profile.email||'—');
+  setText('infoPhone',profile.phone||'—');
+  setText('infoWhatsapp',profile.whatsapp_same?'Igual al celular':(profile.whatsapp||'—'));
+  setText('infoDocument',[profile.document_type,profile.document_number].filter(Boolean).join(' · ')||'—');
+  setText('infoBirth',formatDateInput(profile.birth_date));
+  setText('infoCreated',formatDate(profile.created_at));
+  setText('clientStatus','Cliente seleccionado');
+
+  const [{data:account,error:accountError},{count:movementCount,error:movementError},{data:movements,error:movementsError}]=await Promise.all([
+    db.from('avopuntos_accounts').select('balance,status,last_loyverse_points,last_loyverse_sync_at,last_loyverse_sync_attempt_at,last_loyverse_sync_error,updated_at').eq('profile_id',profile.id).maybeSingle(),
+    db.from('avopuntos_movements').select('id',{count:'exact',head:true}).eq('profile_id',profile.id),
+    db.from('avopuntos_movements').select('movement_type,points_delta,receipt_number,related_receipt_number').eq('profile_id',profile.id).limit(1000)
+  ]);
+
+  if(accountError){showNotice('No se pudo cargar la cuenta AvoPuntos: '+accountError.message,true);return}
+  if(movementError){showNotice('No se pudo cargar el resumen de movimientos: '+movementError.message,true);return}
+  if(movementsError){showNotice('No se pudo cargar el resumen: '+movementsError.message,true);return}
+
+  pointsBalance=Number(account?.balance||0);
+  setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
+
+  const sync=account?.last_loyverse_sync_at?formatDate(account.last_loyverse_sync_at,true):'Sin sincronización registrada';
+  const syncError=account?.last_loyverse_sync_error?'<span class="error">Error de sincronización registrado</span>':'Última sincronización: '+sync;
+  $('accountMeta').innerHTML='Estado: <strong>'+String(account?.status||'—')+'</strong><br>'+syncError;
+
+  let earned=0,used=0;
+  const ticketSet=new Set();
+  for(const m of movements||[]){
+    const d=Number(m.points_delta||0);
+    if(d>0 && (m.movement_type==='earn'||m.movement_type==='earn_reversal'&&false))earned+=d;
+    if(d<0 && (m.movement_type==='redeem'))used+=Math.abs(d);
+    if(m.receipt_number)ticketSet.add(m.receipt_number);
+    if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
+  }
+  setText('statMovements',Number(movementCount||0).toLocaleString('es-CO'));
+  setText('statEarned',Number(earned).toLocaleString('es-CO')+' AP');
+  setText('statUsed',Number(used).toLocaleString('es-CO')+' AP');
+  setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
+  $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
+
+  await loadRecentHistory();
+  await refreshHistoryYears();
+}
+
+async function refreshHistoryYears(){
+  if(!selectedProfile)return;
+  const {data,error}=await db.from('avopuntos_movements').select('created_at').eq('profile_id',selectedProfile.id).order('created_at',{ascending:false}).limit(1000);
+  if(error)return;
+  populateHistoryYears(data||[]);
+}
+
+async function searchClients(){
+  const term=$('searchInput').value.trim();
+  const results=$('results');
+  results.innerHTML='';
+  if(term.length<2){results.innerHTML='<div class="empty">Escribe al menos 2 caracteres.</div>';return}
+  $('searchBtn').disabled=true;
+  $('searchStatus').textContent='Buscando…';
+
+  const escaped=term.replace(/,/g,'');
+  const {data,error}=await db.from('profiles')
+    .select('id,username,full_name,email,phone,document_number,document_type,created_at')
+    .or('username.ilike.%'+escaped+'%,full_name.ilike.%'+escaped+'%,email.ilike.%'+escaped+'%,document_number.ilike.%'+escaped+'%,phone.ilike.%'+escaped+'%')
+    .order('created_at',{ascending:false})
+    .limit(30);
+
+  $('searchBtn').disabled=false;
+  $('searchStatus').textContent='Admin';
+
+  if(error){showNotice('No se pudo buscar clientes: '+error.message,true);return}
+  if(!data?.length){results.innerHTML='<div class="empty">No se encontraron clientes.</div>';return}
+
+  const ids=data.map(x=>x.id);
+  const {data:accounts}=await db.from('avopuntos_accounts').select('profile_id,balance').in('profile_id',ids);
+  const balanceMap=new Map((accounts||[]).map(a=>[a.profile_id,Number(a.balance||0)]));
+
+  results.innerHTML=data.map(p=>{
+    const secondary=[p.email,p.phone,[p.document_type,p.document_number].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
+    return '<div class="result-item" data-id="'+p.id+'">'+
+      '<div class="result-main"><div class="result-user">'+(p.username||p.full_name||'Sin nickname')+'</div><div class="result-sub">'+(p.full_name||'')+(secondary?' · '+secondary:'')+'</div></div>'+
+      '<div class="result-balance">'+balanceMap.get(p.id)||0+' AP</div>'+
+    '</div>';
+  }).join('');
+
+  results.querySelectorAll('.result-item').forEach((el,i)=>el.addEventListener('click',()=>loadClient(data[i])));
+}
+
+async function openReceipt(receiptNumber){
+  $('receiptModal').hidden=false;
+  $('receiptTitle').textContent='Ticket '+receiptNumber;
+  $('receiptBody').innerHTML='<div class="empty">Cargando ticket…</div>';
+
+  const {data,error}=await db.from('loyverse_receipts')
+    .select('receipt_number,receipt_type,refund_for,receipt_date,created_at,cancelled_at,total_money,total_discount,total_tax,points_earned,points_deducted,points_balance,line_items,payments')
+    .eq('receipt_number',receiptNumber)
+    .maybeSingle();
+
+  if(error){$('receiptBody').innerHTML='<div class="error" style="padding:24px 4px;text-align:center">No se pudo cargar el ticket: '+error.message+'</div>';return}
+  if(!data){$('receiptBody').innerHTML='<div class="empty">No se encontró el ticket.</div>';return}
+
+  const items=Array.isArray(data.line_items)?data.line_items:[];
+  const payments=Array.isArray(data.payments)?data.payments:[];
+  const paymentNames=[...new Set(payments.map(p=>String(p?.name||'').trim()).filter(Boolean))];
+  const htmlItems=items.map(item=>{
+    const qty=Number(item?.quantity)||1;
+    const name=String(item?.item_name||item?.variant_name||'Producto');
+    return '<div class="receipt-item"><div class="receipt-item-name">'+name+'</div><div class="receipt-item-qty">× '+qty+'</div><div class="receipt-item-price">'+formatMoney(item?.total_money)+'</div></div>';
+  }).join('');
+
+  const typeLabel=data.receipt_type==='REFUND'?'Reembolso':'Compra';
+  $('receiptBody').innerHTML=
+    '<div class="receipt-meta">'+
+      '<strong>'+typeLabel+'</strong><br>'+
+      'Fecha: '+formatDate(data.receipt_date||data.created_at,true)+
+      (data.refund_for?'<br>Ticket de origen: '+data.refund_for:'')+
+      (data.cancelled_at?'<br>Cancelado: '+formatDate(data.cancelled_at,true):'')+
+      (paymentNames.length?'<br>Pago: '+paymentNames.join(' + '):'')+
+    '</div>'+
+    '<div class="receipt-items">'+(htmlItems||'<div class="empty">Sin detalle de productos.</div>')+'</div>'+
+    '<div class="receipt-summary">'+
+      '<div class="receipt-row"><span>Descuentos</span><span>'+formatMoney(data.total_discount)+'</span></div>'+
+      '<div class="receipt-row"><span>Impuestos</span><span>'+formatMoney(data.total_tax)+'</span></div>'+
+      '<div class="receipt-row total"><span>Total</span><span>'+formatMoney(data.total_money)+'</span></div>'+
+      '<div class="receipt-row"><span>AP registrados en ticket</span><span>'+Number(data.points_earned||0).toLocaleString('es-CO')+' ganados · '+Number(data.points_deducted||0).toLocaleString('es-CO')+' utilizados</span></div>'+
+      '<div class="receipt-row"><span>Saldo almacenado en ticket</span><span>'+Number(data.points_balance||0).toLocaleString('es-CO')+' AP</span></div>'+
+    '</div>';
+}
+
+async function isCurrentUserAdmin(){
+  const {data}=await db.auth.getUser();
+  const userId=data?.user?.id;
+  if(!userId)return false;
+  const {data:admin,error}=await db.from('admin_users').select('user_id').eq('user_id',userId).maybeSingle();
+  return !error&&!!admin;
+}
+
+async function login(){
+  $('loginBtn').disabled=true;
+  $('loginStatus').className='status';
+  $('loginStatus').textContent='Iniciando sesión…';
+  const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  $('loginBtn').disabled=false;
+  if(error){$('loginStatus').textContent=error.message;return}
+  if(!(await isCurrentUserAdmin())){
+    await db.auth.signOut();
+    $('loginStatus').className='status error';
+    $('loginStatus').textContent='Esta cuenta no tiene acceso al Centro de Control.';
+    showLogin();
+    return;
+  }
+  session=(await db.auth.getSession()).data.session;
+  $('loginStatus').textContent='';
+  showAdmin();
+}
+
+async function logout(){
+  await db.auth.signOut();
+  selectedProfile=null;
+  pointsBalance=0;
+  $('results').innerHTML='';
+  $('clientArea').classList.add('hidden');
+  hideNotice();
+  showLogin();
+}
+
+$('loginBtn').addEventListener('click',login);
+$('email').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('searchBtn').addEventListener('click',searchClients);
+$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')searchClients()});
+$('historyYear').addEventListener('change',populateHistoryMonths);
+$('historySearchBtn').addEventListener('click',loadHistoryForSelected);
+$('historyRecentBtn').addEventListener('click',loadRecentHistory);
+$('logoutBtn').addEventListener('click',logout);
+$('receiptClose').addEventListener('click',()=>{$('receiptModal').hidden=true});
+$('receiptModal').addEventListener('click',e=>{if(e.target===$('receiptModal'))$('receiptModal').hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('receiptModal').hidden=true});
+
+async function init(){
+  const {data}=await db.auth.getSession();
+  if(data?.session && await isCurrentUserAdmin()){
+    session=data.session;showAdmin();
+  }else{
+    if(data?.session)await db.auth.signOut();
+    showLogin();
+  }
+}
+init();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../../sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
