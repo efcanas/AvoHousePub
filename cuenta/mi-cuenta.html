@@ -48,16 +48,6 @@ h1{text-align:center;font-size:30px;margin:8px 0 7px}
 .info-label{display:block;color:#999;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
 .info-value{display:block;font-size:14px;word-break:break-word}
 
-.customer-events{display:flex;flex-direction:column;gap:0}
-.customer-event{padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
-.customer-event:first-child{border-top:0;padding-top:0}
-.customer-event:last-child{padding-bottom:0}
-.customer-event-title{font-size:14px;font-weight:800;margin-bottom:5px}
-.customer-event-description{font-size:13px;color:#c7c7c7;line-height:1.45}
-.customer-event-date{font-size:11px;color:#8f8f8f;margin-top:6px}
-.customer-event-type{display:inline-block;margin-top:7px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:1px}
-.customer-event.empty{color:#999;font-size:13px;padding:4px 0}
-
 .points-panel{display:flex;flex-direction:column;justify-content:center;min-height:100%;text-align:center}
 .points-kicker{color:#aaa;font-size:11px;text-transform:uppercase;letter-spacing:2.5px}
 .points-value{font-size:48px;line-height:1;font-weight:800;margin:13px 0 8px}
@@ -164,18 +154,6 @@ h1{text-align:center;font-size:30px;margin:8px 0 7px}
   </div>
 </section>
 
-<section class="panel full">
-  <div class="panel-heading">
-    <div>
-      <h2 class="panel-title">Actividad de tu cuenta</h2>
-      <div id="activitySummary" class="history-summary">Cargando actividad…</div>
-    </div>
-    <span class="panel-tag">Recientes</span>
-  </div>
-  <div id="customerActivity" class="customer-events">
-    <div class="customer-event empty">Cargando actividad…</div>
-  </div>
-</section>
 
 <section id="puntos" class="panel points-panel">
   <div class="points-kicker">AvoPuntos</div>
@@ -235,7 +213,6 @@ const AUTH_STORAGE_KEY='sb-tjarildqqxtjmafpiyuz-auth-token';
 let session=null;
 let pointsBalance=0;
 let historyMode='recent';
-let activityLoadedAt=null;
 
 const $=id=>document.getElementById(id);
 
@@ -269,45 +246,6 @@ function formatMoney(value){
   return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
 }
 
-function activityEventLabel(type){
-  return ({
-    purchase:'Compra',
-    purchase_cancelled:'Cancelación de compra',
-    refund:'Reembolso',
-    refund_cancelled:'Cancelación de reembolso'
-  })[type]||'Actividad';
-}
-async function loadCustomerActivity(){
-  if(!session?.access_token||!session?.user?.id)return;
-  try{
-    const events=await restGet(
-      '/rest/v1/customer_activity_events?select=event_type,receipt_number,related_receipt_number,title,description,amount,points_delta,points_balance,event_at&profile_id=eq.'+
-      encodeURIComponent(session.user.id)+'&order=event_at.desc&limit=20',
-      session.access_token
-    );
-    const list=Array.isArray(events)?events:[];
-    const el=$('customerActivity');
-    if(!list.length){
-      el.innerHTML='<div class="customer-event empty">Todavía no hay actividad registrada.</div>';
-      $('activitySummary').textContent='Sin actividad registrada';
-      return;
-    }
-    el.innerHTML=list.map(item=>{
-      return '<div class="customer-event">'+
-        '<div class="customer-event-title">'+escapeHtml(item.title||'Actividad')+'</div>'+
-        '<div class="customer-event-description">'+escapeHtml(item.description||'')+'</div>'+
-        '<div class="customer-event-type">'+escapeHtml(activityEventLabel(item.event_type))+'</div>'+
-        '<div class="customer-event-date">'+escapeHtml(formatDate(item.event_at,true))+'</div>'+
-      '</div>';
-    }).join('');
-    $('activitySummary').textContent='Últimos '+list.length+' eventos';
-    activityLoadedAt=new Date();
-  }catch(error){
-    $('customerActivity').innerHTML='<div class="customer-event empty">No fue posible cargar la actividad en este momento.</div>';
-    $('activitySummary').textContent='No fue posible cargar la actividad';
-  }
-}
-
 function movementLabel(type){
   return ({
     opening_balance:'Saldo inicial',
@@ -316,19 +254,34 @@ function movementLabel(type){
     earn_reversal:'Puntos retirados por cancelación',
     redeem_reversal:'Puntos devueltos por cancelación',
     expiration:'Puntos vencidos',
-    adjustment:'Ajuste de puntos'
+    adjustment:'Ajuste de puntos',
+    purchase:'Compra registrada',
+    purchase_cancelled:'Compra cancelada',
+    refund:'Reembolso registrado',
+    refund_cancelled:'Reembolso cancelado'
   })[type]||'Movimiento de AvoPuntos';
 }
 function movementMeta(m){
   let meta=formatDate(m.created_at,true);
   const receipt=m.receipt_number||m.related_receipt_number;
-  if(receipt){
-    const cancelled=m.movement_type==='earn_reversal'||m.movement_type==='redeem_reversal';
-    meta+=(meta?' · ':'')+(cancelled?'Ticket cancelado ':'Ticket ')+escapeHtml(receipt);
-  }
-  if(m.eligible_amount!=null){
-    const amount=Number(m.eligible_amount);
-    if(Number.isFinite(amount))meta+=(meta?' · ':'')+'Compra elegible '+formatMoney(amount);
+  const type=m.movement_type;
+
+  if(type==='purchase'||type==='purchase_cancelled'||type==='refund'||type==='refund_cancelled'){
+    const details=m.details||{};
+    const amount=Number(details.total_money);
+    if(Number.isFinite(amount))meta+=(meta?' · ':'')+formatMoney(amount);
+    const payments=Array.isArray(details.payment_names)?details.payment_names.filter(Boolean):[];
+    if(payments.length)meta+=(meta?' · ':'')+'Pago con '+payments.join(' + ');
+    if(receipt)meta+=(meta?' · ':'')+'Ticket '+escapeHtml(receipt);
+  }else{
+    if(receipt){
+      const cancelled=type==='earn_reversal'||type==='redeem_reversal';
+      meta+=(meta?' · ':'')+(cancelled?'Ticket cancelado ':'Ticket ')+escapeHtml(receipt);
+    }
+    if(m.eligible_amount!=null){
+      const amount=Number(m.eligible_amount);
+      if(Number.isFinite(amount))meta+=(meta?' · ':'')+'Compra elegible '+formatMoney(amount);
+    }
   }
   return meta;
 }
@@ -351,19 +304,20 @@ function renderHistory(movements){
   history.innerHTML=movements.map(m=>{
     const delta=Number(m.points_delta);
     const positive=delta>0;
-    const sign=positive?'+':'−';
+    const negative=delta<0;
+    const sign=positive?'+':(negative?'−':'');
     const value=Math.abs(delta);
     const balanceAfterThis=balanceAfter;
     balanceAfter-=delta;
     const receipt=m.receipt_number||m.related_receipt_number;
     return '<div class="history-item">'+
-      '<div class="history-sign '+(positive?'positive':'negative')+'">'+sign+'</div>'+
+      '<div class="history-sign '+(positive?'positive':(negative?'negative':'neutral'))+'">'+(sign||'•')+'</div>'+
       '<div class="history-main">'+
         '<div class="history-type">'+escapeHtml(movementLabel(m.movement_type))+'</div>'+
         '<div class="history-meta">'+movementMeta(m)+'</div>'+
         '<div class="history-balance">Saldo después: <strong>'+balanceAfterThis+' AP</strong></div>'+
       '</div>'+
-      '<button type="button" class="history-points '+(positive?'positive':'negative')+(receipt?'':' no-detail')+'" '+(receipt?'data-receipt="'+escapeHtml(receipt)+'" aria-label="Ver detalle de la compra"':'disabled')+'>'+sign+value+' AP</button>'+
+      '<button type="button" class="history-points '+(positive?'positive':(negative?'negative':'neutral'))+(receipt?'':' no-detail')+'" '+(receipt?'data-receipt="'+escapeHtml(receipt)+'" aria-label="Ver detalle de la compra"':'disabled')+'>'+(sign||'')+value+' AP</button>'+
     '</div>';
   }).join('');
 
@@ -573,7 +527,7 @@ async function loadHistoryRecent(){
   $('pointsHistory').innerHTML='<div class="history-loading">Cargando historial…</div>';
   try{
     const movements=await restGet(
-      '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number&profile_id=eq.'+
+      '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number,details&profile_id=eq.'+
       encodeURIComponent(session.user.id)+'&order=created_at.desc&limit=10',
       session.access_token
     );
@@ -646,7 +600,6 @@ async function loadAccount(){
     if(account?.length===0){}
     populateHistoryFilters();
     await loadHistoryRecent();
-    await loadCustomerActivity();
     setStatus('');
   }catch(error){
     setStatus('No fue posible cargar la información.');
@@ -686,7 +639,6 @@ loadAccount();
 
 window.setInterval(async()=>{
   if(!session?.user?.id)return;
-  if(!activityLoadedAt||Date.now()-activityLoadedAt.getTime()>10000){await loadCustomerActivity();}
   try{
     const account=await restGet('/rest/v1/avopuntos_accounts?select=balance&profile_id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',session.access_token);
     const next=Number(Array.isArray(account)?account[0]?.balance:NaN);
