@@ -15,7 +15,7 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
   display:flex;align-items:center;gap:8px;
   font-family:Arial,sans-serif;
 }
-.topbar a{
+.topbar a,.topbar button{
   display:inline-flex;align-items:center;justify-content:center;
   min-height:38px;padding:0 13px;border-radius:20px;
   border:1px solid rgba(255,255,255,.42);
@@ -25,8 +25,9 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
   font-size:12px;letter-spacing:1.2px;white-space:nowrap;
   box-shadow:0 8px 24px rgba(0,0,0,.18);
   transition:.18s ease;
+  font-family:inherit;cursor:pointer;
 }
-.topbar a:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.72)}
+.topbar a:hover,.topbar button:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.72)}
 .page{min-height:100vh;padding:92px 18px 34px}
 .account-shell{width:100%;max-width:900px;margin:0 auto}
 .brand-head{text-align:center;margin:0 auto 22px}
@@ -124,7 +125,8 @@ h1{text-align:center;font-size:30px;margin:8px 0 7px}
 
 <nav class="topbar" aria-label="Navegación AvoHouse">
   <a href="../ahtv/index.html">AHtv</a>
-  <a href="../index.html">MENÚ</a>
+  <a href="#puntos">AvoPuntos</a>
+  <button id="topLogoutBtn" type="button">CERRAR SESIÓN</button>
 </nav>
 
 <main class="page">
@@ -185,9 +187,7 @@ h1{text-align:center;font-size:30px;margin:8px 0 7px}
 </section>
 </div>
 
-<div class="bottom-actions">
-  <button id="logoutBtn" class="primary" type="button">Cerrar sesión</button>
-</div>
+
 <div id="pageStatus" class="status">Comprobando sesión…</div>
 </div>
 </main>
@@ -635,7 +635,7 @@ async function logout(){
   try{localStorage.removeItem(AUTH_STORAGE_KEY)}catch(_){}
   window.location.href='../index.html';
 }
-$('logoutBtn').addEventListener('click',logout);
+$('topLogoutBtn').addEventListener('click',logout);
 loadAccount();
 
 window.setInterval(async()=>{
