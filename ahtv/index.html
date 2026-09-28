@@ -178,7 +178,15 @@ body::before {
     const SUPABASE_URL = 'https://tjarildqqxtjmafpiyuz.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
     const { createClient } = window.supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage,
+        storageKey: 'sb-tjarildqqxtjmafpiyuz-auth-token'
+      }
+    });
 
     const searchInput = document.getElementById('search');
     const resultsEl = document.getElementById('results');
