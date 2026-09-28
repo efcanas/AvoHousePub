@@ -794,6 +794,7 @@ async function loadAccount(){
     setText('statTickets','—');
 
     await loadAccountSummary();
+    await loadWhatsappVerification();
 
     if(account?.length===0){}
     populateHistoryFilters();
