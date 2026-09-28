@@ -172,6 +172,11 @@ button:disabled{opacity:.45;cursor:default}
 .reward-admin-item:last-child{border-bottom:0}
 .reward-admin-name{font-size:13px;font-weight:800}
 .reward-admin-meta{margin-top:3px;color:#999;font-size:10px;line-height:1.45}
+
+.instagram-admin-card{margin-top:18px}
+.instagram-admin-card .panel-heading{margin-bottom:14px}
+.instagram-admin-status{padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.035)}
+.instagram-admin-user{font-size:14px;font-weight:800;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -317,6 +322,32 @@ button:disabled{opacity:.45;cursor:default}
         <div class="stat"><div class="stat-label">Ganados netos</div><div id="statEarned" class="stat-value">0</div></div>
         <div class="stat"><div class="stat-label">Utilizados netos</div><div id="statUsed" class="stat-value">0</div></div>
         <div class="stat"><div class="stat-label">Tickets</div><div id="statTickets" class="stat-value">0</div></div>
+      </div>
+    </section>
+
+    <section class="card instagram-admin-card">
+      <div class="panel-heading">
+        <div>
+          <h2 class="panel-title">Verificación de Instagram</h2>
+          <div class="history-summary">Validación manual de la cuenta de Instagram</div>
+        </div>
+        <span id="instagramAdminMode" class="panel-tag">—</span>
+      </div>
+      <div id="instagramAdminStatus" class="instagram-admin-status">
+        <div class="instagram-admin-help">Selecciona un cliente.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="panel-heading">
+        <div>
+          <h2 class="panel-title">Recompensas AP</h2>
+          <div class="history-summary">Beneficios y bonificaciones registradas</div>
+        </div>
+        <span class="panel-tag">Cliente</span>
+      </div>
+      <div id="customerRewardsAdmin" class="rewards-admin-list">
+        <div class="empty">Selecciona un cliente.</div>
       </div>
     </section>
 
@@ -862,35 +893,48 @@ function renderWhatsappVerificationAdmin(data){
 }
 
 function renderInstagramVerificationAdmin(data){
-  const area=$('instagramVerificationAdmin');
-  if(!area)return;
+  const compact=$('instagramVerificationAdmin');
+  const card=$('instagramAdminStatus');
+  const mode=$('instagramAdminMode');
+
+  if(compact)compact.dataset.verificationId=String(data?.id||'');
 
   if(!data){
-    area.dataset.verificationId='';
-    area.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge">⚪ Sin verificar</span></div></div>';
+    if(compact)compact.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge">⚪ Sin verificar</span></div></div>';
+    if(card)card.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Instagram para este cliente.</div>';
+    if(mode)mode.textContent='Sin solicitud';
     return;
   }
 
-  area.dataset.verificationId=String(data.id||'');
+  if(compact)compact.dataset.verificationId=String(data.id||'');
 
   if(data.status==='verified'){
     const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    area.innerHTML='<div class="verification-admin">'+
-      '<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>'+
-      (bonus>0?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>':'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>')+
-      '</div>';
+    const statusHtml='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>';
+    const helpHtml=bonus>0
+      ?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
+      :'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>';
+
+    if(compact)compact.innerHTML='<div class="verification-admin">'+statusHtml+helpHtml+'</div>';
+    if(card)card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Instagram')+'</div>'+statusHtml+helpHtml;
+    if(mode)mode.textContent='Verificado';
     return;
   }
 
   const code=String(data.code||'');
-  area.innerHTML='<div class="verification-admin">'+
-    '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-    '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-    '<div class="verification-admin-help">Comprueba manualmente que la cuenta de Instagram corresponde al usuario registrado y que el código coincide con el enviado por DM. Después valida.</div>'+
-    '<button id="validateInstagramBtn" class="verification-admin-btn" type="button">VALIDAR INSTAGRAM</button>'+
-    '</div>';
+  if(compact)compact.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div></div>';
 
-  $('validateInstagramBtn').addEventListener('click',verifySelectedInstagram);
+  if(card){
+    card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Instagram')+'</div>'+
+      '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
+      '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
+      '<div class="instagram-admin-help">Comprueba manualmente que la cuenta corresponde al usuario registrado y que el código coincide con el enviado por DM. Después valida.</div>'+
+      '<button id="validateInstagramBtn" class="verification-admin-btn" type="button">VALIDAR INSTAGRAM</button>';
+  }
+
+  const btn=$('validateInstagramBtn');
+  if(btn)btn.addEventListener('click',verifySelectedInstagram);
+  if(mode)mode.textContent='Pendiente';
 }
 
 async function loadInstagramVerificationAdmin(){
@@ -1116,6 +1160,8 @@ async function loadClient(profile){
   await loadRecentHistory();
   await refreshHistoryYears();
   await loadWhatsappVerificationAdmin();
+  await loadInstagramVerificationAdmin();
+  await loadCustomerRewardsAdmin();
   await loadCustomerRule();
 }
 
