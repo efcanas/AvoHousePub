@@ -186,6 +186,33 @@ button:disabled{opacity:.45;cursor:default}
 <section id="adminArea" class="hidden">
   <div id="notice" class="notice" role="status"></div>
 
+  <section id="pointsSettingsCard" class="card">
+    <div class="panel-heading">
+      <h2 class="panel-title">Configuración general de AvoPuntos</h2>
+      <span id="pointsSettingsStatus" class="panel-tag">Admin</span>
+    </div>
+      <div class="helper">La tasa base aplica a nuevas compras. Las promociones respetan sus fechas y el beneficio individual de un cliente tiene prioridad sobre una promoción general.</div>
+      <div class="settings-grid" style="margin-top:12px">
+        <div>
+          <span class="info-label">Tasa base · AP por $1.000</span>
+          <input id="basePointsRate" type="number" min="0" max="100000" step="1" inputmode="numeric" aria-label="Tasa base de AvoPuntos">
+        </div>
+        <button id="saveBaseRateBtn" class="primary" type="button">GUARDAR TASA</button>
+      </div>
+      <div class="panel-heading" style="margin-top:18px;padding-top:14px">
+        <h3 class="panel-title" style="font-size:15px">Nueva promoción</h3>
+      </div>
+      <div class="promo-form">
+        <input id="promoName" type="text" maxlength="120" placeholder="Nombre de la promoción">
+        <input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Multiplicador" aria-label="Multiplicador">
+        <div><span class="info-label">Desde</span><input id="promoStart" type="date"></div>
+        <div><span class="info-label">Hasta</span><input id="promoEnd" type="date"></div>
+        <button id="createPromoBtn" class="primary" type="button">CREAR PROMOCIÓN</button>
+      </div>
+      <div id="promotionList" class="promo-list"><div class="empty">Cargando promociones…</div></div>
+    </section>
+
+
   <section class="card">
     <div class="panel-heading">
       <h2 class="panel-title">Buscar cliente</h2>
@@ -253,41 +280,15 @@ button:disabled{opacity:.45;cursor:default}
       </section>
     </div>
 
-    <section id="pointsSettingsCard" class="card">
-      <div class="panel-heading">
-        <h2 class="panel-title">Configuración de AvoPuntos</h2>
-        <span id="pointsSettingsStatus" class="panel-tag">Admin</span>
-      </div>
-      <div class="helper">La tasa base aplica a nuevas compras. Las promociones respetan sus fechas y el beneficio individual de un cliente tiene prioridad sobre una promoción general.</div>
-      <div class="settings-grid" style="margin-top:12px">
-        <div>
-          <span class="info-label">Tasa base · AP por $1.000</span>
-          <input id="basePointsRate" type="number" min="0" max="100000" step="1" inputmode="numeric" aria-label="Tasa base de AvoPuntos">
-        </div>
-        <button id="saveBaseRateBtn" class="primary" type="button">GUARDAR TASA</button>
-      </div>
-      <div class="panel-heading" style="margin-top:18px;padding-top:14px">
-        <h3 class="panel-title" style="font-size:15px">Nueva promoción</h3>
-      </div>
-      <div class="promo-form">
-        <input id="promoName" type="text" maxlength="120" placeholder="Nombre de la promoción">
-        <input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Multiplicador" aria-label="Multiplicador">
-        <div><span class="info-label">Desde</span><input id="promoStart" type="date"></div>
-        <div><span class="info-label">Hasta</span><input id="promoEnd" type="date"></div>
-        <button id="createPromoBtn" class="primary" type="button">CREAR PROMOCIÓN</button>
-      </div>
-      <div id="promotionList" class="promo-list"><div class="empty">Cargando promociones…</div></div>
-    </section>
-
-  <section class="card">
+    <section class="card">
       <div class="panel-heading">
         <h2 class="panel-title">Resumen</h2>
         <span id="summaryTag" class="panel-tag">—</span>
       </div>
       <div class="stats-grid">
         <div class="stat"><div class="stat-label">Movimientos</div><div id="statMovements" class="stat-value">0</div></div>
-        <div class="stat"><div class="stat-label">Ganados</div><div id="statEarned" class="stat-value">0</div></div>
-        <div class="stat"><div class="stat-label">Utilizados</div><div id="statUsed" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">Ganados netos</div><div id="statEarned" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">Utilizados netos</div><div id="statUsed" class="stat-value">0</div></div>
         <div class="stat"><div class="stat-label">Tickets</div><div id="statTickets" class="stat-value">0</div></div>
       </div>
     </section>
@@ -831,11 +832,13 @@ async function loadClient(profile){
   const ticketSet=new Set();
   for(const m of movements||[]){
     const d=Number(m.points_delta||0);
-    if(d>0 && (m.movement_type==='earn'||m.movement_type==='earn_reversal'&&false))earned+=d;
-    if(d<0 && (m.movement_type==='redeem'))used+=Math.abs(d);
+    if(m.movement_type==='earn'||m.movement_type==='earn_reversal')earned+=d;
+    if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal')used-=d;
     if(m.receipt_number)ticketSet.add(m.receipt_number);
     if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
   }
+  earned=Math.max(0,Math.round(earned));
+  used=Math.max(0,Math.round(used));
   setText('statMovements',Number(movementCount||0).toLocaleString('es-CO'));
   setText('statEarned',Number(earned).toLocaleString('es-CO')+' AP');
   setText('statUsed',Number(used).toLocaleString('es-CO')+' AP');
