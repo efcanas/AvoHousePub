@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avohouse-images-v1';
+const CACHE_NAME = 'avohouse-images-v2';
 
 self.addEventListener('install', event => {
   event.waitUntil(
