@@ -394,7 +394,13 @@ function formatDateInput(value){
   if(Number.isNaN(d.getTime()))return value;
   return new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(d);
 }
-function movementLabel(type){
+function movementLabel(type,details={}){
+  if(details?.refund_cancellation===true && type==='earn'){
+    return 'Puntos restituidos por cancelación de devolución';
+  }
+  if(details?.refund_cancellation===true && type==='redeem'){
+    return 'Canje revertido por cancelación de devolución';
+  }
   return ({
     opening_balance:'Saldo inicial',
     earn:'Puntos ganados',
@@ -463,7 +469,7 @@ function renderHistory(movements){
     return '<div class="history-item">'+
       '<div class="history-sign '+(positive?'positive':negative?'negative':'neutral')+'">'+(sign||'•')+'</div>'+
       '<div class="history-main">'+
-        '<div class="history-type">'+movementLabel(m.movement_type)+'</div>'+
+        '<div class="history-type">'+movementLabel(m.movement_type,m.details||{})+'</div>'+
         '<div class="history-meta">'+movementMeta(m)+'</div>'+
         '<div class="history-balance">Saldo después: <strong>'+Number(balanceAfterThis).toLocaleString('es-CO')+' AP</strong></div>'+
       '</div>'+
