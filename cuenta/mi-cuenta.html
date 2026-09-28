@@ -252,7 +252,13 @@ function formatMoney(value){
   return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
 }
 
-function movementLabel(type){
+function movementLabel(type,details={}){
+  if(details?.refund_cancellation===true && type==='earn'){
+    return 'Puntos restituidos por cancelación de devolución';
+  }
+  if(details?.refund_cancellation===true && type==='redeem'){
+    return 'Canje revertido por cancelación de devolución';
+  }
   return ({
     opening_balance:'Saldo inicial',
     earn:'Puntos ganados',
