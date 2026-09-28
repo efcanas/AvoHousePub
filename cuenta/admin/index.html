@@ -187,7 +187,7 @@ button:disabled{opacity:.45;cursor:default}
 .instagram-admin-card .panel-heading{margin-bottom:14px}
 .instagram-admin-status{padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.035)}
 .instagram-admin-user{font-size:14px;font-weight:800;margin-bottom:6px}
-.facebook-admin-card{margin-top:18px}.whatsapp-admin-card{margin-top:18px}
+.facebook-admin-card{margin-top:18px}.whatsapp-admin-card{margin-top:18px}.verification-admin-card[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -274,6 +274,7 @@ button:disabled{opacity:.45;cursor:default}
           <div class="info"><span class="info-label">Celular</span><span id="infoPhone" class="info-value">—</span></div>
           <div class="info"><span class="info-label">WhatsApp</span><span id="infoWhatsapp" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Instagram</span><span id="infoInstagram" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Facebook</span><span id="infoFacebook" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Fecha de nacimiento</span><span id="infoBirth" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>        </div>
@@ -330,7 +331,7 @@ button:disabled{opacity:.45;cursor:default}
       </div>
     </section>
 
-    <section class="card whatsapp-admin-card">
+    <section id="whatsappAdminCard" class="card whatsapp-admin-card verification-admin-card" hidden>
       <div class="panel-heading">
         <div>
           <h2 class="panel-title">Verificación de WhatsApp</h2>
@@ -343,7 +344,7 @@ button:disabled{opacity:.45;cursor:default}
       </div>
     </section>
 
-    <section class="card instagram-admin-card">
+    <section id="instagramAdminCard" class="card instagram-admin-card verification-admin-card" hidden>
       <div class="panel-heading">
         <div>
           <h2 class="panel-title">Verificación de Instagram</h2>
@@ -355,7 +356,7 @@ button:disabled{opacity:.45;cursor:default}
         <div class="instagram-admin-help">Selecciona un cliente.</div>
       </div>
     </section>
-    <section class="card facebook-admin-card">
+    <section id="facebookAdminCard" class="card facebook-admin-card verification-admin-card" hidden>
       <div class="panel-heading">
         <div>
           <h2 class="panel-title">Verificación de Facebook</h2>
@@ -970,12 +971,32 @@ async function refreshClientPointsAfterVerification(){
   await refreshHistoryYears();
 }
 
+function setAdminVerificationInfo(infoId, baseValue, data){
+  const base=String(baseValue||'No registrado');
+  if(data?.status==='verified'){
+    setText(infoId,base+' · ✅ Verificado');
+  }else if(data?.status==='pending'){
+    setText(infoId,base+' · ⏳ Solicitud pendiente');
+  }else{
+    setText(infoId,base);
+  }
+}
+
 function renderWhatsappVerificationAdmin(data){
   const area=$('whatsappAdminStatus');
   const mode=$('whatsappAdminMode');
+  const card=$('whatsappAdminCard');
   if(!area)return;
 
   area.dataset.verificationId=String(data?.id||'');
+  if(card)card.hidden=!(data && data.status==='pending');
+
+  const base=selectedProfile
+    ? (selectedProfile.whatsapp_same
+      ? (selectedProfile.phone ? selectedProfile.phone : 'Igual al celular')
+      : (selectedProfile.whatsapp || 'No registrado'))
+    : (data?.contact_value||'No registrado');
+  setAdminVerificationInfo('infoWhatsapp',base,data);
 
   if(!data){
     area.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de WhatsApp para este cliente.</div>';
@@ -1002,7 +1023,6 @@ function renderWhatsappVerificationAdmin(data){
   $('validateWhatsappBtn').addEventListener('click',verifySelectedWhatsapp);
   if(mode)mode.textContent='Pendiente';
 }
-
 async function loadWhatsappVerificationAdmin(){
   if(!selectedProfile)return;
 
@@ -1053,9 +1073,14 @@ async function verifySelectedWhatsapp(){
 function renderInstagramVerificationAdmin(data){
   const area=$('instagramAdminStatus');
   const mode=$('instagramAdminMode');
+  const card=$('instagramAdminCard');
   if(!area)return;
 
   area.dataset.verificationId=String(data?.id||'');
+  if(card)card.hidden=!(data && data.status==='pending');
+
+  const base=String(data?.contact_value||selectedProfile?.instagram||'No registrado');
+  setAdminVerificationInfo('infoInstagram',base,data);
 
   if(!data){
     area.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Instagram para este cliente.</div>';
@@ -1083,7 +1108,6 @@ function renderInstagramVerificationAdmin(data){
   $('validateInstagramBtn').addEventListener('click',verifySelectedInstagram);
   if(mode)mode.textContent='Pendiente';
 }
-
 async function loadInstagramVerificationAdmin(){
   if(!selectedProfile)return;
 
@@ -1134,9 +1158,14 @@ async function verifySelectedInstagram(){
 function renderFacebookVerificationAdmin(data){
   const area=$('facebookAdminStatus');
   const mode=$('facebookAdminMode');
+  const card=$('facebookAdminCard');
   if(!area)return;
 
   area.dataset.verificationId=String(data?.id||'');
+  if(card)card.hidden=!(data && data.status==='pending');
+
+  const base=String(data?.contact_value||'No registrado');
+  setAdminVerificationInfo('infoFacebook',base,data);
 
   if(!data){
     area.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Facebook para este cliente.</div>';
@@ -1164,7 +1193,6 @@ function renderFacebookVerificationAdmin(data){
   $('validateFacebookBtn').addEventListener('click',verifySelectedFacebook);
   if(mode)mode.textContent='Pendiente';
 }
-
 async function loadFacebookVerificationAdmin(){
   if(!selectedProfile)return;
 
@@ -1255,7 +1283,7 @@ async function loadClient(profile){
     ? (profile.phone ? profile.phone : 'Igual al celular')
     : (profile.whatsapp || 'No registrado'));
   setText('infoInstagram',profile.instagram || 'No registrado');
-  setText('infoFacebook','');
+  setText('infoFacebook','No registrado');
   setText('infoDocument',[profile.document_type,profile.document_number].filter(Boolean).join(' · ')||'—');
   setText('infoBirth',formatDateInput(profile.birth_date));
   setText('infoCreated',formatDate(profile.created_at));
