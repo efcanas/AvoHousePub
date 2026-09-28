@@ -463,7 +463,9 @@ async function loadClient(profile){
   setText('infoFullName',profile.full_name||'—');
   setText('infoEmail',profile.email||'—');
   setText('infoPhone',profile.phone||'—');
-  setText('infoWhatsapp',profile.whatsapp_same?'Igual al celular':(profile.whatsapp||'—'));
+  setText('infoWhatsapp',profile.whatsapp_same
+    ? (profile.phone ? profile.phone : 'Igual al celular')
+    : (profile.whatsapp || 'No registrado'));
   setText('infoDocument',[profile.document_type,profile.document_number].filter(Boolean).join(' · ')||'—');
   setText('infoBirth',formatDateInput(profile.birth_date));
   setText('infoCreated',formatDate(profile.created_at));
@@ -530,7 +532,7 @@ async function searchClients(){
   // Escapar caracteres especiales del filtro PostgREST para que la búsqueda no se rompa.
   const escaped=term.replace(/[,%]/g,' ').replace(/[()]/g,' ').trim();
   const {data,error}=await db.from('profiles')
-    .select('id,username,full_name,email,phone,document_number,document_type,created_at')
+    .select('id,username,full_name,email,phone,whatsapp,whatsapp_same,document_number,document_type,created_at,birth_date')
     .or('username.ilike.%'+escaped+'%,full_name.ilike.%'+escaped+'%,email.ilike.%'+escaped+'%,document_number.ilike.%'+escaped+'%,phone.ilike.%'+escaped+'%')
     .order('created_at',{ascending:false})
     .limit(30);
