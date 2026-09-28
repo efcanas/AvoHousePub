@@ -4,7 +4,7 @@
 <link rel="preload" as="image" href="../Fondo.webp" fetchpriority="high">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AvoHouse · Mi cuenta</title>
+<title>AvoHouse · Mi cuenta</title>\n<meta name="ah-version" content="recompensas-ap-instagram-v1">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -734,24 +734,26 @@ function renderWhatsappVerification(data){
   if(!area)return;
 
   if(!data){
-    area.innerHTML='<div class="verification-line"><span class="verification-badge">Sin verificar</span><button id="verifyWhatsappBtn" class="verification-action" type="button">VERIFICAR WHATSAPP</button></div>';
-    $('verifyWhatsappBtn').addEventListener('click',requestWhatsappVerification);
+    area.innerHTML='<div class="verification-line"><span class="verification-badge">Sin verificar</span></div>';
     return;
   }
 
   if(data.status==='verified'){
     const bonus=Number(data.bonus_granted?data.bonus_points:0);
     area.innerHTML='<div class="verification-line"><span class="verification-badge verified">✅ Verificado</span></div>'+
-      (bonus>0?'<div class="verification-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>':'<div class="verification-help">Verificado. Esta cuenta no recibió una nueva bonificación.</div>');
+      (bonus>0
+        ?'<div class="verification-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
+        :'<div class="verification-help">Verificado. Esta cuenta no recibió una nueva bonificación.</div>');
     return;
   }
 
   const code=String(data.code||'');
-  const target=AVOHOUSE_WHATSAPP.replace(/\D/g,'');
-  const text=encodeURIComponent('Hola AvoHouse. Quiero verificar mi WhatsApp. Código: '+code);
-  area.innerHTML='<div class="verification-line"><span class="verification-badge pending">⏳ Pendiente</span><a class="verification-action" href="https://wa.me/'+target+'?text='+text+'" target="_blank" rel="noopener">ABRIR WHATSAPP</a></div>'+
-    '<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong><div class="verification-help">Envía este código por WhatsApp a AvoHouse. La solicitud permanece pendiente hasta que sea validada manualmente.</div></div>';
+  area.innerHTML='<div class="verification-line"><span class="verification-badge pending">⏳ Pendiente</span></div>'+
+    (code
+      ?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong></div>'
+      :'<div class="verification-help">Solicitud pendiente de validación manual.</div>');
 }
+
 
 async function loadWhatsappVerification(){
   if(!session?.user?.id)return;
