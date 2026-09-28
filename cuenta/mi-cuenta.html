@@ -281,7 +281,10 @@ function formatDate(value,withTime=false){
 }
 function formatMoney(value){
   const n=Number(value);
-  return Number.isFinite(n)?'function movementLabel(type,details={}){
+  return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
+}
+
+function movementLabel(type,details={}){
   if(details?.bonus_type==='whatsapp_verification' && type==='earn'){
     return 'Bonificación por verificación de WhatsApp';
   }
