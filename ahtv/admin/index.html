@@ -270,6 +270,82 @@
       line-height: 1.45;
     }
 
+    .admin-song-card {
+      margin: 14px 0 18px;
+    }
+
+    .admin-song-search {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .admin-song-search input {
+      margin: 0;
+    }
+
+    .admin-song-results {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .admin-song-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 12px;
+      background: rgba(255,255,255,.035);
+    }
+
+    .admin-song-text {
+      min-width: 0;
+    }
+
+    .admin-song-artist {
+      font-size: 14px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .admin-song-title {
+      margin-top: 3px;
+      color: #d4d7dd;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .admin-song-row button {
+      flex: 0 0 auto;
+      margin-right: 0;
+    }
+
+    .admin-song-status {
+      margin-top: 10px;
+      min-height: 18px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .admin-song-search {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-song-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .admin-song-row button {
+        width: 100%;
+      }
+    }
+
     .now-card {
       padding: 18px;
       margin: 0 0 18px;
@@ -475,6 +551,20 @@
           <button id="requestsEnabledBtn" class="primary" disabled>CAMBIAR</button>
         </div>
       </div>
+    </div>
+
+    <div class="card admin-song-card">
+      <div class="topline">
+        <h3 style="margin:0;">Añadir canción</h3>
+        <span class="muted">ADMINISTRADOR</span>
+      </div>
+      <div class="meta">Sin límite de solicitudes, sin restricción de repetición y funciona aunque las solicitudes de clientes estén cerradas.</div>
+      <div class="admin-song-search">
+        <input id="adminSongSearch" type="search" placeholder="Artista o canción…" autocomplete="off">
+        <button id="adminSongSearchBtn" class="primary" type="button">BUSCAR</button>
+      </div>
+      <div id="adminSongResults" class="admin-song-results"></div>
+      <div id="adminSongStatus" class="admin-song-status"></div>
     </div>
 
     <div id="nowPlayingCard" class="now-card">
@@ -739,6 +829,93 @@
       : "Las nuevas solicitudes quedan pendientes hasta que las apruebes o rechaces.";
     requestModeBtn.textContent = automatico ? "PASAR A MANUAL" : "PASAR A AUTOMÁTICO";
     requestModeBtn.disabled = false;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, ch => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+    })[ch]);
+  }
+
+  async function searchAdminSongs() {
+    const input = document.getElementById("adminSongSearch");
+    const results = document.getElementById("adminSongResults");
+    const status = document.getElementById("adminSongStatus");
+    const q = input.value.trim();
+
+    if (q.length < 2) {
+      results.innerHTML = "";
+      status.className = "admin-song-status muted";
+      status.textContent = q ? "Escribe al menos 2 caracteres." : "";
+      return;
+    }
+
+    const safe = q.replace(/,/g, " ");
+    const filter = `artist.ilike.%${safe}%,title.ilike.%${safe}%`;
+
+    const { data, error } = await db
+      .from("songs")
+      .select("id,artist,title")
+      .eq("active", true)
+      .or(filter)
+      .order("artist", { ascending: true })
+      .order("title", { ascending: true })
+      .limit(20);
+
+    if (error) {
+      console.error(error);
+      results.innerHTML = "";
+      status.className = "admin-song-status error";
+      status.textContent = "No se pudo realizar la búsqueda.";
+      return;
+    }
+
+    if (!data?.length) {
+      results.innerHTML = '<div class="muted">No encontramos coincidencias.</div>';
+      status.className = "admin-song-status muted";
+      status.textContent = "";
+      return;
+    }
+
+    status.textContent = "";
+    results.innerHTML = data.map(song =>
+      '<div class="admin-song-row">'+
+        '<div class="admin-song-text">'+
+          '<div class="admin-song-artist">'+escapeHtml(song.artist)+'</div>'+
+          '<div class="admin-song-title">'+escapeHtml(song.title)+'</div>'+
+        '</div>'+
+        '<button class="primary admin-queue-btn" type="button">PONER EN COLA</button>'+
+      '</div>'
+    ).join("");
+
+    results.querySelectorAll(".admin-queue-btn").forEach((btn,index)=>{
+      btn.addEventListener("click",()=>queueAdminSong(data[index],btn));
+    });
+  }
+
+  async function queueAdminSong(song, button) {
+    button.disabled = true;
+    button.textContent = "AÑADIENDO…";
+    const status = document.getElementById("adminSongStatus");
+
+    const { data, error } = await db.rpc("ahtv_admin_queue_song", {
+      p_song_id: song.id
+    });
+
+    if (error) {
+      console.error(error);
+      status.className = "admin-song-status error";
+      status.textContent = error.message || "No fue posible añadir la canción.";
+      button.disabled = false;
+      button.textContent = "PONER EN COLA";
+      return;
+    }
+
+    status.className = "admin-song-status ok";
+    status.textContent = `“${song.artist} — ${song.title}” añadida a la cola en la posición ${data?.queue_position || "?"}.`;
+    button.disabled = false;
+    button.textContent = "PONER EN COLA";
+    await loadRequests();
   }
 
   async function loadRequestMode() {
@@ -1373,6 +1550,16 @@
   }
 
   loginBtn.addEventListener("click", () => login());
+
+  const adminSongSearchBtn = document.getElementById("adminSongSearchBtn");
+  const adminSongSearch = document.getElementById("adminSongSearch");
+  adminSongSearchBtn.addEventListener("click", searchAdminSongs);
+  adminSongSearch.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      searchAdminSongs();
+    }
+  });
 
   refreshBtn.addEventListener("click", async () => {
     await loadNowPlaying();
