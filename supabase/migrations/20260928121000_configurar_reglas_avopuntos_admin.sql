@@ -189,47 +189,7 @@ $$;
 revoke all on function public.avopuntos_admin_set_promotion_active(uuid,boolean) from public;
 grant execute on function public.avopuntos_admin_set_promotion_active(uuid,boolean) to authenticated;
 
-create or replace function public.avopuntos_admin_set_customer_multiplier(
-  p_profile_id uuid,p_multiplier numeric,p_start_date date,p_end_date date,p_reason text
-)
-returns jsonb language plpgsql security definer set search_path=public
-as $$
-declare
-  v_admin uuid:=auth.uid();
-  v_reason text:=nullif(trim(coalesce(p_reason,'')),'');
-  v_id uuid;
-  v_deactivated integer:=0;
-begin
-  if v_admin is null or not exists(select 1 from public.admin_users where user_id=v_admin) then raise exception 'No autorizado.'; end if;
-  if p_profile_id is null or not exists(select 1 from public.profiles where id=p_profile_id) then raise exception 'No existe el cliente seleccionado.'; end if;
-  if p_multiplier is null or p_multiplier<=0 or p_multiplier>100 then raise exception 'El multiplicador debe estar entre 0,01× y 100×.'; end if;
-  if p_start_date is null then raise exception 'La fecha de inicio es obligatoria.'; end if;
-  if p_end_date is not null and p_end_date<p_start_date then raise exception 'La fecha final no puede ser anterior a la fecha inicial.'; end if;
-  if v_reason is null or char_length(v_reason)>500 then raise exception 'Debes indicar un motivo de hasta 500 caracteres.'; end if;
-
-  update public.avopuntos_customer_rules
-  set active=false,updated_at=now()
-  where profile_id=p_profile_id and active=true;
-  get diagnostics v_deactivated=row_count;
-
-  insert into public.avopuntos_customer_rules(
-    profile_id,multiplier,start_date,end_date,active,reason,created_by
-  ) values(p_profile_id,p_multiplier,p_start_date,p_end_date,true,v_reason,v_admin)
-  returning id into v_id;
-
-  insert into public.avopuntos_admin_changes(
-    admin_user_id,entity_type,entity_id,action,details
-  ) values(v_admin,'customer_rule',v_id,'create',jsonb_build_object(
-    'profile_id',p_profile_id,'multiplier',p_multiplier,'start_date',p_start_date,
-    'end_date',p_end_date,'reason',v_reason,
-    'previous_active_rules_deactivated',v_deactivated
-  ));
-
-  return jsonb_build_object('ok',true,'id',v_id,'previous_active_rules_deactivated',v_deactivated);
-end;
-$$;
-
-revoke all on function public.avopuntos_admin_set_customer_multiplier(uuid,numeric,date,date,text) from public;
+CREATE OR REPLACE FUNCTION public.avopuntos_admin_set_customer_multiplier(p_profile_id uuid, p_multiplier numeric, p_start_date date, p_end_date date, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_admin uuid := auth.uid();\n  v_reason text := nullif(trim(coalesce(p_reason,'')),'');\n  v_id uuid;\nbegin\n  if v_admin is null or not exists (select 1 from public.admin_users where user_id=v_admin) then\n    raise exception 'No autorizado.';\n  end if;\n\n  if p_profile_id is null or not exists (select 1 from public.profiles where id=p_profile_id) then\n    raise exception 'No existe el cliente seleccionado.';\n  end if;\n\n  if p_multiplier is null or p_multiplier <= 0 or p_multiplier > 100 then\n    raise exception 'El multiplicador debe estar entre 0,01× y 100×.';\n  end if;\n\n  if p_start_date is null then\n    raise exception 'La fecha de inicio es obligatoria.';\n  end if;\n\n  if p_end_date is not null and p_end_date < p_start_date then\n    raise exception 'La fecha final no puede ser anterior a la fecha inicial.';\n  end if;\n\n  if v_reason is null or char_length(v_reason) > 500 then\n    raise exception 'Debes indicar un motivo de hasta 500 caracteres.';\n  end if;\n\n  insert into public.avopuntos_customer_rules(\n    profile_id,multiplier,start_date,end_date,active,reason,created_by\n  ) values (\n    p_profile_id,p_multiplier,p_start_date,p_end_date,true,v_reason,v_admin\n  )\n  returning id into v_id;\n\n  insert into public.avopuntos_admin_changes(\n    admin_user_id,entity_type,entity_id,action,details\n  ) values (\n    v_admin,'customer_rule',v_id,'create',\n    jsonb_build_object(\n      'profile_id',p_profile_id,\n      'multiplier',p_multiplier,\n      'start_date',p_start_date,\n      'end_date',p_end_date,\n      'reason',v_reason\n    )\n  );\n\n  return jsonb_build_object('ok',true,'id',v_id);\nend;\n$function$\n\n\nrevoke all on function public.avopuntos_admin_set_customer_multiplier(uuid,numeric,date,date,text) from public;
 grant execute on function public.avopuntos_admin_set_customer_multiplier(uuid,numeric,date,date,text) to authenticated;
 
 create or replace function public.avopuntos_admin_set_customer_rule_active(p_rule_id uuid,p_active boolean)
