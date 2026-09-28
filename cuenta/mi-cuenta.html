@@ -216,6 +216,7 @@ const AUTH_STORAGE_KEY='sb-tjarildqqxtjmafpiyuz-auth-token';
 let session=null;
 let pointsBalance=0;
 let historyMode='recent';
+let accountCreatedAt=null;
 
 const $=id=>document.getElementById(id);
 
@@ -473,10 +474,18 @@ function formatMonthYear(year,month){
   const name=new Intl.DateTimeFormat('es-CO',{month:'long'}).format(new Date(Number(year),Number(month)-1,1));
   return name.charAt(0).toUpperCase()+name.slice(1)+' '+year;
 }
+function getAccountCreationParts(){
+  const d=accountCreatedAt?new Date(accountCreatedAt):null;
+  if(!d||Number.isNaN(d.getTime()))return null;
+  return {year:d.getFullYear(),month:d.getMonth()+1};
+}
+
 function populateHistoryFilters(){
   const yearSelect=$('historyYear');
-  const currentYear=new Date().getFullYear();
-  const firstYear=2026;
+  const parts=getAccountCreationParts();
+  const now=new Date();
+  const currentYear=now.getFullYear();
+  const firstYear=parts?.year??currentYear;
 
   yearSelect.innerHTML='';
   for(let year=currentYear;year>=firstYear;year--){
@@ -487,6 +496,9 @@ function populateHistoryFilters(){
   }
 
   yearSelect.value=String(currentYear);
+  if(firstYear===currentYear && parts && parts.month>1){
+    yearSelect.value=String(currentYear);
+  }
   updateHistoryMonthOptions();
 }
 
@@ -498,7 +510,9 @@ function updateHistoryMonthOptions(){
   const currentYear=now.getFullYear();
   const currentMonth=now.getMonth()+1;
   const selectedYear=Number(yearSelect.value);
+  const parts=getAccountCreationParts();
 
+  const minMonth=(parts&&selectedYear===parts.year)?parts.month:1;
   const maxMonth=selectedYear<currentYear?12:currentMonth;
   monthSelect.innerHTML='';
 
@@ -508,7 +522,7 @@ function updateHistoryMonthOptions(){
     option.value=String(month);
     option.textContent=name;
 
-    if(month>maxMonth){
+    if(month<minMonth || month>maxMonth){
       option.disabled=true;
       option.textContent=name+' · No disponible';
     }
@@ -516,9 +530,9 @@ function updateHistoryMonthOptions(){
     monthSelect.appendChild(option);
   });
 
-  const previousValue=Number(monthSelect.value);
-  if(!previousValue||previousValue>maxMonth){
-    monthSelect.value=String(maxMonth);
+  const currentValue=Number(monthSelect.value);
+  if(!currentValue||currentValue<minMonth||currentValue>maxMonth){
+    monthSelect.value=String(minMonth);
   }
 }
 
@@ -595,6 +609,7 @@ async function loadAccount(){
     setText('infoWhatsapp',p.whatsapp);
     setText('infoDocument',[p.document_type,p.document_number].filter(Boolean).join(' · '));
     setText('infoCreated',formatDate(p.created_at));
+    accountCreatedAt=p.created_at;
     setText('welcome','Hola, '+(p.full_name||p.username||'Usuario')+'.');
 
     pointsBalance=Number.isInteger(Number(a?.balance))?Number(a.balance):0;
