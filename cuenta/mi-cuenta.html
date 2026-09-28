@@ -284,6 +284,56 @@ function formatMoney(value){
   return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
 }
 
+
+function renderAccountSummary(movements){
+  let earned=0,used=0;
+  const ticketSet=new Set();
+
+  for(const m of (Array.isArray(movements)?movements:[])){
+    const d=Number(m.points_delta||0);
+
+    if(m.movement_type==='earn'||m.movement_type==='earn_reversal'){
+      earned+=d;
+    }
+
+    if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal'){
+      used-=d;
+    }
+
+    if(m.receipt_number)ticketSet.add(m.receipt_number);
+    if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
+  }
+
+  earned=Math.max(0,Math.round(earned));
+  used=Math.max(0,Math.round(used));
+
+  setText(
+    'statMovements',
+    (Array.isArray(movements)?movements.length:0).toLocaleString('es-CO')
+  );
+  setText('statEarned',earned.toLocaleString('es-CO')+' AP');
+  setText('statUsed',used.toLocaleString('es-CO')+' AP');
+  setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
+  $('summaryTag').textContent='Saldo '+pointsBalance.toLocaleString('es-CO')+' AP';
+}
+
+async function loadAccountSummary(){
+  if(!session?.user?.id)return;
+
+  try{
+    const movements=await restGet(
+      '/rest/v1/avopuntos_movements?select=movement_type,points_delta,receipt_number,related_receipt_number&profile_id=eq.'+
+      encodeURIComponent(session.user.id)+'&order=created_at.desc&limit=1000',
+      session.access_token
+    );
+
+    renderAccountSummary(Array.isArray(movements)?movements:[]);
+  }catch(_){
+    // El saldo y el resto de la cuenta siguen visibles aunque el resumen histórico falle.
+    $('summaryTag').textContent='Saldo '+pointsBalance.toLocaleString('es-CO')+' AP';
+  }
+}
+
 function movementLabel(type,details={}){
   if(details?.bonus_type==='whatsapp_verification' && type==='earn'){
     return 'Bonificación por verificación de WhatsApp';
