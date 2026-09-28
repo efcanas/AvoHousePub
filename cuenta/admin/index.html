@@ -9,16 +9,22 @@
 html{scroll-behavior:smooth}
 body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#fff;background:url('../../Fondo.png') center/cover fixed no-repeat}
 body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:-1}
-.topbar{position:fixed;top:16px;right:16px;z-index:10000;display:flex;align-items:center;gap:8px}
-.topbar a,.topbar button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 13px;border-radius:20px;border:1px solid rgba(255,255,255,.42);background:rgba(0,0,0,.42);backdrop-filter:blur(8px);color:#fff;text-decoration:none;font-size:12px;letter-spacing:1.2px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}
-.topbar a:hover,.topbar button:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.72)}
-.page{min-height:100vh;padding:92px 18px 40px}
+body{padding-top:300px;position:relative;overflow-x:hidden}
+body::before{content:"";position:fixed;top:300px;left:0;right:0;bottom:0;background:url("../../imagenes/FondoAHtv.png") center center / cover no-repeat;z-index:0;pointer-events:none}
+body::after{content:"";position:fixed;top:300px;left:0;right:0;bottom:0;background:rgba(0,0,0,.32);z-index:0;pointer-events:none}
+.header{position:fixed;top:0;left:0;width:100%;z-index:1000;text-align:center;padding:25px 20px 15px;background:rgba(0,0,0,.86);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+.header .logo{width:260px;max-width:90%;margin:0 auto 8px;display:block}
+.header-title{font-size:1.35em;letter-spacing:3px;margin-bottom:6px;color:#d4af37;font-weight:800}
+.header-subtitle{color:#9ca3af;font-size:13px;margin-bottom:14px}
+.header-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.home-button,.header button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;padding:10px 16px;border:1px solid rgba(255,255,255,.20);border-radius:30px;font-size:.82em;background:rgba(255,255,255,.04);cursor:pointer}
+.home-button:hover,.header button:hover{background:#fff;color:#111}
+.page{position:relative;z-index:1;min-height:100vh;padding:18px 18px 40px}
 .shell{width:100%;max-width:1000px;margin:0 auto}
-.brand-head{text-align:center;margin:0 auto 22px}
-.logo{display:block;width:135px;max-width:42%;margin:0 auto 15px}
-.kicker{text-align:center;text-transform:uppercase;letter-spacing:3px;font-size:11px;opacity:.72}
-h1{text-align:center;font-size:30px;margin:8px 0 7px}
-.subtitle{text-align:center;color:#c9c9c9;line-height:1.5;font-size:14px;margin:0}
+.brand-head{display:none}
+.kicker{display:none}
+h1{display:none}
+.subtitle{display:none}
 .notice{display:none;margin:0 0 18px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);font-size:13px;line-height:1.5}
 .notice.show{display:block}
 .notice.error{color:#ffb7b7;border-color:rgba(255,90,90,.4);background:rgba(100,0,0,.14)}
@@ -113,20 +119,17 @@ button:disabled{opacity:.45;cursor:default}
 </style>
 </head>
 <body>
-<nav class="topbar">
-  <a href="../../index.html">MENÚ</a>
-  <a href="../mi-cuenta.html">MI CUENTA</a>
-  <button id="logoutBtn" class="hidden">SALIR</button>
-</nav>
-
 <main class="page">
-<div class="shell">
-<header class="brand-head">
-  <img class="logo" src="../../LogoPrincipal.png" alt="AvoHouse">
-  <div class="kicker">AvoHouse</div>
-  <h1>Centro de Control del Cliente</h1>
-  <p class="subtitle">Consulta administrativa de cuentas, AvoPuntos y movimientos.</p>
+<header class="header">
+  <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
+  <div class="header-title">AvoPuntos</div>
+  <div class="header-subtitle">Centro de Control del Cliente</div>
+  <div class="header-actions">
+    <a href="../../ahtv/" class="home-button">← AHtv</a>
+    <button id="logoutBtn" class="hidden">CERRAR SESIÓN</button>
+  </div>
 </header>
+<div class="shell">
 
 <section id="loginCard" class="card auth-card">
   <div class="panel-heading"><h2 class="panel-title">Acceso administrativo</h2><span class="panel-tag">AvoPuntos</span></div>
@@ -139,7 +142,6 @@ button:disabled{opacity:.45;cursor:default}
     </label>
     <button id="loginBtn" class="primary" type="submit" style="width:100%;margin-top:10px">ENTRAR</button>
   </form>
-  <button id="ahTvLoginBtn" class="secondary" type="button" style="width:100%;margin-top:10px">ABRIR ADMINISTRACIÓN AHtv</button>
   <div id="loginStatus" class="status">Conectando con AvoHouse…</div>
 </section>
 
@@ -701,7 +703,7 @@ async function logout(){
   showLogin();
 }
 
-$('ahTvLoginBtn').addEventListener('click',openAhTvAdmin);
+
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('searchBtn').addEventListener('click',searchClients);
@@ -743,10 +745,6 @@ function restoreAdminEmail(){
   }catch(_){}
 }
 
-function openAhTvAdmin(){
-  const returnTo=encodeURIComponent(window.location.pathname+'?v=20260927-3');
-  window.location.href='../../ahtv/admin/?returnTo='+returnTo;
-}
 
 async function init(){
   restoreAdminEmail();
