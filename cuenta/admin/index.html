@@ -61,6 +61,15 @@ button:disabled{opacity:.45;cursor:default}
 .balance-value{font-size:48px;line-height:1;font-weight:800;margin:13px 0 8px}
 .balance-caption{color:#9ca3af;font-size:13px}
 .account-meta{margin-top:15px;color:#8f96a3;font-size:12px;line-height:1.6}
+.points-adjust{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.09)}
+.points-adjust-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;font-weight:800}
+.points-adjust-row{display:grid;grid-template-columns:130px 1fr;gap:8px;margin-top:10px}
+.points-adjust input{margin:0}
+.points-adjust-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.points-adjust-actions button{width:100%}
+.points-add{background:#b8ff39;color:#111}
+.points-remove{background:rgba(255,93,93,.08);border:1px solid #ff5d5d;color:#ff5d5d}
+.points-adjust-status{margin-top:8px;min-height:18px;font-size:12px;text-align:center}
 .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .stat{padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.035);text-align:center}
 .stat-label{color:#8f96a3;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
@@ -183,6 +192,18 @@ button:disabled{opacity:.45;cursor:default}
         <div id="balanceValue" class="balance-value">—</div>
         <div class="balance-caption">Saldo actual</div>
         <div id="accountMeta" class="account-meta">—</div>
+        <div class="points-adjust">
+          <div class="points-adjust-title">Ajustar AvoPuntos</div>
+          <div class="points-adjust-row">
+            <input id="adjustPoints" type="number" min="1" step="1" inputmode="numeric" placeholder="Puntos" aria-label="Cantidad de puntos">
+            <input id="adjustReason" type="text" maxlength="500" placeholder="Motivo del ajuste" aria-label="Motivo del ajuste">
+          </div>
+          <div class="points-adjust-actions">
+            <button id="addPointsBtn" class="points-add" type="button">AÑADIR PUNTOS</button>
+            <button id="removePointsBtn" class="points-remove" type="button">QUITAR PUNTOS</button>
+          </div>
+          <div id="pointsAdjustStatus" class="points-adjust-status"></div>
+        </div>
       </section>
     </div>
 
@@ -455,6 +476,66 @@ async function loadRecentHistory(){
   historyMovements=data||[];
   if(!historyMovements.length)populateHistoryYears([]);
   renderHistory(historyMovements);
+}
+
+async function adjustSelectedPoints(deltaMultiplier){
+  if(!selectedProfile)return;
+
+  const pointsInput=$('adjustPoints');
+  const reasonInput=$('adjustReason');
+  const statusEl=$('pointsAdjustStatus');
+  const points=Number(pointsInput.value);
+  const reason=reasonInput.value.trim();
+
+  if(!Number.isInteger(points)||points<=0){
+    statusEl.textContent='Indica una cantidad entera de puntos mayor que cero.';
+    statusEl.className='points-adjust-status error';
+    return;
+  }
+  if(!reason){
+    statusEl.textContent='Indica el motivo del ajuste.';
+    statusEl.className='points-adjust-status error';
+    return;
+  }
+
+  const delta=points*deltaMultiplier;
+  if(delta<0 && points>Number(pointsBalance)){
+    statusEl.textContent='No se pueden quitar más puntos que el saldo disponible.';
+    statusEl.className='points-adjust-status error';
+    return;
+  }
+
+  $('addPointsBtn').disabled=true;
+  $('removePointsBtn').disabled=true;
+  statusEl.textContent='Aplicando ajuste…';
+  statusEl.className='points-adjust-status muted';
+
+  const {data,error}=await db.rpc('avopuntos_admin_adjust_points',{
+    p_profile_id:selectedProfile.id,
+    p_points_delta:delta,
+    p_reason:reason
+  });
+
+  $('addPointsBtn').disabled=false;
+  $('removePointsBtn').disabled=false;
+
+  if(error){
+    statusEl.textContent=error.message||'No se pudo aplicar el ajuste.';
+    statusEl.className='points-adjust-status error';
+    return;
+  }
+
+  const nextBalance=Number(data?.balance);
+  pointsBalance=Number.isInteger(nextBalance)?nextBalance:pointsBalance+delta;
+  setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
+  $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
+  pointsInput.value='';
+  reasonInput.value='';
+  statusEl.textContent=(delta>0?'+':'')+delta.toLocaleString('es-CO')+' AP aplicados correctamente.';
+  statusEl.className='points-adjust-status ok';
+
+  await loadRecentHistory();
+  await refreshHistoryYears();
 }
 
 async function loadClient(profile){
@@ -744,6 +825,8 @@ $('searchInput').addEventListener('input',()=>{
 });
 
 $('historyYear').addEventListener('change',populateHistoryMonths);
+$('addPointsBtn').addEventListener('click',()=>adjustSelectedPoints(1));
+$('removePointsBtn').addEventListener('click',()=>adjustSelectedPoints(-1));
 $('historySearchBtn').addEventListener('click',loadHistoryForSelected);
 $('historyRecentBtn').addEventListener('click',loadRecentHistory);
 $('logoutBtn').addEventListener('click',logout);
