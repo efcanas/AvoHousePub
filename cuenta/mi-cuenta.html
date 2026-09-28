@@ -757,13 +757,11 @@ function renderWhatsappVerification(data){
 
 async function loadWhatsappVerification(){
   if(!session?.user?.id)return;
+
   try{
-    const rows=await restGet(
-      '/rest/v1/avopuntos_contact_verifications?select=id,channel,contact_value,code,status,bonus_points,bonus_granted,requested_at,verified_at&profile_id=eq.'+
-      encodeURIComponent(session.user.id)+'&channel=eq.whatsapp&order=created_at.desc&limit=1',
-      session.access_token
-    );
-    renderWhatsappVerification(Array.isArray(rows)?rows[0]:null);
+    const response=await restRpc('avopuntos_get_my_whatsapp_verification',{},session.access_token);
+    const data=Array.isArray(response)?response[0]:response;
+    renderWhatsappVerification(data||null);
   }catch(_){
     renderWhatsappVerification(null);
   }
