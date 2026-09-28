@@ -851,16 +851,17 @@ function renderWhatsappVerificationAdmin(data){
 
 async function loadWhatsappVerificationAdmin(){
   if(!selectedProfile)return;
-  const {data,error}=await db.from('avopuntos_contact_verifications')
-    .select('id,profile_id,channel,contact_value,code,status,bonus_points,bonus_granted,requested_at,verified_at')
-    .eq('profile_id',selectedProfile.id)
-    .eq('channel','whatsapp')
-    .order('created_at',{ascending:false})
-    .limit(1);
+
+  const {data,error}=await db.rpc('avopuntos_admin_get_whatsapp_verification',{
+    p_profile_id:selectedProfile.id
+  });
+
   if(error){
     renderWhatsappVerificationAdmin(null);
+    showNotice('No se pudo consultar la verificación de WhatsApp: '+(error.message||'error desconocido'),true);
     return;
   }
+
   renderWhatsappVerificationAdmin(Array.isArray(data)?data[0]:null);
 }
 
