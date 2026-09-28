@@ -134,6 +134,25 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
   .receipt-item{grid-template-columns:1fr auto}.receipt-item-price{grid-column:2;grid-row:1}
   .receipt-item-qty{grid-column:1;grid-row:2}.receipt-card{padding:19px 16px}
 }
+
+.reward-list{display:flex;flex-direction:column;gap:10px}
+.reward-item{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.reward-item:last-child{border-bottom:0}
+.reward-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.reward-name{font-size:14px;font-weight:800}
+.reward-description{margin-top:4px;color:#999;font-size:11px;line-height:1.5}
+.reward-status{flex:0 0 auto;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#aaa;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:6px 8px}
+.reward-status.claimed{color:#b8f5b8;border-color:rgba(184,245,184,.35)}
+.reward-status.pending{color:#e8d59a;border-color:rgba(232,213,154,.35)}
+.reward-status.available{color:#d4af37;border-color:rgba(212,175,55,.35)}
+.reward-points{margin-top:7px;font-size:12px;font-weight:800}
+.reward-meta{margin-top:4px;color:#777;font-size:10px}
+.reward-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.reward-actions input{min-width:0;flex:1 1 180px;min-height:36px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;padding:0 11px;font:inherit;font-size:12px}
+.reward-actions button{min-height:36px;border-radius:9px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:#fff;padding:0 12px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.reward-actions button:hover{background:rgba(255,255,255,.10)}
+.reward-actions button:disabled{opacity:.5;cursor:default}
+.rewards-note{margin-top:11px;color:#777;font-size:10px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -195,6 +214,20 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
     <div class="stat"><div class="stat-label">Utilizados netos</div><div id="statUsed" class="stat-value">0 AP</div></div>
     <div class="stat"><div class="stat-label">Tickets</div><div id="statTickets" class="stat-value">0</div></div>
   </div>
+</section>
+
+<section class="panel full" id="rewardsSection">
+  <div class="panel-heading">
+    <div>
+      <h2 class="panel-title">Recompensas AP</h2>
+      <div class="history-summary">Beneficios, premios y bonificaciones de tu cuenta</div>
+    </div>
+    <span id="rewardsMode" class="panel-tag">Activas</span>
+  </div>
+  <div id="rewardsList" class="reward-list">
+    <div class="history-loading">Cargando recompensas…</div>
+  </div>
+  <div class="rewards-note">Las recompensas pueden incluir verificaciones, campañas, concursos y otros beneficios que AvoHouse habilite con el tiempo.</div>
 </section>
 
 <section class="panel full">
@@ -734,6 +767,121 @@ async function loadWhatsappVerification(){
   }
 }
 
+async function requestInstagramVerification(){
+  const input=$('instagramUsernameInput');
+  const button=$('requestInstagramBtn');
+  if(!input||!button||!session?.access_token)return;
+
+  const username=input.value.trim();
+  if(!username){
+    showNotice('Escribe tu usuario de Instagram para solicitar la verificación.',true);
+    input.focus();
+    return;
+  }
+
+  button.disabled=true;
+  hideNotice();
+
+  try{
+    const response=await restRpc('avopuntos_request_instagram_verification',{
+      p_username:username
+    },session.access_token);
+
+    const data=Array.isArray(response)?response[0]:response;
+    await loadRewards();
+
+    if(data?.status==='pending'){
+      setStatus('Solicitud de verificación de Instagram generada.');
+    }else if(data?.status==='verified'){
+      setStatus('Instagram ya estaba verificado.');
+    }
+  }catch(error){
+    showNotice('No fue posible generar la verificación de Instagram: '+(error?.message||'inténtalo nuevamente.'),true);
+  }finally{
+    const current=$('requestInstagramBtn');
+    if(current)current.disabled=false;
+  }
+}
+
+function renderRewards(rewards){
+  const list=$('rewardsList');
+  if(!list)return;
+
+  if(!Array.isArray(rewards)||!rewards.length){
+    list.innerHTML='<div class="history-empty">No hay recompensas activas en este momento.</div>';
+    $('rewardsMode').textContent='Sin novedades';
+    return;
+  }
+
+  list.innerHTML=rewards.map(reward=>{
+    const status=reward.status||'available';
+    const statusLabel={
+      claimed:'Reclamada',
+      pending:'Pendiente',
+      available:'Disponible',
+      revoked:'Revocada'
+    }[status]||'Disponible';
+
+    let points='';
+    const granted=Number(reward.points_granted||0);
+    const configured=Number(reward.points||0);
+
+    if(status==='claimed'){
+      points=granted>0
+        ? '<div class="reward-points">+'+granted.toLocaleString('es-CO')+' AP</div>'
+        : '';
+    }else if(configured>0){
+      points='<div class="reward-points">Beneficio: +'+configured.toLocaleString('es-CO')+' AP</div>';
+    }
+
+    let meta='';
+    if(status==='claimed'&&reward.claimed_at){
+      meta='<div class="reward-meta">Reclamada el '+escapeHtml(formatDate(reward.claimed_at))+'</div>';
+    }
+
+    let actions='';
+    if(reward.code==='instagram_verified'&&status==='available'){
+      actions='<div class="reward-actions">'+
+        '<input id="instagramUsernameInput" type="text" maxlength="32" placeholder="@tuusuario" autocomplete="off" aria-label="Usuario de Instagram">'+
+        '<button id="requestInstagramBtn" type="button">VERIFICAR INSTAGRAM</button>'+
+      '</div>';
+    }else if(reward.code==='instagram_verified'&&status==='pending'){
+      const code=String(reward.verification_code||'');
+      actions=code
+        ? '<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong><div class="verification-help">Envía este código por mensaje directo al Instagram de AvoHouse. La solicitud permanece pendiente hasta que sea validada manualmente.</div></div>'
+        : '<div class="reward-meta">Solicitud pendiente de validación manual.</div>';
+    }
+
+    return '<div class="reward-item">'+
+      '<div class="reward-top">'+
+        '<div>'+
+          '<div class="reward-name">'+escapeHtml(reward.name)+'</div>'+
+          '<div class="reward-description">'+escapeHtml(reward.description)+'</div>'+
+          points+meta+
+        '</div>'+
+        '<span class="reward-status '+escapeHtml(status)+'">'+statusLabel+'</span>'+
+      '</div>'+
+      actions+
+    '</div>';
+  }).join('');
+
+  const btn=$('requestInstagramBtn');
+  if(btn)btn.addEventListener('click',requestInstagramVerification);
+
+  $('rewardsMode').textContent=rewards.some(r=>r.status==='pending')?'Pendientes':'Activas';
+}
+
+async function loadRewards(){
+  if(!session?.user?.id)return;
+  try{
+    const rewards=await restRpc('avopuntos_get_my_rewards',{},session.access_token);
+    renderRewards(Array.isArray(rewards)?rewards:[]);
+  }catch(error){
+    $('rewardsList').innerHTML='<div class="history-empty">No fue posible cargar las recompensas en este momento.</div>';
+    $('rewardsMode').textContent='Error';
+  }
+}
+
 async function requestWhatsappVerification(){
   const button=$('verifyWhatsappBtn');
   if(button)button.disabled=true;
@@ -795,6 +943,7 @@ async function loadAccount(){
 
     await loadAccountSummary();
     await loadWhatsappVerification();
+    await loadRewards();
 
     if(account?.length===0){}
     populateHistoryFilters();
@@ -847,6 +996,7 @@ window.setInterval(async()=>{
       $('summaryTag').textContent='Saldo '+next.toLocaleString('es-CO')+' AP';
       await loadAccountSummary();
       await loadWhatsappVerification();
+      await loadRewards();
       if(historyMode==='month')await loadHistoryMonth();
       else await loadHistoryRecent();
     }
