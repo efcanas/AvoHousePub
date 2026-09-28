@@ -5,7 +5,7 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME).then(cache => {
       const scope = self.registration.scope;
       return cache.addAll([
-        new URL('Fondo.png', scope).href,
+        new URL('Fondo.webp', scope).href,
         new URL('LogoPrincipal.png', scope).href
       ]);
     }).then(() => self.skipWaiting())
