@@ -657,16 +657,16 @@ async function togglePromotion(id,currentActive){
 }
 async function loadCustomerRule(){
   if(!selectedProfile)return;
-  const {data,error}=await db.from('avopuntos_customer_rules')
+  const {data:rows,error}=await db.from('avopuntos_customer_rules')
     .select('id,multiplier,start_date,end_date,active,reason,created_at')
     .eq('profile_id',selectedProfile.id)
     .order('created_at',{ascending:false})
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
   if(error){
     $('customerRuleSummary').textContent='No se pudo consultar el beneficio individual.';
     return;
   }
+  const data=Array.isArray(rows)?rows[0]:null;
   if(!data){
     $('customerRuleSummary').textContent='Sin beneficio individual configurado.';
     $('customerRuleStatus').textContent='';
