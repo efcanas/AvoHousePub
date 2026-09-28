@@ -27,6 +27,8 @@ function installStyle(){
   '.ah-global-dropdown a,.ah-global-dropdown button{width:100%;display:block;text-align:left;padding:10px 11px;border-radius:10px;border:0;background:transparent;color:#fff;text-decoration:none;font:inherit;font-size:13px;cursor:pointer}'+
   '.ah-global-dropdown a:hover,.ah-global-dropdown button:hover{background:rgba(255,255,255,.08)}'+
   '.ah-global-dropdown button{border-top:1px solid rgba(255,255,255,.1);border-radius:0 0 10px 10px}'+
+  '.ah-global-dropdown #ahLogoutButton{color:#ff5d5d;border-color:#ff5d5d}'+
+  '.ah-global-dropdown #ahLogoutButton:hover{background:rgba(255,93,93,.10);color:#ff5d5d;border-color:#ff5d5d}'+
   '.ah-music-modal{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.72);backdrop-filter:blur(5px)}'+
   '.ah-music-modal[hidden]{display:none}'+
   '.ah-music-card{width:min(430px,100%);padding:27px 23px;border-radius:20px;background:rgba(18,18,18,.97);border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}'+
