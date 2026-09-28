@@ -177,7 +177,7 @@ button:disabled{opacity:.45;cursor:default}
 .instagram-admin-card .panel-heading{margin-bottom:14px}
 .instagram-admin-status{padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.035)}
 .instagram-admin-user{font-size:14px;font-weight:800;margin-bottom:6px}
-</style>
+.facebook-admin-card{margin-top:18px}</style>
 </head>
 <body>
 <main class="page">
@@ -271,6 +271,11 @@ button:disabled{opacity:.45;cursor:default}
   <span id="infoInstagram" class="info-value">—</span>
   <div id="instagramVerificationAdmin"></div>
 </div>
+<div class="info">
+  <span class="info-label">Facebook</span>
+  <span id="infoFacebook" class="info-value">—</span>
+  <div id="facebookVerificationAdmin"></div>
+</div>
           <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Fecha de nacimiento</span><span id="infoBirth" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
@@ -337,6 +342,19 @@ button:disabled{opacity:.45;cursor:default}
         <div class="instagram-admin-help">Selecciona un cliente.</div>
       </div>
     </section>
+    <section class="card facebook-admin-card">
+      <div class="panel-heading">
+        <div>
+          <h2 class="panel-title">Verificación de Facebook</h2>
+          <div class="history-summary">Validación manual del seguimiento a AvoHouse</div>
+        </div>
+        <span id="facebookAdminMode" class="panel-tag">—</span>
+      </div>
+      <div id="facebookAdminStatus" class="instagram-admin-status">
+        <div class="instagram-admin-help">Selecciona un cliente.</div>
+      </div>
+    </section>
+
 
     <section class="card">
       <div class="panel-heading">
@@ -936,6 +954,121 @@ function renderInstagramVerificationAdmin(data){
   if(btn)btn.addEventListener('click',verifySelectedInstagram);
   if(mode)mode.textContent='Pendiente';
 }
+function renderFacebookVerificationAdmin(data){
+  const area=$('facebookVerificationAdmin');
+  const card=$('facebookAdminStatus');
+  const mode=$('facebookAdminMode');
+
+  if(area)area.dataset.verificationId=String(data?.id||'');
+
+  if(!data){
+    if(area)area.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge">⚪ Sin verificar</span></div></div>';
+    if(card)card.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Facebook para este cliente.</div>';
+    if(mode)mode.textContent='Sin solicitud';
+    return;
+  }
+
+  if(data.status==='verified'){
+    const bonus=Number(data.bonus_granted?data.bonus_points:0);
+    const statusHtml='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>';
+    const helpHtml=bonus>0
+      ?'<div class="instagram-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
+      :'<div class="instagram-admin-help">Verificado sin nueva bonificación.</div>';
+
+    if(area)area.innerHTML='<div class="verification-admin">'+statusHtml+helpHtml+'</div>';
+    if(card)card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Facebook')+'</div>'+statusHtml+helpHtml;
+    if(mode)mode.textContent='Verificado';
+    return;
+  }
+
+  const code=String(data.code||'');
+  if(area)area.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div></div>';
+
+  if(card){
+    card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Facebook')+'</div>'+
+      '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
+      '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
+      '<div class="instagram-admin-help">Comprueba manualmente que la cuenta/persona que escribió corresponde al cliente y que sigue a AvoHouse en Facebook. Confirma además que el código coincide con el recibido por mensaje directo.</div>'+
+      '<button id="validateFacebookBtn" class="verification-admin-btn" type="button">VALIDAR FACEBOOK</button>';
+  }
+
+  const btn=$('validateFacebookBtn');
+  if(btn)btn.addEventListener('click',verifySelectedFacebook);
+  if(mode)mode.textContent='Pendiente';
+}
+
+async function loadFacebookVerificationAdmin(){
+  if(!selectedProfile)return;
+
+  const {data,error}=await db.rpc('avopuntos_admin_get_facebook_verification',{
+    p_profile_id:selectedProfile.id
+  });
+
+  if(error){
+    renderFacebookVerificationAdmin(null);
+    showNotice('No se pudo consultar la verificación de Facebook: '+(error.message||'error desconocido'),true);
+    return;
+  }
+
+  renderFacebookVerificationAdmin(Array.isArray(data)?data[0]:null);
+}
+
+async function verifySelectedFacebook(){
+  const btn=$('validateFacebookBtn');
+  if(!btn||!selectedProfile)return;
+  const area=$('facebookVerificationAdmin');
+  const id=area.dataset.verificationId;
+  if(!id)return;
+
+  btn.disabled=true;
+  hideNotice();
+
+  try{
+    const {data,error}=await db.rpc('avopuntos_admin_verify_facebook',{p_verification_id:id});
+    if(error)throw error;
+
+    const result=data||{};
+    const bonus=Number(result.bonus_points||0);
+    const balance=Number(result.balance);
+
+    if(Number.isInteger(balance))pointsBalance=balance;
+    setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
+    $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
+    $('pointsAdjustStatus').textContent=bonus>0
+      ? 'Facebook validado. +'+bonus.toLocaleString('es-CO')+' AP acreditados.'
+      : 'Facebook validado. No se acreditó un bono nuevo.';
+    $('pointsAdjustStatus').className='points-adjust-status '+(bonus>0?'ok':'muted');
+
+    await loadFacebookVerificationAdmin();
+    await loadCustomerRewardsAdmin();
+    await loadRecentHistory();
+    await refreshHistoryYears();
+
+    const {data:movements}=await db.from('avopuntos_movements')
+      .select('movement_type,points_delta,receipt_number,related_receipt_number')
+      .eq('profile_id',selectedProfile.id)
+      .limit(1000);
+
+    let earned=0,used=0;
+    const ticketSet=new Set();
+    for(const m of movements||[]){
+      const d=Number(m.points_delta||0);
+      if(m.movement_type==='earn'||m.movement_type==='earn_reversal')earned+=d;
+      if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal')used-=d;
+      if(m.receipt_number)ticketSet.add(m.receipt_number);
+      if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
+    }
+
+    setText('statEarned',Math.max(0,Math.round(earned)).toLocaleString('es-CO')+' AP');
+    setText('statUsed',Math.max(0,Math.round(used)).toLocaleString('es-CO')+' AP');
+    setText('statMovements',(movements||[]).length.toLocaleString('es-CO'));
+    setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
+  }catch(error){
+    showNotice('No se pudo validar Facebook: '+(error?.message||'inténtalo nuevamente.'),true);
+    btn.disabled=false;
+  }
+}
+
 
 async function loadInstagramVerificationAdmin(){
   if(!selectedProfile)return;
@@ -1118,6 +1251,7 @@ async function loadClient(profile){
     ? (profile.phone ? profile.phone : 'Igual al celular')
     : (profile.whatsapp || 'No registrado'));
   setText('infoInstagram',profile.instagram || 'No registrado');
+  setText('infoFacebook','');
   setText('infoDocument',[profile.document_type,profile.document_number].filter(Boolean).join(' · ')||'—');
   setText('infoBirth',formatDateInput(profile.birth_date));
   setText('infoCreated',formatDate(profile.created_at));
