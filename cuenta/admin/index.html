@@ -187,7 +187,8 @@ button:disabled{opacity:.45;cursor:default}
 .instagram-admin-card .panel-heading{margin-bottom:14px}
 .instagram-admin-status{padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.035)}
 .instagram-admin-user{font-size:14px;font-weight:800;margin-bottom:6px}
-.facebook-admin-card{margin-top:18px}</style>
+.facebook-admin-card{margin-top:18px}.whatsapp-admin-card{margin-top:18px}
+</style>
 </head>
 <body>
 <main class="page">
@@ -274,17 +275,14 @@ button:disabled{opacity:.45;cursor:default}
           <div class="info">
   <span class="info-label">WhatsApp</span>
   <span id="infoWhatsapp" class="info-value">—</span>
-  <div id="whatsappVerificationAdmin"></div>
 </div>
 <div class="info">
   <span class="info-label">Instagram</span>
   <span id="infoInstagram" class="info-value">—</span>
-  <div id="instagramVerificationAdmin"></div>
 </div>
 <div class="info">
   <span class="info-label">Facebook</span>
   <span id="infoFacebook" class="info-value">—</span>
-  <div id="facebookVerificationAdmin"></div>
 </div>
           <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Fecha de nacimiento</span><span id="infoBirth" class="info-value">—</span></div>
@@ -340,6 +338,19 @@ button:disabled{opacity:.45;cursor:default}
         <div class="stat"><div class="stat-label">Ganados netos</div><div id="statEarned" class="stat-value">0</div></div>
         <div class="stat"><div class="stat-label">Utilizados netos</div><div id="statUsed" class="stat-value">0</div></div>
         <div class="stat"><div class="stat-label">Tickets</div><div id="statTickets" class="stat-value">0</div></div>
+      </div>
+    </section>
+
+    <section class="card whatsapp-admin-card">
+      <div class="panel-heading">
+        <div>
+          <h2 class="panel-title">Verificación de WhatsApp</h2>
+          <div class="history-summary">Validación manual del número registrado</div>
+        </div>
+        <span id="whatsappAdminMode" class="panel-tag">—</span>
+      </div>
+      <div id="whatsappAdminStatus" class="instagram-admin-status">
+        <div class="instagram-admin-help">Selecciona un cliente.</div>
       </div>
     </section>
 
@@ -937,294 +948,38 @@ async function adjustSelectedPoints(deltaMultiplier){
 }
 
 function renderWhatsappVerificationAdmin(data){
-  const area=$('whatsappVerificationAdmin');
+  const area=$('whatsappAdminStatus');
+  const mode=$('whatsappAdminMode');
   if(!area)return;
 
   if(!data){
     area.dataset.verificationId='';
-    area.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge">⚪ Sin verificar</span></div></div>';
+    area.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de WhatsApp para este cliente.</div>';
+    if(mode)mode.textContent='Sin solicitud';
     return;
   }
+
   area.dataset.verificationId=String(data.id||'');
 
   if(data.status==='verified'){
-    area.dataset.verificationId=String(data.id||'');
     const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    area.innerHTML='<div class="verification-admin">'+
-      '<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>'+
-      (bonus>0?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>':'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>')+
-      '</div>';
+    area.innerHTML='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>'+
+      (bonus>0
+        ?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
+        :'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>');
+    if(mode)mode.textContent='Verificado';
     return;
   }
 
   const code=String(data.code||'');
-  area.innerHTML='<div class="verification-admin">'+
-    '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
+  area.innerHTML='<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
     '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
     '<div class="verification-admin-help">Comprueba manualmente que el número desde el que te escribió por WhatsApp coincide con el número registrado arriba y que el código coincide. Después valida.</div>'+
-    '<button id="validateWhatsappBtn" class="verification-admin-btn" type="button">VALIDAR WHATSAPP</button>'+
-    '</div>';
-  $('validateWhatsappBtn').addEventListener('click',verifySelectedWhatsapp);
-}
+    '<button id="validateWhatsappBtn" class="verification-admin-btn" type="button">VALIDAR WHATSAPP</button>';
 
-function renderInstagramVerificationAdmin(data){
-  const compact=$('instagramVerificationAdmin');
-  const card=$('instagramAdminStatus');
-  const mode=$('instagramAdminMode');
-
-  if(compact)compact.dataset.verificationId=String(data?.id||'');
-
-  if(!data){
-    if(compact)compact.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge">⚪ Sin verificar</span></div></div>';
-    if(card)card.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Instagram para este cliente.</div>';
-    if(mode)mode.textContent='Sin solicitud';
-    return;
-  }
-
-  if(compact)compact.dataset.verificationId=String(data.id||'');
-
-  if(data.status==='verified'){
-    const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    const statusHtml='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>';
-    const helpHtml=bonus>0
-      ?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
-      :'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>';
-
-    if(compact)compact.innerHTML='<div class="verification-admin">'+statusHtml+helpHtml+'</div>';
-    if(card)card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Instagram')+'</div>'+statusHtml+helpHtml;
-    if(mode)mode.textContent='Verificado';
-    return;
-  }
-
-  const code=String(data.code||'');
-  if(compact)compact.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div></div>';
-
-  if(card){
-    card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Instagram')+'</div>'+
-      '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-      '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-      '<div class="instagram-admin-help">Comprueba manualmente que la cuenta corresponde al usuario registrado y que el código coincide con el enviado por DM. Después valida.</div>'+
-      '<button id="validateInstagramBtn" class="verification-admin-btn" type="button">VALIDAR INSTAGRAM</button>';
-  }
-
-  const btn=$('validateInstagramBtn');
-  if(btn)btn.addEventListener('click',verifySelectedInstagram);
+  const btn=$('validateWhatsappBtn');
+  if(btn)btn.addEventListener('click',verifySelectedWhatsapp);
   if(mode)mode.textContent='Pendiente';
-}
-function renderFacebookVerificationAdmin(data){
-  const area=$('facebookVerificationAdmin');
-  const card=$('facebookAdminStatus');
-  const mode=$('facebookAdminMode');
-
-  if(area)area.dataset.verificationId=String(data?.id||'');
-
-  if(!data){
-    if(area)area.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge">⚪ Sin verificar</span></div></div>';
-    if(card)card.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Facebook para este cliente.</div>';
-    if(mode)mode.textContent='Sin solicitud';
-    return;
-  }
-
-  if(data.status==='verified'){
-    const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    const statusHtml='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>';
-    const helpHtml=bonus>0
-      ?'<div class="instagram-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
-      :'<div class="instagram-admin-help">Verificado sin nueva bonificación.</div>';
-
-    if(area)area.innerHTML='<div class="verification-admin">'+statusHtml+helpHtml+'</div>';
-    if(card)card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Facebook')+'</div>'+statusHtml+helpHtml;
-    if(mode)mode.textContent='Verificado';
-    return;
-  }
-
-  const code=String(data.code||'');
-  if(area)area.innerHTML='<div class="verification-admin"><div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div></div>';
-
-  if(card){
-    card.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Facebook')+'</div>'+
-      '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-      '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-      '<div class="instagram-admin-help">Comprueba manualmente que la cuenta/persona que escribió corresponde al cliente y que sigue a AvoHouse en Facebook. Confirma además que el código coincide con el recibido por mensaje directo.</div>'+
-      '<button id="validateFacebookBtn" class="verification-admin-btn" type="button">VALIDAR FACEBOOK</button>';
-  }
-
-  const btn=$('validateFacebookBtn');
-  if(btn)btn.addEventListener('click',verifySelectedFacebook);
-  if(mode)mode.textContent='Pendiente';
-}
-
-async function loadFacebookVerificationAdmin(){
-  if(!selectedProfile)return;
-
-  const {data,error}=await db.rpc('avopuntos_admin_get_facebook_verification',{
-    p_profile_id:selectedProfile.id
-  });
-
-  if(error){
-    renderFacebookVerificationAdmin(null);
-    showNotice('No se pudo consultar la verificación de Facebook: '+(error.message||'error desconocido'),true);
-    return;
-  }
-
-  renderFacebookVerificationAdmin(Array.isArray(data)?data[0]:null);
-}
-
-async function verifySelectedFacebook(){
-  const btn=$('validateFacebookBtn');
-  if(!btn||!selectedProfile)return;
-  const area=$('facebookVerificationAdmin');
-  const id=area.dataset.verificationId;
-  if(!id)return;
-
-  btn.disabled=true;
-  hideNotice();
-
-  try{
-    const {data,error}=await db.rpc('avopuntos_admin_verify_facebook',{p_verification_id:id});
-    if(error)throw error;
-
-    const result=data||{};
-    const bonus=Number(result.bonus_points||0);
-    const balance=Number(result.balance);
-
-    if(Number.isInteger(balance))pointsBalance=balance;
-    setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
-    $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
-    $('pointsAdjustStatus').textContent=bonus>0
-      ? 'Facebook validado. +'+bonus.toLocaleString('es-CO')+' AP acreditados.'
-      : 'Facebook validado. No se acreditó un bono nuevo.';
-    $('pointsAdjustStatus').className='points-adjust-status '+(bonus>0?'ok':'muted');
-
-    await loadFacebookVerificationAdmin();
-    await loadCustomerRewardsAdmin();
-    await loadRecentHistory();
-    await refreshHistoryYears();
-
-    const {data:movements}=await db.from('avopuntos_movements')
-      .select('movement_type,points_delta,receipt_number,related_receipt_number')
-      .eq('profile_id',selectedProfile.id)
-      .limit(1000);
-
-    let earned=0,used=0;
-    const ticketSet=new Set();
-    for(const m of movements||[]){
-      const d=Number(m.points_delta||0);
-      if(m.movement_type==='earn'||m.movement_type==='earn_reversal')earned+=d;
-      if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal')used-=d;
-      if(m.receipt_number)ticketSet.add(m.receipt_number);
-      if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
-    }
-
-    setText('statEarned',Math.max(0,Math.round(earned)).toLocaleString('es-CO')+' AP');
-    setText('statUsed',Math.max(0,Math.round(used)).toLocaleString('es-CO')+' AP');
-    setText('statMovements',(movements||[]).length.toLocaleString('es-CO'));
-    setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
-  }catch(error){
-    showNotice('No se pudo validar Facebook: '+(error?.message||'inténtalo nuevamente.'),true);
-    btn.disabled=false;
-  }
-}
-
-
-async function loadInstagramVerificationAdmin(){
-  if(!selectedProfile)return;
-
-  const {data,error}=await db.rpc('avopuntos_admin_get_instagram_verification',{
-    p_profile_id:selectedProfile.id
-  });
-
-  if(error){
-    renderInstagramVerificationAdmin(null);
-    showNotice('No se pudo consultar la verificación de Instagram: '+(error.message||'error desconocido'),true);
-    return;
-  }
-
-  renderInstagramVerificationAdmin(Array.isArray(data)?data[0]:null);
-}
-
-async function loadCustomerRewardsAdmin(){
-  if(!selectedProfile)return;
-
-  const {data,error}=await db.rpc('avopuntos_admin_get_customer_rewards',{
-    p_profile_id:selectedProfile.id
-  });
-
-  const list=$('customerRewardsAdmin');
-  if(!list)return;
-
-  if(error){
-    list.innerHTML='<div class="empty">No fue posible cargar las recompensas.</div>';
-    return;
-  }
-
-  if(!Array.isArray(data)||!data.length){
-    list.innerHTML='<div class="empty">No hay recompensas registradas.</div>';
-    return;
-  }
-
-  list.innerHTML=data.map(r=>{
-    const points=Number(r.points_granted||0);
-    const detail=points>0?'<div class="reward-admin-meta">+'+points.toLocaleString('es-CO')+' AP · '+escapeHtml(formatDate(r.claimed_at||r.created_at,true))+'</div>'
-      :'<div class="reward-admin-meta">'+escapeHtml(formatDate(r.claimed_at||r.created_at,true))+'</div>';
-    return '<div class="reward-admin-item"><div class="reward-admin-name">'+escapeHtml(r.name)+'</div>'+detail+'</div>';
-  }).join('');
-}
-
-async function verifySelectedInstagram(){
-  const btn=$('validateInstagramBtn');
-  if(!btn||!selectedProfile)return;
-  const area=$('instagramVerificationAdmin');
-  const id=area.dataset.verificationId;
-  if(!id)return;
-
-  btn.disabled=true;
-  hideNotice();
-
-  try{
-    const {data,error}=await db.rpc('avopuntos_admin_verify_instagram',{p_verification_id:id});
-    if(error)throw error;
-
-    const result=data||{};
-    const bonus=Number(result.bonus_points||0);
-    const balance=Number(result.balance);
-
-    if(Number.isInteger(balance))pointsBalance=balance;
-    setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
-    $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
-    $('pointsAdjustStatus').textContent=bonus>0
-      ? 'Instagram validado. +'+bonus.toLocaleString('es-CO')+' AP acreditados.'
-      : 'Instagram validado. No se acreditó un bono nuevo.';
-    $('pointsAdjustStatus').className='points-adjust-status '+(bonus>0?'ok':'muted');
-
-    await loadInstagramVerificationAdmin();
-    await loadCustomerRewardsAdmin();
-    await loadRecentHistory();
-    await refreshHistoryYears();
-
-    const {data:movements}=await db.from('avopuntos_movements')
-      .select('movement_type,points_delta,receipt_number,related_receipt_number')
-      .eq('profile_id',selectedProfile.id)
-      .limit(1000);
-
-    let earned=0,used=0;
-    const ticketSet=new Set();
-    for(const m of movements||[]){
-      const d=Number(m.points_delta||0);
-      if(m.movement_type==='earn'||m.movement_type==='earn_reversal')earned+=d;
-      if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal')used-=d;
-      if(m.receipt_number)ticketSet.add(m.receipt_number);
-      if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
-    }
-
-    setText('statEarned',Math.max(0,Math.round(earned)).toLocaleString('es-CO')+' AP');
-    setText('statUsed',Math.max(0,Math.round(used)).toLocaleString('es-CO')+' AP');
-    setText('statMovements',(movements||[]).length.toLocaleString('es-CO'));
-    setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
-  }catch(error){
-    showNotice('No se pudo validar Instagram: '+(error?.message||'inténtalo nuevamente.'),true);
-    btn.disabled=false;
-  }
 }
 
 async function loadWhatsappVerificationAdmin(){
@@ -1247,7 +1002,7 @@ async function verifySelectedWhatsapp(){
   const btn=$('validateWhatsappBtn');
   if(!btn||!selectedProfile)return;
   // El ID se guarda directamente en el elemento para evitar depender del texto visible.
-  const area=$('whatsappVerificationAdmin');
+  const area=$('whatsappAdminStatus');
   const id=area.dataset.verificationId;
   if(!id)return;
   btn.disabled=true;
