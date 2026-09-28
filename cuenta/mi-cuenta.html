@@ -36,6 +36,16 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
 .info{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08);min-width:0}
 .info-label{display:block;color:#999;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
 .info-value{display:block;font-size:14px;word-break:break-word}
+.verification-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.verification-badge{font-size:11px;line-height:1;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:6px 8px;color:#bdbdbd}
+.verification-badge.verified{color:#b8f5b8;border-color:rgba(184,245,184,.35)}
+.verification-badge.pending{color:#e8d59a;border-color:rgba(232,213,154,.35)}
+.verification-action{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.05);color:#fff;border-radius:9px;padding:7px 10px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none}
+.verification-action:hover{background:rgba(255,255,255,.10)}
+.verification-action:disabled{opacity:.5;cursor:default}
+.verification-code{margin-top:8px;padding:10px 12px;border-radius:10px;border:1px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.035);color:#ddd;font-size:12px;line-height:1.5}
+.verification-code strong{font-size:18px;letter-spacing:3px}
+.verification-help{margin-top:5px;color:#888;font-size:10px;line-height:1.45}
 
 .points-panel{display:flex;flex-direction:column;justify-content:center;min-height:100%;text-align:center}
 .points-kicker{color:#aaa;font-size:1.4em;font-weight:600;text-transform:uppercase;letter-spacing:3px}
@@ -157,7 +167,11 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
     <div class="info"><span class="info-label">Nombre completo</span><span id="infoFullName" class="info-value">—</span></div>
     <div class="info"><span class="info-label">Correo electrónico</span><span id="infoEmail" class="info-value">—</span></div>
     <div class="info"><span class="info-label">Celular</span><span id="infoPhone" class="info-value">—</span></div>
-    <div class="info"><span class="info-label">WhatsApp</span><span id="infoWhatsapp" class="info-value">—</span></div>
+    <div class="info">
+  <span class="info-label">WhatsApp</span>
+  <span id="infoWhatsapp" class="info-value">—</span>
+  <div id="whatsappVerificationArea"></div>
+</div>
     <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
     <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
   </div>
@@ -268,6 +282,9 @@ function formatDate(value,withTime=false){
 function formatMoney(value){
   const n=Number(value);
   return Number.isFinite(n)?'function movementLabel(type,details={}){
+  if(details?.bonus_type==='whatsapp_verification' && type==='earn'){
+    return 'Bonificación por verificación de WhatsApp';
+  }
   if(details?.refund_cancellation===true && type==='earn'){
     return 'Puntos restituidos por cancelación de devolución';
   }
@@ -488,6 +505,30 @@ async function restGet(path,accessToken){
     return body;
   }finally{clearTimeout(timer)}
 }
+async function restRpc(functionName,body,accessToken){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  try{
+    const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+functionName,{
+      method:'POST',
+      headers:{
+        'apikey':SUPABASE_PUBLISHABLE_KEY,
+        'Authorization':'Bearer '+accessToken,
+        'Content-Type':'application/json',
+        'Accept':'application/json'
+      },
+      body:JSON.stringify(body??{}),
+      signal:controller.signal
+    });
+    const data=await response.json().catch(()=>null);
+    if(!response.ok){
+      const error=new Error(data?.message||data?.error_description||('HTTP '+response.status));
+      error.status=response.status;
+      throw error;
+    }
+    return data;
+  }finally{clearTimeout(timer)}
+}
 function monthBounds(year,month){
   const start=new Date(Number(year),Number(month)-1,1);
   const end=new Date(Number(year),Number(month),1);
@@ -600,6 +641,61 @@ async function loadHistoryMonth(){
   }
 }
 
+const AVOHOUSE_WHATSAPP='+573026475174';
+
+function renderWhatsappVerification(data){
+  const area=$('whatsappVerificationArea');
+  if(!area)return;
+
+  if(!data){
+    area.innerHTML='<div class="verification-line"><span class="verification-badge">Sin verificar</span><button id="verifyWhatsappBtn" class="verification-action" type="button">VERIFICAR WHATSAPP</button></div>';
+    $('verifyWhatsappBtn').addEventListener('click',requestWhatsappVerification);
+    return;
+  }
+
+  if(data.status==='verified'){
+    const bonus=Number(data.bonus_granted?data.bonus_points:0);
+    area.innerHTML='<div class="verification-line"><span class="verification-badge verified">✅ Verificado</span></div>'+
+      (bonus>0?'<div class="verification-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>':'<div class="verification-help">Verificado. Esta cuenta no recibió una nueva bonificación.</div>');
+    return;
+  }
+
+  const code=String(data.code||'');
+  const target=AVOHOUSE_WHATSAPP.replace(/\D/g,'');
+  const text=encodeURIComponent('Hola AvoHouse. Quiero verificar mi WhatsApp. Código: '+code);
+  area.innerHTML='<div class="verification-line"><span class="verification-badge pending">⏳ Pendiente</span><a class="verification-action" href="https://wa.me/'+target+'?text='+text+'" target="_blank" rel="noopener">ABRIR WHATSAPP</a></div>'+
+    '<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong><div class="verification-help">Envía este código por WhatsApp a AvoHouse. La solicitud permanece pendiente hasta que sea validada manualmente.</div></div>';
+}
+
+async function loadWhatsappVerification(){
+  if(!session?.user?.id)return;
+  try{
+    const rows=await restGet(
+      '/rest/v1/avopuntos_contact_verifications?select=id,channel,contact_value,code,status,bonus_points,bonus_granted,requested_at,verified_at&profile_id=eq.'+
+      encodeURIComponent(session.user.id)+'&channel=eq.whatsapp&order=created_at.desc&limit=1',
+      session.access_token
+    );
+    renderWhatsappVerification(Array.isArray(rows)?rows[0]:null);
+  }catch(_){
+    renderWhatsappVerification(null);
+  }
+}
+
+async function requestWhatsappVerification(){
+  const button=$('verifyWhatsappBtn');
+  if(button)button.disabled=true;
+  try{
+    const data=await restRpc('avopuntos_request_whatsapp_verification',{},session.access_token);
+    renderWhatsappVerification(data);
+  }catch(error){
+    showNotice('No fue posible generar la verificación de WhatsApp: '+(error?.message||'inténtalo nuevamente.'),true);
+    await loadWhatsappVerification();
+  }finally{
+    const current=$('verifyWhatsappBtn');
+    if(current)current.disabled=false;
+  }
+}
+
 async function loadAccount(){
   hideNotice();
   setStatus('Cargando información…');
@@ -695,6 +791,7 @@ window.setInterval(async()=>{
       setText('pointsValue',next+' AP');
       $('summaryTag').textContent='Saldo '+next.toLocaleString('es-CO')+' AP';
       await loadAccountSummary();
+      await loadWhatsappVerification();
       if(historyMode==='month')await loadHistoryMonth();
       else await loadHistoryRecent();
     }
