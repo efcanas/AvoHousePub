@@ -22,18 +22,18 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.62);z-inde
 .notice{display:none;margin:0 0 18px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);font-size:13px;line-height:1.5}
 .notice.show{display:block}
 .notice.error{color:#ffb7b7;border-color:rgba(255,90,90,.4);background:rgba(100,0,0,.14)}
-.card{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.17);border-radius:20px;padding:22px;backdrop-filter:blur(7px);box-shadow:0 18px 60px rgba(0,0,0,.24);margin-bottom:18px}
+.card{background:rgba(21,23,28,.94);border:1px solid #2c3038;border-radius:18px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25);margin:12px 0}
 .card h2,.card h3{margin:0}
 .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
 .panel-title{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:2px;color:#aaa}
 .panel-tag{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.2px}
 .auth-card{max-width:470px;margin-left:auto;margin-right:auto}
-input,select{width:100%;min-height:42px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.32);color:#fff;outline:none;font:inherit;font-size:13px}
-input:focus,select:focus{border-color:rgba(255,255,255,.65)}
+input,select{width:100%;padding:15px 16px;margin:7px 0;border:1px solid #2c3038;border-radius:13px;background:#101217;color:#f5f5f5;outline:none;font:inherit;font-size:16px}
+input:focus,select:focus{border-color:#b8ff39}
 button{font:inherit}
-.primary{border:1px solid #fff;background:#fff;color:#111;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}
-.ghost{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);color:#fff;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}
-.primary:hover,.ghost:hover{filter:brightness(.95)}
+.primary{border:0;background:#b8ff39;color:#111;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}
+.ghost{border:1px solid #2c3038;background:#111318;color:#fff;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}
+.primary:hover,.ghost:hover{filter:brightness(.96)}
 button:disabled{opacity:.45;cursor:default}
 .search-row{display:grid;grid-template-columns:1fr auto;gap:8px}
 .helper{margin-top:8px;color:#777;font-size:10px;line-height:1.5}
@@ -117,8 +117,8 @@ button:disabled{opacity:.45;cursor:default}
 <main class="page">
 <header class="header">
   <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
-  <div class="header-title">AvoPuntos</div>
-  <div class="header-subtitle">Centro de Control del Cliente</div>
+  <div class="header-title">Centro de Control</div>
+  <div class="header-subtitle">Administración de clientes y AvoPuntos</div>
   <div class="header-actions">
     <a href="../../ahtv/admin/" class="home-button">AHtv</a>
     <button id="logoutBtn" class="hidden">CERRAR SESIÓN</button>
@@ -148,10 +148,10 @@ button:disabled{opacity:.45;cursor:default}
       <h2 class="panel-title">Buscar cliente</h2>
       <span id="searchStatus" class="panel-tag">Admin</span>
     </div>
-    <div class="search-row">
+    <form id="searchForm" class="search-row" onsubmit="return false;">
       <input id="searchInput" type="search" placeholder="Nickname, nombre, correo, documento o celular" autocomplete="off">
-      <button id="searchBtn" class="primary">BUSCAR</button>
-    </div>
+      <button id="searchBtn" type="submit" class="primary">BUSCAR</button>
+    </form>
     <div class="helper">La búsqueda requiere al menos 2 caracteres. Selecciona un cliente para abrir su información.</div>
     <div id="results" class="results" style="margin-top:14px"></div>
   </section>
@@ -515,12 +515,20 @@ async function refreshHistoryYears(){
 async function searchClients(){
   const term=$('searchInput').value.trim();
   const results=$('results');
-  results.innerHTML='';
-  if(term.length<2){results.innerHTML='<div class="empty">Escribe al menos 2 caracteres.</div>';return}
+
+  if(term.length<2){
+    results.innerHTML=term?'<div class="empty">Escribe al menos 2 caracteres.</div>':'';
+    $('searchStatus').textContent='Admin';
+    return;
+  }
+
+  results.innerHTML='<div class="empty">Buscando clientes…</div>';
   $('searchBtn').disabled=true;
   $('searchStatus').textContent='Buscando…';
+  hideNotice();
 
-  const escaped=term.replace(/,/g,'');
+  // Escapar caracteres especiales del filtro PostgREST para que la búsqueda no se rompa.
+  const escaped=term.replace(/[,%]/g,' ').replace(/[()]/g,' ').trim();
   const {data,error}=await db.from('profiles')
     .select('id,username,full_name,email,phone,document_number,document_type,created_at')
     .or('username.ilike.%'+escaped+'%,full_name.ilike.%'+escaped+'%,email.ilike.%'+escaped+'%,document_number.ilike.%'+escaped+'%,phone.ilike.%'+escaped+'%')
@@ -530,11 +538,27 @@ async function searchClients(){
   $('searchBtn').disabled=false;
   $('searchStatus').textContent='Admin';
 
-  if(error){showNotice('No se pudo buscar clientes: '+error.message,true);return}
-  if(!data?.length){results.innerHTML='<div class="empty">No se encontraron clientes.</div>';return}
+  if(error){
+    results.innerHTML='';
+    showNotice('No se pudo buscar clientes: '+error.message,true);
+    return;
+  }
+
+  if(!data?.length){
+    results.innerHTML='<div class="empty">No se encontraron clientes para «'+term.replace(/[<>&"]/g,'')+'».</div>';
+    return;
+  }
 
   const ids=data.map(x=>x.id);
-  const {data:accounts}=await db.from('avopuntos_accounts').select('profile_id,balance').in('profile_id',ids);
+  const {data:accounts,error:accountError}=await db
+    .from('avopuntos_accounts')
+    .select('profile_id,balance')
+    .in('profile_id',ids);
+
+  if(accountError){
+    showNotice('Clientes encontrados, pero no se pudieron cargar sus saldos: '+accountError.message,true);
+  }
+
   const balanceMap=new Map((accounts||[]).map(a=>[a.profile_id,Number(a.balance||0)]));
 
   results.innerHTML=data.map(p=>{
@@ -701,8 +725,19 @@ async function logout(){
 
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
-$('searchBtn').addEventListener('click',searchClients);
-$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')searchClients()});
+$('searchForm').addEventListener('submit',e=>{e.preventDefault();searchClients();});
+let searchDebounce=null;
+$('searchInput').addEventListener('input',()=>{
+  clearTimeout(searchDebounce);
+  const term=$('searchInput').value.trim();
+  if(term.length<2){
+    $('results').innerHTML=term?'Escribe al menos 2 caracteres.':'';
+    $('searchStatus').textContent='Admin';
+    return;
+  }
+  searchDebounce=setTimeout(()=>searchClients(),300);
+});
+
 $('historyYear').addEventListener('change',populateHistoryMonths);
 $('historySearchBtn').addEventListener('click',loadHistoryForSelected);
 $('historyRecentBtn').addEventListener('click',loadRecentHistory);
