@@ -643,16 +643,7 @@ async function loadAccount(){
     setText('statUsed','—');
     setText('statTickets','—');
 
-    try{
-      const movements=await restGet(
-        '/rest/v1/avopuntos_movements?select=movement_type,points_delta,receipt_number,related_receipt_number&profile_id=eq.'+
-        encodeURIComponent(userId)+'&order=created_at.desc&limit=1000',
-        session.access_token
-      );
-      renderAccountSummary(Array.isArray(movements)?movements:[]);
-    }catch(_){
-      // El saldo sigue visible aunque el resumen histórico no pueda consultarse.
-    }
+    await loadAccountSummary();
 
     if(account?.length===0){}
     populateHistoryFilters();
@@ -702,6 +693,8 @@ window.setInterval(async()=>{
     if(Number.isInteger(next)&&next!==pointsBalance){
       pointsBalance=next;
       setText('pointsValue',next+' AP');
+      $('summaryTag').textContent='Saldo '+next.toLocaleString('es-CO')+' AP';
+      await loadAccountSummary();
       if(historyMode==='month')await loadHistoryMonth();
       else await loadHistoryRecent();
     }
@@ -734,6 +727,21 @@ function renderAccountSummary(movements){
   setText('statUsed',used.toLocaleString('es-CO')+' AP');
   setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
   $('summaryTag').textContent='Saldo '+pointsBalance.toLocaleString('es-CO')+' AP';
+}
+
+async function loadAccountSummary(){
+  if(!session?.user?.id)return;
+  try{
+    const movements=await restGet(
+      '/rest/v1/avopuntos_movements?select=movement_type,points_delta,receipt_number,related_receipt_number&profile_id=eq.'+
+      encodeURIComponent(session.user.id)+'&order=created_at.desc&limit=1000',
+      session.access_token
+    );
+    renderAccountSummary(Array.isArray(movements)?movements:[]);
+  }catch(_){
+    // El saldo y el resto de la cuenta siguen visibles aunque el resumen histórico falle.
+    $('summaryTag').textContent='Saldo '+pointsBalance.toLocaleString('es-CO')+' AP';
+  }
 }
 
 function movementLabel(type,details={}){
