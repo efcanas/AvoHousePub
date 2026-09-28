@@ -3,12 +3,6 @@ name: Convert Sin Alcohol images to WebP
 on:
   push:
     branches: [main]
-    paths:
-      - "productos/Agua.png"
-      - "productos/Coca-Cola.png"
-      - "productos/Electrolit.png"
-      - "productos/Ginder.png"
-      - "productos/Soda.png"
 
 permissions:
   contents: write
