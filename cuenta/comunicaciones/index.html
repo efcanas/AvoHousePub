@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AvoHouse · Comunicaciones</title>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f5f5f5;background:url('../../Fondo.webp') center/cover fixed no-repeat;position:relative;overflow-x:hidden;font-size:16px}
+body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.64);z-index:0;pointer-events:none}
+.page{position:relative;z-index:1;min-height:100vh;padding:0 18px 40px;padding-top:255px}
+.shell{width:100%;max-width:1180px;margin:0 auto}
+.header{position:fixed;top:0;left:0;width:100%;z-index:1000;text-align:center;padding:21px 20px 14px;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+.header .logo{width:230px;max-width:85%;margin:0 auto 7px;display:block}
+.header-title{font-size:1.25em;letter-spacing:3px;margin-bottom:5px;color:#d4af37;font-weight:800}
+.header-subtitle{color:#9ca3af;font-size:13px;margin-bottom:12px}
+.header-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.home-button,.header button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;padding:9px 15px;border:1px solid rgba(255,255,255,.20);border-radius:30px;font-size:.8em;background:rgba(255,255,255,.04);cursor:pointer}
+.home-button:hover,.header button:hover{background:#fff;color:#111}
+#logoutBtn{border-color:#ff5d5d;color:#ff5d5d;background:rgba(255,93,93,.08)}
+#logoutBtn:hover{background:rgba(255,93,93,.15);color:#ff5d5d;border-color:#ff5d5d}
+.card{background:rgba(21,23,28,.95);border:1px solid #2c3038;border-radius:18px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25);margin:12px 0}
+.auth-card{max-width:470px;margin-left:auto;margin-right:auto}
+.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
+.panel-title{margin:0;font-size:18px;color:#f5f5f5}
+.panel-tag{font-size:12px;color:#9ca3af}
+input,select,textarea{width:100%;padding:12px 13px;margin:6px 0;border:1px solid #2c3038;border-radius:11px;background:#101217;color:#f5f5f5;outline:none;font:inherit;font-size:15px}
+textarea{min-height:180px;resize:vertical;line-height:1.5}
+textarea.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+input:focus,select:focus,textarea:focus{border-color:#b8ff39}
+button{font:inherit}
+.primary{border:0;background:#b8ff39;color:#111;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+.ghost{border:1px solid #2c3038;background:#111318;color:#fff;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+.primary:hover,.ghost:hover{filter:brightness(.96)}
+.danger{border:1px solid #ff5d5d;background:rgba(255,93,93,.08);color:#ff5d5d;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+.notice{display:none;margin:0 0 14px;padding:11px 13px;border-radius:11px;border:1px solid #2c3038;background:rgba(21,23,28,.95);font-size:13px;line-height:1.5}
+.notice.show{display:block}
+.notice.ok{color:#cdeecf;border-color:rgba(184,245,184,.25)}
+.notice.error{color:#ffb7b7;border-color:rgba(255,90,90,.4);background:rgba(100,0,0,.14)}
+.muted{color:#9ca3af}
+.hidden{display:none!important}
+.template-list{display:flex;flex-direction:column;gap:8px}
+.template-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:13px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.035)}
+.template-item:hover{background:rgba(255,255,255,.06)}
+.template-main{min-width:0}
+.template-name{font-size:15px;font-weight:800}
+.template-meta{margin-top:5px;color:#8f96a3;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.template-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.badge{font-size:10px;border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 7px;color:#cfd2d8}
+.badge.live{color:#b8f5b8;border-color:rgba(184,245,184,.35)}
+.badge.draft{color:#e8d59a;border-color:rgba(232,213,154,.35)}
+.badge.info{color:#aeb8cf}
+.template-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px}
+.template-actions button{white-space:nowrap}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px}
+.field-label{display:block;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.help{margin:4px 0 8px;color:#7f8795;font-size:11px;line-height:1.45}
+.editor-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:10px}
+.variables{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.variable-chip{font-size:11px;border:1px solid rgba(255,255,255,.13);border-radius:20px;padding:5px 8px;color:#d4d7dd;background:rgba(255,255,255,.035)}
+.mass-grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.mass-note{margin-top:8px;color:#9ca3af;font-size:12px;line-height:1.5}
+.mass-preview{margin-top:9px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);border-radius:11px;background:rgba(255,255,255,.025);font-size:12px;line-height:1.5}
+.history-list{display:flex;flex-direction:column;gap:7px}
+.history-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.history-title{font-weight:800;font-size:14px}
+.history-meta{margin-top:4px;color:#8f96a3;font-size:12px;line-height:1.45}
+.history-status{align-self:center;font-size:11px;border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:5px 8px;white-space:nowrap}
+.history-status.sent{color:#b8f5b8;border-color:rgba(184,245,184,.35)}
+.history-status.partial_error,.history-status.error{color:#ffb7b7;border-color:rgba(255,93,93,.35)}
+.empty{padding:22px;text-align:center;color:#8f96a3}
+.section-intro{margin:-4px 0 12px;color:#9ca3af;font-size:13px;line-height:1.55}
+.pending-card{border-style:dashed;border-color:rgba(232,213,154,.28)}
+@media(max-width:820px){
+  .grid-3{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .page{padding:250px 12px 28px}
+  .header{padding:17px 14px 11px}
+  .header .logo{width:195px}
+  .header-title{font-size:1.05em}
+  .template-item{grid-template-columns:1fr}
+  .template-actions{justify-content:flex-start}
+  .mass-grid{grid-template-columns:1fr}
+  .history-item{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="header">
+  <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
+  <div class="header-title">Comunicaciones</div>
+  <div class="header-subtitle">Plantillas, envíos y seguimiento de correo</div>
+  <div class="header-actions">
+    <a href="../../ahtv/admin/" class="home-button">AHtv</a>
+    <a href="../admin/" class="home-button">CC</a>
+    <button id="logoutBtn" class="hidden">CERRAR SESIÓN</button>
+  </div>
+</header>
+
+<div class="shell">
+<section id="loginCard" class="card auth-card">
+  <div class="panel-heading"><h2 class="panel-title">Acceso administrativo</h2><span class="panel-tag">Comunicaciones</span></div>
+  <form id="loginForm">
+    <input id="email" type="email" placeholder="Correo" autocomplete="username" required>
+    <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" required>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:#aaa">
+      <input id="rememberEmail" type="checkbox" style="width:auto;margin:0">
+      Recordar mi correo en este dispositivo
+    </label>
+    <button id="loginBtn" class="primary" type="submit" style="width:100%;margin-top:10px">ENTRAR</button>
+  </form>
+  <div id="loginStatus" class="muted" style="text-align:center;font-size:11px;padding-top:8px">Conectando con AvoHouse…</div>
+</section>
+
+<section id="adminArea" class="hidden">
+  <div id="notice" class="notice" role="status"></div>
+
+  <section class="card">
+    <div class="panel-heading">
+      <h2 class="panel-title">Plantillas</h2>
+      <button id="newTemplateBtn" class="ghost" type="button">NUEVA PLANTILLA</button>
+    </div>
+    <p class="section-intro">Aquí se administran las plantillas reales de Resend. Guardar conserva cambios como borrador; <strong>PUBLICAR</strong> los hace vigentes para los envíos que usan esa plantilla.</p>
+    <div id="templateList" class="template-list"></div>
+  </section>
+
+  <section id="editorCard" class="card hidden">
+    <div class="panel-heading">
+      <h2 class="panel-title" id="editorTitle">Editar plantilla</h2>
+      <span id="editorStatus" class="panel-tag"></span>
+    </div>
+
+    <input id="editorId" type="hidden">
+    <div class="grid-2">
+      <label><span class="field-label">Nombre</span><input id="templateName"></label>
+      <label><span class="field-label">Alias</span><input id="templateAlias"></label>
+    </div>
+    <div class="grid-2">
+      <label><span class="field-label">Asunto</span><input id="templateSubject"></label>
+      <label><span class="field-label">Remitente</span><input id="templateFrom" value="AvoHouse &lt;noreply@avohousepub.com&gt;"></label>
+    </div>
+    <label><span class="field-label">Reply-to</span><input id="templateReplyTo"></label>
+    <div style="margin-top:7px">
+      <span class="field-label">Variables</span>
+      <div id="variableChips" class="variables"></div>
+    </div>
+    <label style="display:block;margin-top:14px"><span class="field-label">HTML</span><textarea id="templateHtml" class="code" spellcheck="false"></textarea></label>
+    <label style="display:block"><span class="field-label">Texto plano</span><textarea id="templateText" class="code" spellcheck="false"></textarea></label>
+    <div class="editor-actions">
+      <button id="cancelEditBtn" class="ghost" type="button">CANCELAR</button>
+      <button id="reloadTemplateBtn" class="ghost" type="button">RECARGAR</button>
+      <button id="saveTemplateBtn" class="primary" type="button">GUARDAR BORRADOR</button>
+      <button id="publishTemplateBtn" class="primary" type="button">PUBLICAR</button>
+    </div>
+  </section>
+
+  <section id="newTemplateCard" class="card hidden">
+    <div class="panel-heading">
+      <h2 class="panel-title">Nueva plantilla</h2>
+      <span class="panel-tag">Resend · borrador</span>
+    </div>
+    <p class="section-intro">Crea aquí nuevas plantillas que después aparecerán en el catálogo. Para variables, usa el formato triple: <code>{{{NOMBRE_VARIABLE}}}</code>.</p>
+    <div class="grid-2">
+      <label><span class="field-label">Nombre</span><input id="newName" placeholder="Ej. Campaña septiembre"></label>
+      <label><span class="field-label">Alias</span><input id="newAlias" placeholder="avohouse-campana-septiembre"></label>
+    </div>
+    <div class="grid-2">
+      <label><span class="field-label">Asunto</span><input id="newSubject" placeholder="Asunto del correo"></label>
+      <label><span class="field-label">Remitente</span><input id="newFrom" value="AvoHouse &lt;noreply@avohousepub.com&gt;"></label>
+    </div>
+    <label><span class="field-label">Reply-to</span><input id="newReplyTo"></label>
+    <label><span class="field-label">Variables JSON (opcional)</span><textarea id="newVariables" class="code" style="min-height:90px" spellcheck="false">[]</textarea></label>
+    <label><span class="field-label">HTML</span><textarea id="newHtml" class="code" spellcheck="false" placeholder="<!DOCTYPE html>..."></textarea></label>
+    <label><span class="field-label">Texto plano</span><textarea id="newText" class="code" spellcheck="false"></textarea></label>
+    <div class="editor-actions">
+      <button id="cancelNewBtn" class="ghost" type="button">CANCELAR</button>
+      <button id="createTemplateBtn" class="primary" type="button">CREAR BORRADOR</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="panel-heading">
+      <h2 class="panel-title">Probar una plantilla</h2>
+      <span class="panel-tag">Envío individual</span>
+    </div>
+    <div class="grid-2">
+      <label><span class="field-label">Plantilla</span><select id="testTemplate"></select></label>
+      <label><span class="field-label">Enviar a</span><input id="testTo" type="email" placeholder="correo de prueba"></label>
+    </div>
+    <label><span class="field-label">Variables JSON</span><textarea id="testVariables" class="code" style="min-height:120px" spellcheck="false">{}</textarea></label>
+    <div class="help">Los valores que no ingreses se completan con los valores de respaldo de la plantilla. Este botón envía únicamente al destinatario indicado.</div>
+    <div class="editor-actions"><button id="sendTestBtn" class="ghost" type="button">ENVIAR PRUEBA</button></div>
+  </section>
+
+  <section class="card">
+    <div class="panel-heading">
+      <h2 class="panel-title">Nueva comunicación</h2>
+      <span class="panel-tag">Envío masivo</span>
+    </div>
+    <p class="section-intro">El envío masivo se limita a clientes con correo confirmado y autorización publicitaria vigente. No utiliza tarjetas ni otros canales.</p>
+    <div class="mass-grid">
+      <label><span class="field-label">Plantilla para envío masivo</span><select id="massTemplate"></select></label>
+      <button id="countRecipientsBtn" class="ghost" type="button">ACTUALIZAR DESTINATARIOS</button>
+    </div>
+    <div id="massEligibility" class="mass-preview">Selecciona una plantilla.</div>
+    <div id="recipientCount" class="mass-note">Destinatarios: —</div>
+    <div class="editor-actions">
+      <button id="sendAllBtn" class="danger" type="button" disabled>ENVIAR A TODOS</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="panel-heading">
+      <h2 class="panel-title">Historial de comunicaciones</h2>
+      <button id="refreshHistoryBtn" class="ghost" type="button">ACTUALIZAR</button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </section>
+
+  <section class="card pending-card">
+    <div class="panel-heading">
+      <h2 class="panel-title">Correo de confirmación de cuenta</h2>
+      <span class="panel-tag">Supabase Auth</span>
+    </div>
+    <p class="section-intro">La confirmación de correo de registro es un flujo independiente del correo de bienvenida y de las comunicaciones de Resend. Esta sección queda identificada aquí para no confundir ambos mensajes.</p>
+    <div class="muted" style="font-size:12px">Estado: integración pendiente de trasladar a la administración central de plantillas.</div>
+  </section>
+</section>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
+const SUPABASE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
+const FUNCTION_URL=SUPABASE_URL+'/functions/v1/avohouse-communications';
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+
+const els={
+  loginCard:document.getElementById('loginCard'),adminArea:document.getElementById('adminArea'),
+  loginForm:document.getElementById('loginForm'),email:document.getElementById('email'),password:document.getElementById('password'),
+  rememberEmail:document.getElementById('rememberEmail'),loginBtn:document.getElementById('loginBtn'),loginStatus:document.getElementById('loginStatus'),
+  logoutBtn:document.getElementById('logoutBtn'),notice:document.getElementById('notice'),
+  templateList:document.getElementById('templateList'),editorCard:document.getElementById('editorCard'),editorTitle:document.getElementById('editorTitle'),
+  editorStatus:document.getElementById('editorStatus'),editorId:document.getElementById('editorId'),templateName:document.getElementById('templateName'),
+  templateAlias:document.getElementById('templateAlias'),templateSubject:document.getElementById('templateSubject'),templateFrom:document.getElementById('templateFrom'),
+  templateReplyTo:document.getElementById('templateReplyTo'),variableChips:document.getElementById('variableChips'),templateHtml:document.getElementById('templateHtml'),
+  templateText:document.getElementById('templateText'),newTemplateBtn:document.getElementById('newTemplateBtn'),newTemplateCard:document.getElementById('newTemplateCard'),
+  cancelEditBtn:document.getElementById('cancelEditBtn'),reloadTemplateBtn:document.getElementById('reloadTemplateBtn'),
+  saveTemplateBtn:document.getElementById('saveTemplateBtn'),publishTemplateBtn:document.getElementById('publishTemplateBtn'),
+  cancelNewBtn:document.getElementById('cancelNewBtn'),createTemplateBtn:document.getElementById('createTemplateBtn'),
+  newName:document.getElementById('newName'),newAlias:document.getElementById('newAlias'),newSubject:document.getElementById('newSubject'),
+  newFrom:document.getElementById('newFrom'),newReplyTo:document.getElementById('newReplyTo'),newVariables:document.getElementById('newVariables'),
+  newHtml:document.getElementById('newHtml'),newText:document.getElementById('newText'),
+  testTemplate:document.getElementById('testTemplate'),testTo:document.getElementById('testTo'),testVariables:document.getElementById('testVariables'),
+  sendTestBtn:document.getElementById('sendTestBtn'),massTemplate:document.getElementById('massTemplate'),countRecipientsBtn:document.getElementById('countRecipientsBtn'),
+  massEligibility:document.getElementById('massEligibility'),recipientCount:document.getElementById('recipientCount'),sendAllBtn:document.getElementById('sendAllBtn'),
+  historyList:document.getElementById('historyList'),refreshHistoryBtn:document.getElementById('refreshHistoryBtn')
+};
+
+let templates=[];
+
+function showNotice(message,type=''){
+  els.notice.textContent=message;
+  els.notice.className='notice show '+type;
+}
+function clearNotice(){
+  els.notice.textContent='';
+  els.notice.className='notice';
+}
+function templateCategory(t){
+  const a=String(t?.alias||'');
+  if(a==='avohouse-welcome')return'Cuenta · Bienvenida';
+  if(a==='avohouse-verification')return'Verificación · WhatsApp / RRSS';
+  if(a==='avohouse-purchase-receipt')return'Transaccional · Compra';
+  if(a==='avohouse-purchase-cancellation')return'Transaccional · Cancelación de compra';
+  if(a==='avohouse-purchase-refund')return'Transaccional · Reembolso';
+  if(a==='avohouse-purchase-refund-cancellation')return'Transaccional · Cancelación de reembolso';
+  return'Comunicación';
+}
+function massEligibility(t){
+  const vars=Array.isArray(t?.variables)?t.variables:[];
+  const unsupported=vars.map(v=>String(v?.key||'').trim()).filter(Boolean).filter(k=>k!=='CUSTOMER_NAME');
+  if(unsupported.length)return {ok:false,reason:'No apta para envío masivo automático: requiere '+unsupported.join(', ')+'.'};
+  if(String(t?.status||'').toLowerCase()!=='published')return {ok:false,reason:'La plantilla debe estar publicada.'};
+  return {ok:true,reason:'Apta: se personaliza automáticamente con CUSTOMER_NAME.'};
+}
+function renderVariables(vars){
+  els.variableChips.innerHTML='';
+  (Array.isArray(vars)?vars:[]).forEach(v=>{
+    const span=document.createElement('span');
+    span.className='variable-chip';
+    span.textContent='{{{'+String(v.key||'')+'}}} · '+String(v.type||'string');
+    els.variableChips.appendChild(span);
+  });
+  if(!els.variableChips.children.length)els.variableChips.innerHTML='<span class="muted" style="font-size:12px">Sin variables declaradas.</span>';
+}
+function sortedData(result){
+  return Array.isArray(result?.data)?result.data:[];
+}
+function fillSelect(select,list,placeholder='Selecciona…'){
+  select.innerHTML='<option value="">'+placeholder+'</option>';
+  list.forEach(t=>{
+    const option=document.createElement('option');
+    option.value=t.id;
+    option.textContent=t.name+' · '+templateCategory(t);
+    select.appendChild(option);
+  });
+}
+async function api(action,payload={}){
+  const {data}=await supabaseClient.auth.getSession();
+  const token=data?.session?.access_token;
+  if(!token)throw new Error('La sesión administrativa no está activa.');
+  const response=await fetch(FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({action,...payload})});
+  const raw=await response.text();
+  let body={};
+  try{body=raw?JSON.parse(raw):{}}catch{body={error:raw||'Respuesta inválida.'}}
+  if(!response.ok)throw new Error(body?.error||('Error HTTP '+response.status));
+  return body;
+}
+async function loadTemplates(){
+  const body=await api('list');
+  templates=sortedData(body.templates);
+  templates.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es'));
+  renderTemplateList();
+  fillSelect(els.testTemplate,templates,'Selecciona una plantilla');
+  fillSelect(els.massTemplate,templates,'Selecciona una plantilla');
+  updateMassState();
+}
+function renderTemplateList(){
+  if(!templates.length){els.templateList.innerHTML='<div class="empty">No hay plantillas disponibles.</div>';return;}
+  els.templateList.innerHTML='';
+  templates.forEach(t=>{
+    const item=document.createElement('div');item.className='template-item';
+    const main=document.createElement('div');main.className='template-main';
+    const name=document.createElement('div');name.className='template-name';name.textContent=t.name||'Sin nombre';
+    const meta=document.createElement('div');meta.className='template-meta';meta.textContent=(templateCategory(t)+' · '+(t.subject||'Sin asunto')+' · '+(t.alias||'sin alias'));
+    const badges=document.createElement('div');badges.className='template-badges';
+    const status=document.createElement('span');status.className='badge '+(String(t.status).toLowerCase()==='published'?'live':'draft');status.textContent=String(t.status||'').toLowerCase()==='published'?'PUBLICADA':'BORRADOR';
+    const vars=document.createElement('span');vars.className='badge info';vars.textContent='Variables: '+((t.variables||[]).length);
+    badges.append(status,vars);
+    main.append(name,meta,badges);
+    const actions=document.createElement('div');actions.className='template-actions';
+    const edit=document.createElement('button');edit.className='ghost';edit.type='button';edit.textContent='EDITAR';edit.addEventListener('click',()=>openEditor(t.id));
+    actions.append(edit);
+    item.append(main,actions);
+    els.templateList.appendChild(item);
+  });
+}
+async function openEditor(id){
+  clearNotice();
+  try{
+    const body=await api('get',{id});
+    const t=body.template;
+    els.editorCard.classList.remove('hidden');
+    els.newTemplateCard.classList.add('hidden');
+    els.editorTitle.textContent='Editar · '+(t.name||'Plantilla');
+    els.editorStatus.textContent=String(t.status||'').toLowerCase()==='published'?'PUBLICADA':'BORRADOR';
+    els.editorId.value=t.id||id;
+    els.templateName.value=t.name||'';
+    els.templateAlias.value=t.alias||'';
+    els.templateSubject.value=t.subject||'';
+    els.templateFrom.value=t.from||'AvoHouse <noreply@avohousepub.com>';
+    els.templateReplyTo.value=Array.isArray(t.reply_to)?t.reply_to.join(', '):(t.reply_to||'');
+    els.templateHtml.value=t.html||'';
+    els.templateText.value=t.text||'';
+    els.editorStatus.dataset.variables=JSON.stringify(Array.isArray(t.variables)?t.variables:[]);
+    renderVariables(t.variables);
+    els.editorCard.scrollIntoView({behavior:'smooth',block:'start'});
+    const massOpt=Array.from(els.massTemplate.options).find(o=>o.value===id);
+    if(massOpt)els.massTemplate.value=id;
+    updateMassState(t);
+  }catch(e){showNotice(e.message,'error')}
+}
+async function reloadEditor(){
+  const id=els.editorId.value;
+  if(id)await openEditor(id);
+}
+async function saveEditor(publish=false){
+  const id=els.editorId.value;
+  if(!id)return;
+  try{
+    els.saveTemplateBtn.disabled=true;els.publishTemplateBtn.disabled=true;
+    const vars=JSON.parse(els.editorStatus.dataset.variables||'[]');
+    await api('update',{id,name:els.templateName.value.trim(),alias:els.templateAlias.value.trim(),subject:els.templateSubject.value.trim(),
+      from:els.templateFrom.value.trim()||'AvoHouse <noreply@avohousepub.com>',reply_to:els.templateReplyTo.value.trim(),html:els.templateHtml.value,text:els.templateText.value,variables:vars});
+    if(publish)await api('publish',{id});
+    await loadTemplates();
+    await openEditor(id);
+    showNotice(publish?'La plantilla fue publicada.':'El borrador fue guardado.','ok');
+  }catch(e){showNotice(e.message,'error')}
+  finally{els.saveTemplateBtn.disabled=false;els.publishTemplateBtn.disabled=false}
+}
+function openNewTemplate(){
+  els.newTemplateCard.classList.remove('hidden');els.editorCard.classList.add('hidden');
+  els.newTemplateCard.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeNewTemplate(){els.newTemplateCard.classList.add('hidden')}
+function closeEditor(){els.editorCard.classList.add('hidden')}
+async function createTemplate(){
+  try{
+    const variables=JSON.parse(els.newVariables.value||'[]');
+    if(!Array.isArray(variables))throw new Error('Variables JSON debe ser un arreglo.');
+    els.createTemplateBtn.disabled=true;
+    const body=await api('create',{name:els.newName.value.trim(),alias:els.newAlias.value.trim(),subject:els.newSubject.value.trim(),
+      from:els.newFrom.value.trim()||'AvoHouse <noreply@avohousepub.com>',reply_to:els.newReplyTo.value.trim(),html:els.newHtml.value,text:els.newText.value,variables});
+    closeNewTemplate();
+    await loadTemplates();
+    if(body.template?.id)await openEditor(body.template.id);
+    showNotice('La nueva plantilla fue creada como borrador.','ok');
+  }catch(e){showNotice(e.message,'error')}
+  finally{els.createTemplateBtn.disabled=false}
+}
+async function sendTest(){
+  const id=els.testTemplate.value;
+  if(!id){showNotice('Selecciona una plantilla para la prueba.','error');return}
+  const to=els.testTo.value.trim();
+  if(!to){showNotice('Indica el correo destinatario de la prueba.','error');return}
+  let variables={};
+  try{variables=JSON.parse(els.testVariables.value||'{}')}catch{showNotice('Variables JSON inválidas.','error');return}
+  try{
+    els.sendTestBtn.disabled=true;
+    const r=await api('send_test',{id,to,variables});
+    showNotice('Prueba enviada a '+r.to+'.','ok');
+  }catch(e){showNotice(e.message,'error')}
+  finally{els.sendTestBtn.disabled=false}
+}
+async function updateRecipientCount(){
+  const id=els.massTemplate.value;
+  if(!id){els.recipientCount.textContent='Destinatarios: —';return}
+  const body=await api('count_recipients');
+  els.recipientCount.textContent='Destinatarios autorizados y confirmados: '+Number(body.count||0).toLocaleString('es-CO');
+}
+async function updateMassState(templateOverride=null){
+  const id=els.massTemplate.value;
+  const t=templateOverride||templates.find(x=>String(x.id)===String(id));
+  if(!t){
+    els.massEligibility.textContent='Selecciona una plantilla.';
+    els.sendAllBtn.disabled=true;
+    els.recipientCount.textContent='Destinatarios: —';
+    return;
+  }
+  const e=massEligibility(t);
+  els.massEligibility.textContent=e.reason;
+  els.sendAllBtn.disabled=!e.ok;
+}
+async function sendAll(){
+  const id=els.massTemplate.value;
+  if(!id)return;
+  const t=templates.find(x=>String(x.id)===String(id));
+  const e=massEligibility(t);
+  if(!e.ok){showNotice(e.reason,'error');return}
+  try{
+    await updateRecipientCount();
+    const countText=els.recipientCount.textContent;
+    if(!confirm('Vas a enviar este correo a todos los clientes con autorización publicitaria vigente y correo confirmado.\n\n'+countText+'\n\n¿Confirmas el envío?'))return;
+    els.sendAllBtn.disabled=true;
+    showNotice('Enviando comunicación masiva…');
+    const r=await api('send_all',{id,confirm:true});
+    showNotice('Envío terminado. Enviados: '+Number(r.sent||0).toLocaleString('es-CO')+' · Fallidos: '+Number(r.failed||0).toLocaleString('es-CO')+'.',r.failed?'error':'ok');
+    await loadTemplates();
+    await loadHistory();
+    await updateMassState();
+  }catch(e){showNotice(e.message,'error');els.sendAllBtn.disabled=false}
+}
+async function loadHistory(){
+  try{
+    const r=await api('history');
+    const rows=Array.isArray(r.history)?r.history:[];
+    if(!rows.length){els.historyList.innerHTML='<div class="empty">Todavía no hay comunicaciones masivas registradas.</div>';return}
+    els.historyList.innerHTML='';
+    rows.forEach(row=>{
+      const item=document.createElement('div');item.className='history-item';
+      const main=document.createElement('div');
+      const title=document.createElement('div');title.className='history-title';title.textContent=row.template_name||row.subject||'Comunicación';
+      const date=row.created_at?new Intl.DateTimeFormat('es-CO',{dateStyle:'short',timeStyle:'short',timeZone:'America/Bogota'}).format(new Date(row.created_at)):'';
+      const meta=document.createElement('div');meta.className='history-meta';
+      meta.textContent=date+' · '+Number(row.recipient_count||0).toLocaleString('es-CO')+' destinatarios · '+Number(row.sent_count||0).toLocaleString('es-CO')+' enviados · '+Number(row.failed_count||0).toLocaleString('es-CO')+' fallidos';
+      main.append(title,meta);
+      const badge=document.createElement('span');badge.className='history-status '+String(row.status||'');badge.textContent=String(row.status||'').toUpperCase();
+      item.append(main,badge);els.historyList.appendChild(item);
+    });
+  }catch(e){showNotice(e.message,'error')}
+}
+
+els.loginForm.addEventListener('submit',async e=>{
+  e.preventDefault();
+  try{
+    els.loginBtn.disabled=true;els.loginStatus.textContent='Validando…';
+    const {data,error}=await supabaseClient.auth.signInWithPassword({email:els.email.value.trim().toLowerCase(),password:els.password.value});
+    if(error)throw error;
+    if(els.rememberEmail.checked)localStorage.setItem('avohouse_admin_email',els.email.value.trim().toLowerCase());
+    else localStorage.removeItem('avohouse_admin_email');
+    els.password.value='';
+    els.loginStatus.textContent='Sesión activa.';
+    await boot();
+  }catch(e){els.loginStatus.textContent='No fue posible iniciar sesión.';showNotice(e.message,'error')}
+  finally{els.loginBtn.disabled=false}
+});
+els.logoutBtn.addEventListener('click',async()=>{
+  await supabaseClient.auth.signOut();
+  els.adminArea.classList.add('hidden');els.loginCard.classList.remove('hidden');els.logoutBtn.classList.add('hidden');
+  els.loginStatus.textContent='Sesión cerrada.';
+});
+els.newTemplateBtn.addEventListener('click',openNewTemplate);
+els.cancelNewBtn.addEventListener('click',closeNewTemplate);
+els.cancelEditBtn.addEventListener('click',closeEditor);
+els.reloadTemplateBtn.addEventListener('click',reloadEditor);
+els.saveTemplateBtn.addEventListener('click',()=>saveEditor(false));
+els.publishTemplateBtn.addEventListener('click',()=>saveEditor(true));
+els.createTemplateBtn.addEventListener('click',createTemplate);
+els.sendTestBtn.addEventListener('click',sendTest);
+els.massTemplate.addEventListener('change',async()=>{updateMassState();await updateRecipientCount().catch(e=>showNotice(e.message,'error'))});
+els.countRecipientsBtn.addEventListener('click',()=>updateRecipientCount().catch(e=>showNotice(e.message,'error')));
+els.sendAllBtn.addEventListener('click',sendAll);
+els.refreshHistoryBtn.addEventListener('click',loadHistory);
+
+const rememberedEmail=localStorage.getItem('avohouse_admin_email');
+if(rememberedEmail)els.email.value=rememberedEmail;
+
+async function boot(){
+  try{
+    const {data}=await supabaseClient.auth.getSession();
+    if(!data?.session){
+      els.adminArea.classList.add('hidden');els.loginCard.classList.remove('hidden');els.logoutBtn.classList.add('hidden');return;
+    }
+    els.loginCard.classList.add('hidden');els.adminArea.classList.remove('hidden');els.logoutBtn.classList.remove('hidden');
+    clearNotice();
+    await loadTemplates();
+    await loadHistory();
+  }catch(e){
+    els.loginStatus.textContent='No se pudo cargar Comunicaciones.';
+    showNotice(e.message,'error');
+  }
+}
+supabaseClient.auth.onAuthStateChange(()=>{});
+boot();
+</script>
+</body>
+</html>
