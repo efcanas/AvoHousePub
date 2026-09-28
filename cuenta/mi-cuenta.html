@@ -357,7 +357,7 @@ function renderHistory(movements){
     return '<div class="history-item">'+
       '<div class="history-sign '+(positive?'positive':(negative?'negative':'neutral'))+'">'+(sign||'•')+'</div>'+
       '<div class="history-main">'+
-        '<div class="history-type">'+escapeHtml(movementLabel(m.movement_type))+'</div>'+
+        '<div class="history-type">'+escapeHtml(movementLabel(m.movement_type,m.details||{}))+'</div>'+
         '<div class="history-meta">'+movementMeta(m)+'</div>'+
         '<div class="history-balance">Saldo después: <strong>'+balanceAfterThis+' AP</strong></div>'+
       '</div>'+
@@ -628,7 +628,7 @@ async function loadHistoryMonth(){
   $('pointsHistory').innerHTML='<div class="history-loading">Cargando movimientos del mes…</div>';
   try{
     const movements=await restGet(
-      '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number&profile_id=eq.'+
+      '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number,details&profile_id=eq.'+
       encodeURIComponent(session.user.id)+'&created_at=gte.'+encodeURIComponent(bounds.start.toISOString())+
       '&created_at=lt.'+encodeURIComponent(bounds.end.toISOString())+
       '&order=created_at.desc&limit=1000',
@@ -685,7 +685,8 @@ async function requestWhatsappVerification(){
   const button=$('verifyWhatsappBtn');
   if(button)button.disabled=true;
   try{
-    const data=await restRpc('avopuntos_request_whatsapp_verification',{},session.access_token);
+    const response=await restRpc('avopuntos_request_whatsapp_verification',{},session.access_token);
+    const data=Array.isArray(response)?response[0]:response;
     renderWhatsappVerification(data);
   }catch(error){
     showNotice('No fue posible generar la verificación de WhatsApp: '+(error?.message||'inténtalo nuevamente.'),true);
