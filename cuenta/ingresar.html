@@ -59,7 +59,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <h1>Ingresar</h1>
 <p class="subtitle">Accede a tu cuenta y a las funcionalidades disponibles.</p>
 <div id="loginNotice" class="notice"></div>
-<form id="loginForm" onsubmit="return loginAccount();">
+<form id="loginForm">
 <label class="field">Correo electrónico
 <input id="loginEmail" type="email" autocomplete="email">
 </label>
@@ -165,7 +165,13 @@ function togglePassword(button){
 
 if(window.supabase?.createClient){
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+    auth:{
+      persistSession:true,
+      autoRefreshToken:true,
+      detectSessionInUrl:true,
+      storage:window.localStorage,
+      storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'
+    }
   });
   loginStatus.textContent='Conexión lista.';
 }else{
@@ -277,6 +283,10 @@ async function resetPassword(){
 }
 
 
+document.getElementById('loginForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  loginAccount();
+});
 document.getElementById('recoverBtn').addEventListener('click',recoverAccount);
 document.getElementById('resetBtn').addEventListener('click',resetPassword);
 document.getElementById('recoverLink').addEventListener('click',e=>{
