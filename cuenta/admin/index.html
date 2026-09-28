@@ -36,6 +36,13 @@ button{font:inherit}
 .primary{border:0;background:#b8ff39;color:#111;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}
 .ghost{border:1px solid #2c3038;background:#111318;color:#fff;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}
 .primary:hover,.ghost:hover{filter:brightness(.96)}
+.settings-grid #saveBaseRateBtn{width:max-content;justify-self:center;align-self:end;white-space:nowrap}
+.promo-form #createPromoBtn{width:100%;justify-self:stretch;align-self:end;white-space:nowrap}
+.danger-button{border:1px solid #ff5d5d;background:rgba(255,93,93,.08);color:#ff5d5d;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}
+.danger-button:hover{background:rgba(255,93,93,.15)}
+.customer-delete{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:center}
+.customer-delete .danger-button{width:max-content}
+
 button:disabled{opacity:.45;cursor:default}
 .search-row{display:grid;grid-template-columns:1fr auto;gap:8px}
 .search-row button{margin:7px 0;padding:15px 16px;align-self:stretch}
@@ -81,9 +88,9 @@ button:disabled{opacity:.45;cursor:default}
 .points-add{background:#b8ff39;color:#111}
 .points-remove{background:rgba(255,93,93,.08);border:1px solid #ff5d5d;color:#ff5d5d}
 .points-adjust-status{margin-top:8px;min-height:18px;font-size:12px;text-align:center}
-.settings-grid{display:grid;grid-template-columns:180px auto;gap:8px;align-items:end}
+.settings-grid{display:grid;grid-template-columns:180px minmax(180px,1fr);gap:8px;align-items:end}
 .settings-grid input{margin:0}
-.promo-form{display:grid;grid-template-columns:1.4fr 110px 150px 150px auto;gap:8px;align-items:end;margin-top:12px}
+.promo-form{display:grid;grid-template-columns:minmax(0,1.4fr) 120px 150px 150px 150px;gap:8px;align-items:end;margin-top:12px}
 .promo-form input{margin:0}
 .promo-list{display:flex;flex-direction:column;gap:7px;margin-top:14px}
 .promo-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:11px 12px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03)}
@@ -107,6 +114,9 @@ button:disabled{opacity:.45;cursor:default}
   .special-rule-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:620px){
+  .settings-grid #saveBaseRateBtn{justify-self:center}
+  .promo-form #createPromoBtn{width:max-content;justify-self:center}
+
   .promo-form,.settings-grid,.special-rule-grid{grid-template-columns:1fr}
   .promo-form button,.special-rule-grid .full{grid-column:auto}
   .promo-item{grid-template-columns:1fr}
@@ -227,7 +237,7 @@ button:disabled{opacity:.45;cursor:default}
       </div>
       <div class="promo-form">
         <input id="promoName" type="text" maxlength="120" placeholder="Nombre de la promoción">
-        <input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Multiplicador" aria-label="Multiplicador">
+        <input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Valor" aria-label="Valor de la promoción">
         <div><span class="info-label">Desde</span><input id="promoStart" type="date"></div>
         <div><span class="info-label">Hasta</span><input id="promoEnd" type="date"></div>
         <button id="createPromoBtn" class="primary" type="button">CREAR PROMOCIÓN</button>
@@ -279,6 +289,9 @@ button:disabled{opacity:.45;cursor:default}
           <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Fecha de nacimiento</span><span id="infoBirth" class="info-value">—</span></div>
           <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
+        </div>
+        <div class="customer-delete">
+          <button id="deleteCustomerBtn" class="danger-button" type="button">ELIMINAR CUENTA</button>
         </div>
       </section>
 
@@ -711,7 +724,7 @@ async function createPromotion(){
   const status=$('pointsSettingsStatus');
   if(!name||!Number.isFinite(multiplier)||multiplier<=0||multiplier>100||!start||(end&&end<start)){
     status.textContent='Datos inválidos';
-    showNotice('Revisa nombre, multiplicador y fechas de la promoción.',true);
+    showNotice('Revisa nombre, valor y fechas de la promoción.',true);
     return;
   }
   $('createPromoBtn').disabled=true;
@@ -741,6 +754,50 @@ async function togglePromotion(id,currentActive){
   }
   await loadPointsSettings();
 }
+async function deleteSelectedCustomer(){
+  if(!selectedProfile?.id)return;
+
+  const email=String(selectedProfile.email||'');
+  const username=String(selectedProfile.username||'');
+  const confirmed=window.confirm(
+    'Vas a eliminar permanentemente la cuenta AvoHouse de '+
+    (username||email)+
+    (email?' ('+email+')':'')+
+    '. Se eliminará su cuenta y sus datos de AvoPuntos en AvoHouse. '+
+    'Los registros históricos de tickets pueden quedar sin vínculo con la cuenta.\n\n¿Continuar?'
+  );
+  if(!confirmed)return;
+
+  const btn=$('deleteCustomerBtn');
+  if(btn)btn.disabled=true;
+  hideNotice();
+
+  try{
+    const {data,error}=await db.rpc('avopuntos_admin_delete_customer',{
+      p_profile_id:selectedProfile.id
+    });
+    if(error)throw error;
+
+    selectedProfile=null;
+    pointsBalance=0;
+    $('clientArea').classList.add('hidden');
+    $('results').innerHTML='<div class="empty">Cuenta eliminada. Puedes buscar otro cliente.</div>';
+    showNotice('La cuenta fue eliminada correctamente.',false);
+    setText('infoUsername','—');
+    setText('infoFullName','—');
+    setText('infoEmail','—');
+    setText('infoPhone','—');
+    setText('infoWhatsapp','—');
+    setText('infoInstagram','—');
+    setText('infoDocument','—');
+    setText('infoBirth','—');
+    setText('infoCreated','—');
+  }catch(error){
+    if(btn)btn.disabled=false;
+    showNotice('No se pudo eliminar la cuenta: '+(error?.message||'inténtalo nuevamente.'),true);
+  }
+}
+
 async function loadCustomerRule(){
   if(!selectedProfile)return;
   const {data:rows,error}=await db.from('avopuntos_customer_rules')
@@ -771,7 +828,7 @@ async function saveCustomerRule(){
   const end=$('customerRuleEnd').value||null;
   const reason=$('customerRuleReason').value.trim();
   if(!Number.isFinite(multiplier)||multiplier<=0||multiplier>100||!start||(end&&end<start)||!reason){
-    $('customerRuleStatus').textContent='Revisa multiplicador, fechas y motivo.';
+    $('customerRuleStatus').textContent='Revisa valor, fechas y motivo.';
     $('customerRuleStatus').className='special-rule-status error';
     return;
   }
