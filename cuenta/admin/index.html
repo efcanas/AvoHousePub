@@ -410,6 +410,9 @@ function formatDateInput(value){
   return new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(d);
 }
 function movementLabel(type,details={}){
+  if(details?.bonus_type==='whatsapp_verification' && type==='earn'){
+    return 'Bonificación por verificación de WhatsApp';
+  }
   if(details?.refund_cancellation===true && type==='earn'){
     return 'Puntos restituidos por cancelación de devolución';
   }
