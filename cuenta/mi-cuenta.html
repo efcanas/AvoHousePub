@@ -41,6 +41,11 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
 .points-kicker{color:#aaa;font-size:1.4em;font-weight:600;text-transform:uppercase;letter-spacing:3px}
 .points-value{font-size:48px;line-height:1;font-weight:800;margin:13px 0 8px}
 .points-caption{color:#aaa;font-size:12px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{padding:12px;border:1px solid rgba(255,255,255,.10);border-radius:13px;background:rgba(255,255,255,.035);text-align:center}
+.stat-label{color:#999;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.stat-value{margin-top:5px;font-size:18px;font-weight:800}
+@media(max-width:560px){.stats-grid{grid-template-columns:1fr 1fr}}
 .history-list{display:flex;flex-direction:column;gap:6px}
 .history-empty,.history-loading{padding:24px 6px;text-align:center;color:#999;font-size:13px}
 .history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -166,6 +171,19 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
 </section>
 
 <section class="panel full">
+  <div class="panel-heading">
+    <h2 class="panel-title">Resumen</h2>
+    <span id="summaryTag" class="panel-tag">Saldo — AP</span>
+  </div>
+  <div class="stats-grid">
+    <div class="stat"><div class="stat-label">Movimientos</div><div id="statMovements" class="stat-value">0</div></div>
+    <div class="stat"><div class="stat-label">Ganados netos</div><div id="statEarned" class="stat-value">0 AP</div></div>
+    <div class="stat"><div class="stat-label">Utilizados netos</div><div id="statUsed" class="stat-value">0 AP</div></div>
+    <div class="stat"><div class="stat-label">Tickets</div><div id="statTickets" class="stat-value">0</div></div>
+  </div>
+</section>
+
+<section class="panel full">
   <div class="panel-heading history-heading">
     <div>
       <h2 class="panel-title">Actividad de AvoPuntos</h2>
@@ -249,7 +267,473 @@ function formatDate(value,withTime=false){
 }
 function formatMoney(value){
   const n=Number(value);
-  return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
+  return Number.isFinite(n)?'function movementLabel(type,details={}){
+  if(details?.refund_cancellation===true && type==='earn'){
+    return 'Puntos restituidos por cancelación de devolución';
+  }
+  if(details?.refund_cancellation===true && type==='redeem'){
+    return 'Canje revertido por cancelación de devolución';
+  }
+  return ({
+    opening_balance:'Saldo inicial',
+    earn:'Puntos ganados',
+    redeem:'Puntos utilizados',
+    earn_reversal:'Puntos retirados por cancelación',
+    redeem_reversal:'Puntos devueltos por cancelación',
+    expiration:'Puntos vencidos',
+    adjustment:'Ajuste de puntos',
+    purchase:'Compra registrada',
+    purchase_cancelled:'Compra cancelada',
+    refund:'Reembolso registrado',
+    refund_cancelled:'Reembolso cancelado'
+  })[type]||'Movimiento de AvoPuntos';
+}
+function movementMeta(m){
+  let meta=formatDate(m.created_at,true);
+  const receipt=m.receipt_number||m.related_receipt_number;
+  const type=m.movement_type;
+
+  if(type==='purchase'||type==='purchase_cancelled'||type==='refund'||type==='refund_cancelled'){
+    const details=m.details||{};
+    const amount=Number(details.total_money);
+    if(Number.isFinite(amount))meta+=(meta?' · ':'')+formatMoney(amount);
+    const payments=Array.isArray(details.payment_names)?details.payment_names.filter(Boolean):[];
+    if(payments.length)meta+=(meta?' · ':'')+'Pago con '+payments.join(' + ');
+    if(receipt)meta+=(meta?' · ':'')+'Ticket '+escapeHtml(receipt);
+  }else{
+    if(receipt){
+      const cancelled=type==='earn_reversal'||type==='redeem_reversal';
+      meta+=(meta?' · ':'')+(cancelled?'Ticket cancelado ':'Ticket ')+escapeHtml(receipt);
+    }
+    if(m.eligible_amount!=null){
+      const amount=Number(m.eligible_amount);
+      if(Number.isFinite(amount))meta+=(meta?' · ':'')+'Compra elegible '+formatMoney(amount);
+    }
+  }
+  return meta;
+}
+
+function renderHistory(movements){
+  const history=$('pointsHistory');
+  const summary=$('historySummary');
+  const mode=$('historyMode');
+
+  if(!movements.length){
+    history.innerHTML='<div class="history-empty">'+
+      (historyMode==='recent'?'Todavía no hay movimientos registrados.':'No hay movimientos registrados para el período seleccionado.')+
+      '</div>';
+    summary.textContent=historyMode==='recent'?'Últimos 10 movimientos':'Sin movimientos en el período';
+    mode.textContent=historyMode==='recent'?'Recientes':'Búsqueda mensual';
+    return;
+  }
+
+  let balanceAfter=pointsBalance;
+  history.innerHTML=movements.map(m=>{
+    const delta=Number(m.points_delta);
+    const positive=delta>0;
+    const negative=delta<0;
+    const sign=positive?'+':(negative?'−':'');
+    const value=Math.abs(delta);
+    const balanceAfterThis=balanceAfter;
+    balanceAfter-=delta;
+    const receipt=m.receipt_number||m.related_receipt_number;
+    return '<div class="history-item">'+
+      '<div class="history-sign '+(positive?'positive':(negative?'negative':'neutral'))+'">'+(sign||'•')+'</div>'+
+      '<div class="history-main">'+
+        '<div class="history-type">'+escapeHtml(movementLabel(m.movement_type))+'</div>'+
+        '<div class="history-meta">'+movementMeta(m)+'</div>'+
+        '<div class="history-balance">Saldo después: <strong>'+balanceAfterThis+' AP</strong></div>'+
+      '</div>'+
+      '<button type="button" class="history-points '+(positive?'positive':(negative?'negative':'neutral'))+(receipt?'':' no-detail')+'" '+(receipt?'data-receipt="'+escapeHtml(receipt)+'" aria-label="Ver detalle de la compra"':'disabled')+'>'+(sign||'')+value+' AP</button>'+
+    '</div>';
+  }).join('');
+
+  const ticketCount=new Set(movements.map(m=>m.receipt_number||m.related_receipt_number).filter(Boolean)).size;
+  if(historyMode==='recent'){
+    summary.textContent='Últimos '+movements.length+' movimientos';
+    mode.textContent='Recientes';
+  }else{
+    summary.textContent=ticketCount+' '+(ticketCount===1?'ticket':'tickets')+' · '+movements.length+' '+(movements.length===1?'movimiento':'movimientos');
+    mode.textContent='Búsqueda mensual';
+  }
+  history.insertAdjacentHTML('beforeend','<div class="history-note">'+
+    (historyMode==='recent'?'Mostrando los últimos '+movements.length+' movimientos.':'Se muestran todos los movimientos registrados del período seleccionado.')+
+    '</div>');
+}
+
+function openReceiptModal(){
+  $('receiptModal').hidden=false;
+  document.body.style.overflow='hidden';
+}
+function closeReceiptModal(){
+  $('receiptModal').hidden=true;
+  document.body.style.overflow='';
+}
+function itemTotal(item){
+  if(item?.total_money!=null)return Number(item.total_money);
+  const qty=Number(item?.quantity)||1;
+  const price=Number(item?.price)||0;
+  const discount=Number(item?.total_discount)||0;
+  return qty*price-discount;
+}
+function renderReceipt(receipt){
+  const items=Array.isArray(receipt?.line_items)?receipt.line_items:[];
+  $('receiptTitle').textContent='Ticket '+(receipt?.receipt_number||'');
+  let html='<div class="receipt-meta">'+formatDate(receipt?.receipt_date||receipt?.created_at,true);
+  if(receipt?.cancelled_at)html+=' · Ticket cancelado';
+  else if(receipt?.receipt_type==='REFUND')html+=' · Devolución';
+  html+='</div>';
+
+  if(!items.length){
+    html+='<div class="receipt-loading">Este ticket no tiene productos registrados.</div>';
+  }else{
+    html+='<div class="receipt-items">'+items.map(item=>{
+      const name=escapeHtml(item?.item_name||item?.variant_name||'Producto');
+      const qty=Number(item?.quantity)||1;
+      return '<div class="receipt-item">'+
+        '<div class="receipt-item-name">'+name+'</div>'+
+        '<div class="receipt-item-qty">× '+qty+'</div>'+
+        '<div class="receipt-item-price">'+formatMoney(itemTotal(item))+'</div>'+
+      '</div>';
+    }).join('')+'</div>';
+
+    const total=Number(receipt?.total_money);
+    const discount=Number(receipt?.total_discount);
+    html+='<div class="receipt-summary">';
+    if(Number.isFinite(discount)&&discount>0)html+='<div class="receipt-summary-row"><span>Descuentos</span><span>− '+formatMoney(discount)+'</span></div>';
+    html+='<div class="receipt-summary-row total"><span>Total</span><span>'+formatMoney(total)+'</span></div></div>';
+  }
+
+  html+='<div class="receipt-footnote">Este detalle corresponde al ticket registrado en AvoHouse.</div>';
+  $('receiptBody').innerHTML=html;
+}
+async function showReceipt(receiptNumber){
+  if(!receiptNumber||!session?.access_token)return;
+  $('receiptBody').innerHTML='<div class="receipt-loading">Cargando compra…</div>';
+  openReceiptModal();
+  try{
+    const data=await restGet(
+      '/rest/v1/loyverse_receipts?select=receipt_number,receipt_type,receipt_date,created_at,cancelled_at,total_money,total_discount,line_items&profile_id=eq.'+
+      encodeURIComponent(session.user.id)+'&receipt_number=eq.'+encodeURIComponent(receiptNumber)+'&limit=1',
+      session.access_token
+    );
+    const receipt=Array.isArray(data)?data[0]:null;
+    if(!receipt){
+      $('receiptBody').innerHTML='<div class="receipt-error">No encontramos el detalle de esta compra.</div>';
+      return;
+    }
+    renderReceipt(receipt);
+  }catch(error){
+    $('receiptBody').innerHTML='<div class="receipt-error">No fue posible consultar el detalle de esta compra en este momento.</div>';
+  }
+}
+
+function readStoredSession(){
+  try{
+    const raw=localStorage.getItem(AUTH_STORAGE_KEY);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed?.access_token||!parsed?.user?.id)return null;
+    return parsed;
+  }catch(_){return null}
+}
+async function refreshStoredSession(stored){
+  if(!stored?.refresh_token)return null;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:stored.refresh_token}),
+      signal:controller.signal
+    });
+    if(!response.ok)return null;
+    const data=await response.json();
+    if(!data.access_token||!data.user?.id)return null;
+    const next={
+      access_token:data.access_token,
+      token_type:data.token_type||'bearer',
+      expires_in:data.expires_in,
+      expires_at:Math.floor(Date.now()/1000)+(Number(data.expires_in)||3600),
+      refresh_token:data.refresh_token||stored.refresh_token,
+      user:data.user
+    };
+    try{localStorage.setItem(AUTH_STORAGE_KEY,JSON.stringify(next))}catch(_){}
+    return next;
+  }catch(_){return null}
+  finally{clearTimeout(timer)}
+}
+async function getUsableSession(){
+  const stored=readStoredSession();
+  if(!stored)return null;
+  const expiresAt=Number(stored.expires_at)||0;
+  if(expiresAt && expiresAt>Date.now()/1000+60)return stored;
+  return (await refreshStoredSession(stored))||stored;
+}
+async function restGet(path,accessToken){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  try{
+    const response=await fetch(SUPABASE_URL+path,{
+      headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+accessToken,'Accept':'application/json'},
+      signal:controller.signal
+    });
+    const body=await response.json().catch(()=>null);
+    if(!response.ok){
+      const error=new Error(body?.message||body?.error_description||('HTTP '+response.status));
+      error.status=response.status;
+      throw error;
+    }
+    return body;
+  }finally{clearTimeout(timer)}
+}
+function monthBounds(year,month){
+  const start=new Date(Number(year),Number(month)-1,1);
+  const end=new Date(Number(year),Number(month),1);
+  return {start,end};
+}
+function formatMonthYear(year,month){
+  const name=new Intl.DateTimeFormat('es-CO',{month:'long'}).format(new Date(Number(year),Number(month)-1,1));
+  return name.charAt(0).toUpperCase()+name.slice(1)+' '+year;
+}
+function getAccountCreationParts(){
+  const d=accountCreatedAt?new Date(accountCreatedAt):null;
+  if(!d||Number.isNaN(d.getTime()))return null;
+  return {year:d.getFullYear(),month:d.getMonth()+1};
+}
+
+function populateHistoryFilters(){
+  const yearSelect=$('historyYear');
+  const parts=getAccountCreationParts();
+  const now=new Date();
+  const currentYear=now.getFullYear();
+  const firstYear=parts?.year??currentYear;
+
+  yearSelect.innerHTML='';
+  for(let year=currentYear;year>=firstYear;year--){
+    const option=document.createElement('option');
+    option.value=String(year);
+    option.textContent=String(year);
+    yearSelect.appendChild(option);
+  }
+
+  yearSelect.value=String(currentYear);
+  if(firstYear===currentYear && parts && parts.month>1){
+    yearSelect.value=String(currentYear);
+  }
+  updateHistoryMonthOptions();
+}
+
+function updateHistoryMonthOptions(){
+  const yearSelect=$('historyYear');
+  const monthSelect=$('historyMonth');
+  const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const now=new Date();
+  const currentYear=now.getFullYear();
+  const currentMonth=now.getMonth()+1;
+  const selectedYear=Number(yearSelect.value);
+  const parts=getAccountCreationParts();
+
+  const minMonth=(parts&&selectedYear===parts.year)?parts.month:1;
+  const maxMonth=selectedYear<currentYear?12:currentMonth;
+  monthSelect.innerHTML='';
+
+  months.forEach((name,index)=>{
+    const month=index+1;
+    const option=document.createElement('option');
+    option.value=String(month);
+    option.textContent=name;
+
+    if(month<minMonth || month>maxMonth){
+      option.disabled=true;
+      option.textContent=name+' · No disponible';
+    }
+
+    monthSelect.appendChild(option);
+  });
+
+  const currentValue=Number(monthSelect.value);
+  if(!currentValue||currentValue<minMonth||currentValue>maxMonth){
+    monthSelect.value=String(minMonth);
+  }
+}
+
+$('historyYear').addEventListener('change',updateHistoryMonthOptions);
+async function loadHistoryRecent(){
+  historyMode='recent';
+  $('historyMode').textContent='Recientes';
+  $('historySummary').textContent='Cargando últimos 10 movimientos…';
+  $('pointsHistory').innerHTML='<div class="history-loading">Cargando historial…</div>';
+  try{
+    const movements=await restGet(
+      '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number,details&profile_id=eq.'+
+      encodeURIComponent(session.user.id)+'&order=created_at.desc&limit=10',
+      session.access_token
+    );
+    renderHistory(Array.isArray(movements)?movements:[]);
+  }catch(error){
+    $('pointsHistory').innerHTML='<div class="history-empty">No fue posible cargar el historial en este momento.</div>';
+    $('historySummary').textContent='No fue posible cargar el historial';
+  }
+}
+async function loadHistoryMonth(){
+  historyMode='month';
+  const year=Number($('historyYear').value);
+  const month=Number($('historyMonth').value);
+  const bounds=monthBounds(year,month);
+  $('historyMode').textContent='Búsqueda mensual';
+  $('historySummary').textContent='Cargando '+formatMonthYear(year,month)+'…';
+  $('pointsHistory').innerHTML='<div class="history-loading">Cargando movimientos del mes…</div>';
+  try{
+    const movements=await restGet(
+      '/rest/v1/avopuntos_movements?select=created_at,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number&profile_id=eq.'+
+      encodeURIComponent(session.user.id)+'&created_at=gte.'+encodeURIComponent(bounds.start.toISOString())+
+      '&created_at=lt.'+encodeURIComponent(bounds.end.toISOString())+
+      '&order=created_at.desc&limit=1000',
+      session.access_token
+    );
+    renderHistory(Array.isArray(movements)?movements:[]);
+  }catch(error){
+    $('pointsHistory').innerHTML='<div class="history-empty">No fue posible consultar ese período.</div>';
+    $('historySummary').textContent='Error en la consulta';
+  }
+}
+
+async function loadAccount(){
+  hideNotice();
+  setStatus('Cargando información…');
+
+  session=await getUsableSession();
+  if(!session){
+    window.location.href='ingresar.html';
+    return;
+  }
+
+  const userId=session.user.id;
+  try{
+    const [profile,account]=await Promise.all([
+      restGet('/rest/v1/profiles?select=username,full_name,document_type,document_number,email,phone,whatsapp,created_at&id=eq.'+encodeURIComponent(userId)+'&limit=1',session.access_token),
+      restGet('/rest/v1/avopuntos_accounts?select=balance&profile_id=eq.'+encodeURIComponent(userId)+'&limit=1',session.access_token)
+    ]);
+    const p=Array.isArray(profile)?profile[0]:null;
+    const a=Array.isArray(account)?account[0]:null;
+
+    if(!p){
+      setStatus('No fue posible cargar el perfil.');
+      showNotice('La sesión está activa, pero no encontramos el perfil asociado.',true);
+      return;
+    }
+
+    setText('infoUsername',p.username);
+    setText('infoFullName',p.full_name);
+    setText('infoEmail',p.email);
+    setText('infoPhone',p.phone);
+    setText('infoWhatsapp',p.whatsapp);
+    setText('infoDocument',[p.document_type,p.document_number].filter(Boolean).join(' · '));
+    setText('infoCreated',formatDate(p.created_at));
+    accountCreatedAt=p.created_at;
+    setText('welcome','Hola, '+(p.full_name||p.username||'Usuario')+'.');
+
+    pointsBalance=Number.isInteger(Number(a?.balance))?Number(a.balance):0;
+    setText('pointsValue',pointsBalance+' AP');
+    setText('summaryTag','Saldo '+pointsBalance.toLocaleString('es-CO')+' AP');
+    setText('statMovements','—');
+    setText('statEarned','—');
+    setText('statUsed','—');
+    setText('statTickets','—');
+
+    try{
+      const movements=await restGet(
+        '/rest/v1/avopuntos_movements?select=movement_type,points_delta,receipt_number,related_receipt_number&profile_id=eq.'+
+        encodeURIComponent(userId)+'&order=created_at.desc&limit=1000',
+        session.access_token
+      );
+      renderAccountSummary(Array.isArray(movements)?movements:[]);
+    }catch(_){
+      // El saldo sigue visible aunque el resumen histórico no pueda consultarse.
+    }
+
+    if(account?.length===0){}
+    populateHistoryFilters();
+    await loadHistoryRecent();
+    setStatus('');
+  }catch(error){
+    setStatus('No fue posible cargar la información.');
+    showNotice('No fue posible consultar tu cuenta en este momento. '+(error?.message||'Inténtalo nuevamente.'),true);
+  }
+}
+
+$('historySearchBtn').addEventListener('click',loadHistoryMonth);
+$('historyRecentBtn').addEventListener('click',loadHistoryRecent);
+
+$('pointsHistory').addEventListener('click',event=>{
+  const button=event.target.closest('.history-points[data-receipt]');
+  if(button)showReceipt(button.getAttribute('data-receipt'));
+});
+$('receiptClose').addEventListener('click',closeReceiptModal);
+$('receiptModal').addEventListener('click',event=>{
+  if(event.target===$('receiptModal'))closeReceiptModal();
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&!$('receiptModal').hidden)closeReceiptModal();
+});
+
+async function logout(){
+  try{
+    if(session?.access_token){
+      await fetch(SUPABASE_URL+'/auth/v1/logout',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token}
+      });
+    }
+  }catch(_){}
+  try{localStorage.removeItem(AUTH_STORAGE_KEY)}catch(_){}
+  window.location.href='../index.html';
+}
+$('logoutBtn').addEventListener('click',logout);
+loadAccount();
+
+window.setInterval(async()=>{
+  if(!session?.user?.id)return;
+  try{
+    const account=await restGet('/rest/v1/avopuntos_accounts?select=balance&profile_id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',session.access_token);
+    const next=Number(Array.isArray(account)?account[0]?.balance:NaN);
+    if(Number.isInteger(next)&&next!==pointsBalance){
+      pointsBalance=next;
+      setText('pointsValue',next+' AP');
+      if(historyMode==='month')await loadHistoryMonth();
+      else await loadHistoryRecent();
+    }
+  }catch(_){}
+},10000);
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>+n.toLocaleString('es-CO'):'—';
+}
+function renderAccountSummary(movements){
+  let earned=0,used=0;
+  const ticketSet=new Set();
+  for(const m of (Array.isArray(movements)?movements:[])){
+    const d=Number(m.points_delta||0);
+    if(m.movement_type==='earn'||m.movement_type==='earn_reversal')earned+=d;
+    if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal')used-=d;
+    if(m.receipt_number)ticketSet.add(m.receipt_number);
+    if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
+  }
+  earned=Math.max(0,Math.round(earned));
+  used=Math.max(0,Math.round(used));
+  setText('statMovements',(Array.isArray(movements)?movements.length:0).toLocaleString('es-CO'));
+  setText('statEarned',earned.toLocaleString('es-CO')+' AP');
+  setText('statUsed',used.toLocaleString('es-CO')+' AP');
+  setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
+  $('summaryTag').textContent='Saldo '+pointsBalance.toLocaleString('es-CO')+' AP';
 }
 
 function movementLabel(type,details={}){
