@@ -158,6 +158,42 @@ button:disabled{opacity:.45;cursor:default}
 .receipt-row{display:flex;justify-content:space-between;gap:16px;padding:6px 0;color:#aaa;font-size:12px}
 .receipt-row.total{padding-top:12px;margin-top:5px;border-top:1px solid rgba(255,255,255,.12);color:#fff;font-size:15px;font-weight:800}
 .status{text-align:center;color:#777;font-size:11px;padding-top:5px;min-height:26px}
+.email-history-search{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;margin-bottom:14px}
+.email-history-list{display:flex;flex-direction:column;gap:5px}
+.email-history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer}
+.email-history-item:hover{background:rgba(255,255,255,.025);padding-left:7px;padding-right:7px;border-radius:10px}
+.email-history-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;font-size:15px}
+.email-history-main{min-width:0;flex:1}
+.email-history-type{font-size:14px;font-weight:800}
+.email-history-subject{margin-top:3px;color:#d6d9df;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.email-history-meta{margin-top:4px;color:#8f96a3;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.email-history-status{font-size:10px;color:#b8f5b8;border:1px solid rgba(184,245,184,.25);border-radius:20px;padding:5px 8px;white-space:nowrap}
+.email-history-status.error{color:#ffb7b7;border-color:rgba(255,90,90,.35)}
+.email-modal{position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.76);backdrop-filter:blur(7px)}
+.email-modal[hidden]{display:none}
+.email-modal-card{width:min(760px,100%);max-height:min(88vh,840px);overflow:hidden;background:rgba(12,12,12,.98);border:1px solid rgba(255,255,255,.2);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.55);display:flex;flex-direction:column}
+.email-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:18px 20px 15px;border-bottom:1px solid rgba(255,255,255,.12)}
+.email-modal-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#999}
+.email-modal-title{margin:4px 0 0;font-size:20px;line-height:1.3}
+.email-modal-close{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;font-size:18px;cursor:pointer;flex:0 0 34px}
+.email-modal-meta{padding:12px 20px;color:#aaa;font-size:12px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.08)}
+.email-preview-shell{padding:16px;background:#080808;overflow:auto;min-height:420px}
+.email-preview-frame{display:block;width:100%;height:560px;border:0;border-radius:12px;background:#fff}
+.email-modal-footer{padding:10px 20px 14px;color:#777;font-size:10px;line-height:1.5;border-top:1px solid rgba(255,255,255,.08)}
+@media(max-width:620px){
+  .email-history-search{grid-template-columns:1fr 1fr}
+  .email-history-search .primary,.email-history-search .ghost{width:100%}
+  .email-history-item{gap:8px}
+  .email-history-status{display:none}
+  .email-modal{padding:8px}
+  .email-modal-card{max-height:94vh;border-radius:16px}
+  .email-modal-head{padding:15px 14px 12px}
+  .email-modal-meta{padding:10px 14px}
+  .email-preview-shell{padding:8px;min-height:360px}
+  .email-preview-frame{height:62vh}
+  .email-modal-footer{padding:9px 14px 12px}
+}
+
 @media(max-width:820px){.client-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){
   .header{padding:18px 15px 12px}
@@ -387,6 +423,26 @@ button:disabled{opacity:.45;cursor:default}
     <section class="card">
       <div class="panel-heading">
         <div>
+          <h2 class="panel-title">Correos enviados</h2>
+          <div id="emailHistorySummary" class="history-summary">—</div>
+        </div>
+        <span id="emailHistoryMode" class="panel-tag">Recientes</span>
+      </div>
+      <div class="email-history-search">
+        <select id="emailHistoryYear" aria-label="Año"></select>
+        <select id="emailHistoryMonth" aria-label="Mes"></select>
+        <button id="emailHistorySearchBtn" class="primary" type="button">CONSULTAR</button>
+        <button id="emailHistoryRecentBtn" class="ghost" type="button">ÚLTIMOS 10</button>
+      </div>
+      <div class="helper">Registro de correos enviados a este cliente. Selecciona un correo para abrir la copia del mensaje.</div>
+      <div id="emailHistoryList" class="email-history-list" style="margin-top:10px">
+        <div class="empty">Selecciona un cliente.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="panel-heading">
+        <div>
           <h2 class="panel-title">Actividad de AvoPuntos</h2>
           <div id="historySummary" class="history-summary">—</div>
         </div>
@@ -417,6 +473,23 @@ button:disabled{opacity:.45;cursor:default}
   </div>
 </div>
 
+<div id="emailModal" class="email-modal" hidden>
+  <div class="email-modal-card" role="dialog" aria-modal="true" aria-labelledby="emailModalTitle">
+    <div class="email-modal-head">
+      <div>
+        <div id="emailModalEyebrow" class="email-modal-eyebrow">Correo enviado</div>
+        <h2 id="emailModalTitle" class="email-modal-title">Correo</h2>
+      </div>
+      <button id="emailModalClose" class="email-modal-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div id="emailModalMeta" class="email-modal-meta">Cargando…</div>
+    <div class="email-preview-shell">
+      <iframe id="emailPreviewFrame" class="email-preview-frame" title="Copia del correo enviado" sandbox="allow-same-origin"></iframe>
+    </div>
+    <div id="emailModalFooter" class="email-modal-footer">La vista corresponde al contenido recuperado del mensaje enviado.</div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
@@ -440,6 +513,8 @@ let selectedProfile=null;
 let pointsBalance=0;
 let historyMode='recent';
 let historyMovements=[];
+let emailHistoryMode='recent';
+let emailHistoryRows=[];
 
 const $=id=>document.getElementById(id);
 
@@ -651,6 +726,178 @@ async function loadRecentHistory(){
   renderHistory(historyMovements);
 }
 
+
+function emailEventLabel(type){
+  return ({
+    purchase:'Compra',
+    purchase_cancelled:'Cancelación de compra',
+    refund:'Reembolso',
+    refund_cancelled:'Cancelación de reembolso',
+    welcome:'Bienvenida',
+    verification:'Verificación',
+    transactional:'Correo transaccional',
+    marketing:'Comunicación'
+  })[type]||'Correo enviado';
+}
+function formatDateBogota(value,withTime=true){
+  if(!value)return '—';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '—';
+  return new Intl.DateTimeFormat('es-CO',withTime?{
+    day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'
+  }:{
+    day:'2-digit',month:'long',year:'numeric',timeZone:'America/Bogota'
+  }).format(d);
+}
+function populateEmailHistoryYears(rows){
+  if(!selectedProfile)return;
+  const yearEl=$('emailHistoryYear');
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric'}).formatToParts(new Date());
+  const currentYear=Number(parts.find(p=>p.type==='year')?.value||new Date().getFullYear());
+  const years=new Set((rows||[]).map(r=>{
+    const d=new Date(r.sent_at);
+    if(Number.isNaN(d.getTime()))return null;
+    return Number(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric'}).format(d));
+  }).filter(Boolean));
+  years.add(currentYear);
+  yearEl.innerHTML=[...years].sort((a,b)=>b-a).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  populateEmailHistoryMonths();
+}
+function populateEmailHistoryMonths(){
+  const year=Number($('emailHistoryYear').value)||new Date().getFullYear();
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+  const currentYear=Number(parts.find(p=>p.type==='year')?.value||new Date().getFullYear());
+  const currentMonth=Number(parts.find(p=>p.type==='month')?.value||new Date().getMonth()+1);
+  const labels=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const end=year===currentYear?currentMonth:12;
+  $('emailHistoryMonth').innerHTML='<option value="">Todos los meses</option>'+labels.slice(0,end).map((name,i)=>'<option value="'+(i+1)+'">'+name+'</option>').join('');
+}
+function renderEmailHistory(rows){
+  const list=$('emailHistoryList');
+  if(!rows.length){
+    list.innerHTML='<div class="empty">'+(emailHistoryMode==='recent'?'Todavía no hay correos registrados.':'No hay correos registrados para el período seleccionado.')+'</div>';
+    $('emailHistorySummary').textContent=emailHistoryMode==='recent'?'Sin correos registrados':'Sin correos en el período';
+    $('emailHistoryMode').textContent=emailHistoryMode==='recent'?'Recientes':'Búsqueda';
+    return;
+  }
+  list.innerHTML=rows.map((r,i)=>{
+    const type=String(r.event_type||'transactional');
+    const date=formatDateBogota(r.sent_at);
+    const subject=escapeHtml(r.subject||emailEventLabel(type));
+    const ticket=r.related_receipt_number?(' · Ticket '+escapeHtml(r.related_receipt_number)):(r.metadata?.receipt_number?(' · Ticket '+escapeHtml(r.metadata.receipt_number)):'');
+    const status=String(r.status||'sent').toLowerCase();
+    return '<div class="email-history-item" data-email-index="'+i+'">'+
+      '<div class="email-history-icon">✉</div>'+
+      '<div class="email-history-main">'+
+        '<div class="email-history-type">'+escapeHtml(emailEventLabel(type))+'</div>'+
+        '<div class="email-history-subject">'+subject+'</div>'+
+        '<div class="email-history-meta">'+date+ticket+'</div>'+
+      '</div>'+
+      '<span class="email-history-status '+(status==='error'?'error':'')+'">'+escapeHtml(status==='error'?'ERROR':'ENVIADO')+'</span>'+
+    '</div>';
+  }).join('');
+  list.querySelectorAll('.email-history-item').forEach(el=>{
+    el.addEventListener('click',()=>openArchivedEmail(rows[Number(el.dataset.emailIndex)].id));
+  });
+  const ticketSet=new Set(rows.map(r=>r.related_receipt_number||r.metadata?.receipt_number).filter(Boolean));
+  $('emailHistorySummary').textContent=emailHistoryMode==='recent'
+    ? 'Últimos '+rows.length+' correos'+(ticketSet.size?' · '+ticketSet.size+' tickets':'')
+    : rows.length+' correos'+(ticketSet.size?' · '+ticketSet.size+' tickets':'');
+  $('emailHistoryMode').textContent=emailHistoryMode==='recent'?'Recientes':'Búsqueda';
+}
+async function loadEmailHistoryForSelected(){
+  if(!selectedProfile)return;
+  const year=Number($('emailHistoryYear').value);
+  const month=Number($('emailHistoryMonth').value);
+  let query=db.from('avohouse_email_archive')
+    .select('id,profile_id,event_type,recipient_email,subject,from_email,template_id,resend_email_id,message_id,sent_at,status,related_receipt_number,metadata')
+    .eq('profile_id',selectedProfile.id)
+    .order('sent_at',{ascending:false})
+    .limit(200);
+
+  if(year&&month){
+    const from=new Date(year+'-'+String(month).padStart(2,'0')+'-01T00:00:00-05:00');
+    const nextYear=month===12?year+1:year;
+    const nextMonth=month===12?1:month+1;
+    const to=new Date(nextYear+'-'+String(nextMonth).padStart(2,'0')+'-01T00:00:00-05:00');
+    query=query.gte('sent_at',from.toISOString()).lt('sent_at',to.toISOString());
+  }else if(year){
+    const from=new Date(year+'-01-01T00:00:00-05:00');
+    const to=new Date((year+1)+'-01-01T00:00:00-05:00');
+    query=query.gte('sent_at',from.toISOString()).lt('sent_at',to.toISOString());
+  }
+  const {data,error}=await query;
+  if(error){showNotice('No se pudo consultar los correos: '+error.message,true);return}
+  emailHistoryMode=(year&&month)?'month':(year?'year':'recent');
+  emailHistoryRows=Array.isArray(data)?data:[];
+  renderEmailHistory(emailHistoryRows);
+}
+async function loadRecentEmailHistory(){
+  if(!selectedProfile)return;
+  const {data,error}=await db.from('avohouse_email_archive')
+    .select('id,profile_id,event_type,recipient_email,subject,from_email,template_id,resend_email_id,message_id,sent_at,status,related_receipt_number,metadata')
+    .eq('profile_id',selectedProfile.id)
+    .order('sent_at',{ascending:false})
+    .limit(10);
+  if(error){showNotice('No se pudo cargar el historial de correos: '+error.message,true);return}
+  emailHistoryMode='recent';
+  emailHistoryRows=Array.isArray(data)?data:[];
+  renderEmailHistory(emailHistoryRows);
+}
+async function refreshEmailHistoryYears(){
+  if(!selectedProfile)return;
+  const {data,error}=await db.from('avohouse_email_archive')
+    .select('sent_at')
+    .eq('profile_id',selectedProfile.id)
+    .order('sent_at',{ascending:false})
+    .limit(1000);
+  if(error)return;
+  populateEmailHistoryYears(data||[]);
+}
+async function openArchivedEmail(archiveId){
+  $('emailModal').hidden=false;
+  $('emailModalTitle').textContent='Correo';
+  $('emailModalEyebrow').textContent='Correo enviado';
+  $('emailModalMeta').textContent='Cargando correo…';
+  $('emailModalFooter').textContent='Recuperando la copia exacta del mensaje…';
+  $('emailPreviewFrame').srcdoc='<!DOCTYPE html><html><body style="margin:0;padding:40px;font-family:Arial,sans-serif;color:#555;background:#fff;text-align:center">Cargando…</body></html>';
+
+  try{
+    const {data,error}=await db.auth.getSession();
+    const token=data?.session?.access_token;
+    if(error||!token)throw new Error('La sesión administrativa no está activa.');
+    const response=await fetch(SUPABASE_URL+'/functions/v1/avohouse-communications',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SUPABASE_PUBLISHABLE_KEY},
+      body:JSON.stringify({action:'email_detail',archive_id:archiveId})
+    });
+    const bodyText=await response.text();
+    let body={};
+    try{body=bodyText?JSON.parse(bodyText):{}}catch{body={error:bodyText}};
+    if(!response.ok)throw new Error(body?.error||('Error HTTP '+response.status));
+    const email=body?.email;
+    if(!email)throw new Error('No fue posible recuperar el correo.');
+    $('emailModalTitle').textContent=email.subject||emailEventLabel(email.event_type);
+    $('emailModalEyebrow').textContent=emailEventLabel(email.event_type);
+    $('emailModalMeta').innerHTML=
+      '<strong>Para:</strong> '+escapeHtml(email.recipient_email||'—')+
+      '<br><strong>Fecha:</strong> '+escapeHtml(formatDateBogota(email.sent_at))+
+      (email.related_receipt_number?'<br><strong>Ticket relacionado:</strong> '+escapeHtml(email.related_receipt_number):'');
+    if(email.html_content){
+      $('emailPreviewFrame').srcdoc=email.html_content;
+    }else if(email.text_content){
+      $('emailPreviewFrame').srcdoc='<!DOCTYPE html><html><body style="margin:0;padding:28px;font-family:Arial,Helvetica,sans-serif;white-space:pre-wrap;color:#222;background:#fff">'+escapeHtml(email.text_content)+'</body></html>';
+    }else{
+      $('emailPreviewFrame').srcdoc='<!DOCTYPE html><html><body style="margin:0;padding:40px;font-family:Arial,sans-serif;color:#666;background:#fff;text-align:center">Este registro conserva los datos del envío, pero todavía no tiene el contenido del mensaje disponible.</body></html>';
+    }
+    $('emailModalFooter').textContent=email.html_content
+      ? 'La copia se conserva en el archivo AvoHouse después de recuperarla del mensaje enviado.'
+      : 'Registro del envío sin contenido recuperable.';
+  }catch(error){
+    $('emailModalMeta').innerHTML='<span class="error">'+escapeHtml(error?.message||'No se pudo cargar el correo.')+'</span>';
+    $('emailModalFooter').textContent='No fue posible recuperar la copia del mensaje.';
+  }
+}
 
 function todayColombiaISO(){
   const now=new Date();
@@ -1326,6 +1573,8 @@ async function loadClient(profile){
 
   await loadRecentHistory();
   await refreshHistoryYears();
+  await loadRecentEmailHistory();
+  await refreshEmailHistoryYears();
   await loadWhatsappVerificationAdmin();
   await loadInstagramVerificationAdmin();
   await loadFacebookVerificationAdmin();
@@ -1576,10 +1825,20 @@ $('addPointsBtn').addEventListener('click',()=>adjustSelectedPoints(1));
 $('removePointsBtn').addEventListener('click',()=>adjustSelectedPoints(-1));
 $('historySearchBtn').addEventListener('click',loadHistoryForSelected);
 $('historyRecentBtn').addEventListener('click',loadRecentHistory);
+$('emailHistorySearchBtn').addEventListener('click',loadEmailHistoryForSelected);
+$('emailHistoryRecentBtn').addEventListener('click',loadRecentEmailHistory);
+$('emailHistoryYear').addEventListener('change',populateEmailHistoryMonths);
+$('emailModalClose').addEventListener('click',()=>{$('emailModal').hidden=true});
+$('emailModal').addEventListener('click',e=>{if(e.target===$('emailModal'))$('emailModal').hidden=true});
 $('logoutBtn').addEventListener('click',logout);
 $('receiptClose').addEventListener('click',()=>{$('receiptModal').hidden=true});
 $('receiptModal').addEventListener('click',e=>{if(e.target===$('receiptModal'))$('receiptModal').hidden=true});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')$('receiptModal').hidden=true});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    $('receiptModal').hidden=true;
+    $('emailModal').hidden=true;
+  }
+});
 
 function safeReturnTo(value){
   try{
