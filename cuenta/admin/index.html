@@ -18,6 +18,7 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.62);z-inde
 .header-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
 .home-button,.header button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;padding:10px 16px;border:1px solid rgba(255,255,255,.20);border-radius:30px;font-size:.82em;background:rgba(255,255,255,.04);cursor:pointer}
 .home-button:hover,.header button:hover{background:#fff;color:#111}
+.home-button.active{border-color:#b8ff39;background:rgba(184,255,57,.14);color:#b8ff39;font-weight:800}
 #logoutBtn{border-color:#ff5d5d;color:#ff5d5d;background:rgba(255,93,93,.08)}
 #logoutBtn:hover{background:rgba(255,93,93,.15);color:#ff5d5d;border-color:#ff5d5d}
 .page{padding-top:300px}
@@ -242,8 +243,10 @@ button:disabled{opacity:.45;cursor:default}
   <div class="header-subtitle">Administración de clientes y AvoPuntos</div>
   <div class="header-actions">
     <a href="../../ahtv/admin/" class="home-button">AHtv</a>
-    <a href="../comunicaciones/" class="home-button">COMUNICACIONES</a>\n    <a href="../inventario/" class="home-button">INVENTARIO</a>
-    <button id="logoutBtn" class="hidden">CERRAR SESIÓN</button>
+    <a href="./" class="home-button active">CC</a>
+    <a href="../comunicaciones/" class="home-button">COMUNICACIONES</a>
+    <a href="../inventario/" class="home-button">INVENTARIO</a>
+    <button id="logoutBtn" class="hidden" type="button">CERRAR SESIÓN</button>
   </div>
 </header>
 <div class="shell">
@@ -789,7 +792,8 @@ function emailEventLabel(type){
     welcome:'Bienvenida',
     verification:'Verificación',
     transactional:'Correo transaccional',
-    marketing:'Comunicación'
+    marketing:'Comunicación',
+    profile_update:'Cambio de datos'
   })[type]||'Correo enviado';
 }
 function formatDateBogota(value,withTime=true){
@@ -1173,7 +1177,7 @@ async function deleteSelectedCustomer(){
     (username||email)+
     (email?' ('+email+')':'')+
     '. Se eliminará su cuenta y sus datos de AvoPuntos en AvoHouse. '+
-    'Los registros históricos de tickets pueden quedar sin vínculo con la cuenta.\n\n¿Continuar?'
+    'Los registros históricos de tickets pueden quedar sin vínculo con la cuenta.  ¿Continuar?'
   );
   if(!confirmed)return;
 
