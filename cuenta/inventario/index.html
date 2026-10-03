@@ -106,6 +106,28 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
   }
 }
 
+
+.inventory-row{grid-template-columns:minmax(0,1fr) auto auto auto auto}
+.inventory-actions{display:flex;justify-content:flex-end}
+.inventory-edit{margin:0}
+.inventory-modal-backdrop{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px}
+.inventory-modal{width:min(760px,100%);max-height:min(90vh,900px);overflow:auto;background:#15171c;border:1px solid #3b404a;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.inventory-modal-header{position:sticky;top:0;z-index:1;background:rgba(21,23,28,.98);padding:17px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.inventory-modal-title{margin:0;font-size:20px;font-weight:900}
+.inventory-modal-subtitle{margin-top:4px;color:#9ca3af;font-size:12px;line-height:1.5}
+.inventory-modal-body{padding:18px}
+.inventory-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.inventory-form-full{grid-column:1/-1}
+.inventory-field label,.inventory-check{display:block}
+.inventory-field input,.inventory-field select{margin:5px 0 0}
+.inventory-section-title{margin:16px 0 9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;font-weight:900}
+.inventory-readonly{padding:12px 13px;border:1px solid #2c3038;border-radius:11px;background:#101217;color:#bfc5cf;font-size:13px}
+.inventory-warning{margin-top:10px;padding:10px 12px;border:1px solid rgba(232,213,154,.25);border-radius:11px;background:rgba(232,213,154,.06);color:#ddd1a4;font-size:12px;line-height:1.5}
+.inventory-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:18px}
+.inventory-modal-actions button{margin:0}
+.inventory-no-edit{color:#9ca3af;font-size:12px;line-height:1.5}
+@media(max-width:820px){.inventory-form-grid{grid-template-columns:1fr}.inventory-form-full{grid-column:auto}.inventory-row{grid-template-columns:1fr auto auto}}
+
 </style>
   <link rel="stylesheet" href="../admin/header.css?v=20261002-1">
 </head>
@@ -137,7 +159,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
   <div id="notice" class="notice" role="status"></div>
   <section class="card">
     <div class="panel-heading"><h2 class="panel-title">Inventario</h2><span id="inventoryStatus" class="panel-tag">Loyverse</span></div>
-    <div class="helper">Consulta el catálogo sincronizado desde Loyverse. Esta pantalla no modifica existencias ni productos en Loyverse.</div>
+    <div class="helper">Consulta el catálogo sincronizado desde Loyverse. Desde <strong>EDITAR</strong> puedes modificar existencias y datos del artículo; los cambios se escriben directamente en Loyverse y luego se actualiza el espejo local.</div>
     <div class="inventory-toolbar" style="margin-top:12px">
       <input id="inventorySearch" type="search" placeholder="Buscar producto, SKU o código de barras" autocomplete="off">
       <select id="inventoryCategory" aria-label="Filtrar por categoría"><option value="">Todas las categorías</option></select>
@@ -154,6 +176,95 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
     </div>
     <div id="inventoryList" class="inventory-list"></div>
     <div id="inventorySummary" class="inventory-summary"></div>
+  <div id="inventoryEditBackdrop" class="inventory-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="inventoryEditTitle">
+    <div class="inventory-modal">
+      <div class="inventory-modal-header">
+        <h3 id="inventoryEditTitle" class="inventory-modal-title">Editar en Loyverse</h3>
+        <div id="inventoryEditSubtitle" class="inventory-modal-subtitle"></div>
+      </div>
+      <div class="inventory-modal-body">
+        <div id="inventoryEditNotice" class="notice" style="margin-bottom:12px"></div>
+        <div class="inventory-section-title">Artículo</div>
+        <div class="inventory-form-grid">
+          <div class="inventory-field inventory-form-full">
+            <label class="field-label" for="editItemName">Nombre</label>
+            <input id="editItemName" maxlength="64">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editItemCategory">Categoría</label>
+            <select id="editItemCategory"></select>
+          </div>
+          <div class="inventory-field">
+            <span class="field-label">Control de inventario</span>
+            <div id="editTrackStock" class="inventory-readonly">—</div>
+          </div>
+        </div>
+
+        <div class="inventory-section-title">Variante y precio</div>
+        <div class="inventory-form-grid">
+          <div class="inventory-field">
+            <label class="field-label" for="editSku">SKU</label>
+            <input id="editSku" maxlength="40">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editBarcode">Código de barras</label>
+            <input id="editBarcode" maxlength="128">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editCost">Costo</label>
+            <input id="editCost" type="number" step="0.01" min="0">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editPurchaseCost">Costo de compra</label>
+            <input id="editPurchaseCost" type="number" step="0.01" min="0">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editPricingType">Tipo de precio base</label>
+            <select id="editPricingType"><option value="FIXED">FIJO</option><option value="VARIABLE">VARIABLE</option></select>
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editDefaultPrice">Precio base</label>
+            <input id="editDefaultPrice" type="number" step="0.01" min="0">
+          </div>
+        </div>
+
+        <div class="inventory-section-title">Tienda e inventario</div>
+        <div class="inventory-form-grid">
+          <div class="inventory-field">
+            <label class="field-label" for="editStore">Tienda</label>
+            <select id="editStore"></select>
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editStorePrice">Precio en tienda</label>
+            <input id="editStorePrice" type="number" step="0.01" min="0">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editStock">Existencias</label>
+            <input id="editStock" type="number" step="0.001">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editLowStock">Stock bajo</label>
+            <input id="editLowStock" type="number" step="0.001" min="0">
+          </div>
+          <div class="inventory-field">
+            <label class="field-label" for="editOptimalStock">Stock óptimo</label>
+            <input id="editOptimalStock" type="number" step="0.001" min="0">
+          </div>
+          <div class="inventory-field">
+            <span class="field-label">Venta</span>
+            <label class="inventory-check"><input id="editAvailable" type="checkbox"> Disponible para la venta</label>
+          </div>
+        </div>
+
+        <div class="inventory-warning">Los cambios de existencias usan el nivel final indicado y se escriben en Loyverse. Los cambios de artículo, variante y tienda también se reflejan directamente allí.</div>
+        <div id="inventoryEditNoEdit" class="inventory-no-edit hidden" style="margin-top:10px"></div>
+        <div class="inventory-modal-actions">
+          <button id="inventoryEditCancel" class="ghost" type="button">CANCELAR</button>
+          <button id="inventoryEditSave" class="primary" type="button">GUARDAR EN LOYVERSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
   </section>
 </section>
 </div>
@@ -164,7 +275,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'}});
-let inventoryRows=[],inventoryCategories=[];const $=id=>document.getElementById(id);
+let inventoryRows=[],inventoryCategories=[],inventoryEditState=null;const $=id=>document.getElementById(id);
 function showNotice(message,error){const el=$('notice');el.textContent=message;el.className='notice show'+(error?' error':'')}
 function formatMoney(value){const n=Number(value);return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—'}
 function formatDate(value){if(!value)return'—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(d)}
@@ -175,13 +286,17 @@ function inventoryStoreState(variant){const stores=Array.isArray(variant?.stores
 function inventoryStockInfo(variant,map){const stores=Array.isArray(variant?.stores)?variant.stores:[];for(const store of stores){const key=String(variant.variant_id)+'|'+String(store?.store_id||'');if(map.has(key))return Number(map.get(key))}return null}
 function inventoryStockLabel(row){if(!row.trackStock)return{label:'Sin controlar',cls:'na'};if(row.stock===null)return{label:'Sin dato',cls:'na'};if(row.stock<=0)return{label:'0',cls:'zero'};if(row.lowStock!==null&&Number.isFinite(row.lowStock)&&row.stock<=row.lowStock)return{label:row.stock.toLocaleString('es-CO'),cls:'low'};return{label:row.stock.toLocaleString('es-CO'),cls:'ok'}}
 function populateInventoryCategories(){$('inventoryCategory').innerHTML='<option value="">Todas las categorías</option>'+inventoryCategories.map(c=>'<option value="'+String(c.id).replace(/"/g,'&quot;')+'">'+String(c.name||'').replace(/[&<>]/g,'')+'</option>').join('')}
-function renderInventory(){const list=$('inventoryList'),term=$('inventorySearch').value.trim().toLowerCase(),category=$('inventoryCategory').value,availability=$('inventoryAvailability').value;let rows=inventoryRows.filter(row=>{if(category&&row.categoryId!==category)return false;if(term&&!([row.name,row.sku,row.barcode,row.categoryName,row.option1,row.option2,row.option3].filter(Boolean).join(' ').toLowerCase().includes(term)))return false;if(availability==='available'&&!row.available)return false;if(availability==='unavailable'&&row.available)return false;if(availability==='tracked'&&!row.trackStock)return false;if(availability==='low'&&!(row.trackStock&&row.stock!==null&&row.stock>0&&row.lowStock!==null&&row.stock<=row.lowStock))return false;if(availability==='zero'&&!(row.trackStock&&row.stock!==null&&row.stock<=0))return false;return true});rows.sort((a,b)=>{if(a.trackStock!==b.trackStock)return a.trackStock?-1:1;if((a.stock??Infinity)!==(b.stock??Infinity))return(a.stock??Infinity)-(b.stock??Infinity);return a.name.localeCompare(b.name,'es')});$('inventorySummary').textContent='Mostrando '+rows.length.toLocaleString('es-CO')+' de '+inventoryRows.length.toLocaleString('es-CO')+' variantes activas.';if(!rows.length){list.innerHTML='<div class="empty">No hay productos que coincidan con los filtros.</div>';return}list.innerHTML=rows.map(row=>{const stock=inventoryStockLabel(row),option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · '),meta=[row.categoryName||'Sin categoría',row.sku?'SKU '+row.sku:null,row.barcode?'Barras '+row.barcode:null,option].filter(Boolean).join(' · '),safeName=String(row.name||'').replace(/[&<>]/g,'').replace(/"/g,'&quot;'),safeMeta=String(meta).replace(/[&<>]/g,'');return'<div class="inventory-row"><div class="inventory-main"><div class="inventory-name" title="'+safeName+'">'+safeName+'</div><div class="inventory-meta">'+safeMeta+'</div></div><div class="inventory-value">'+formatMoney(row.price)+'</div><div class="inventory-value inventory-stock '+stock.cls+'">'+stock.label+'</div><div class="inventory-badge '+(row.available?'available':'unavailable')+'">'+(row.available?'A la venta':'No disponible')+'</div></div>'}).join('')}
-async function loadInventory(){ $('inventoryStatus').textContent='Cargando…';$('inventoryList').innerHTML='<div class="empty">Cargando inventario…</div>';const [{data:categories,error:categoryError},{data:items,error:itemError},{data:variants,error:variantError},{data:levels,error:inventoryError},{data:syncState,error:syncError}]=await Promise.all([db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),db.from('loyverse_items').select('id,item_name,category_id,track_stock').is('deleted_at',null),db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,default_price,stores,option1_value,option2_value,option3_value').is('deleted_at',null),db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle()]);if(categoryError||itemError||variantError||inventoryError||syncError){const first=[categoryError,itemError,variantError,inventoryError,syncError].find(Boolean);$('inventoryStatus').textContent='Error';showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);return}inventoryCategories=categories||[];populateInventoryCategories();const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name])),itemMap=new Map((items||[]).map(i=>[String(i.id),i])),inventoryByVariant=new Map((levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)]));inventoryRows=(variants||[]).map(v=>{const item=itemMap.get(String(v.item_id))||{},store=inventoryStoreState(v);return{variantId:String(v.variant_id),itemId:String(v.item_id),name:String(item.item_name||'Sin nombre'),categoryId:String(item.category_id||''),categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',trackStock:Boolean(item.track_stock),stock:inventoryStockInfo(v,inventoryByVariant),lowStock:store?.low_stock===null||store?.low_stock===undefined?null:Number(store.low_stock),available:store?.available_for_sale!==false,price:v.default_price,sku:String(v.sku||''),barcode:String(v.barcode||''),option1:String(v.option1_value||''),option2:String(v.option2_value||''),option3:String(v.option3_value||'')}});$('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');$('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');$('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');$('inventoryStatLevels').textContent=(levels||[]).length.toLocaleString('es-CO');$('inventoryStatus').textContent=syncState?.last_success_at?'Actualizado '+formatDate(syncState.last_success_at):'Loyverse';renderInventory()}
+function renderInventory(){const list=$('inventoryList'),term=$('inventorySearch').value.trim().toLowerCase(),category=$('inventoryCategory').value,availability=$('inventoryAvailability').value;let rows=inventoryRows.filter(row=>{if(category&&row.categoryId!==category)return false;if(term&&!([row.name,row.sku,row.barcode,row.categoryName,row.option1,row.option2,row.option3].filter(Boolean).join(' ').toLowerCase().includes(term)))return false;if(availability==='available'&&!row.available)return false;if(availability==='unavailable'&&row.available)return false;if(availability==='tracked'&&!row.trackStock)return false;if(availability==='low'&&!(row.trackStock&&row.stock!==null&&row.stock>0&&row.lowStock!==null&&row.stock<=row.lowStock))return false;if(availability==='zero'&&!(row.trackStock&&row.stock!==null&&row.stock<=0))return false;return true});rows.sort((a,b)=>{if(a.trackStock!==b.trackStock)return a.trackStock?-1:1;if((a.stock??Infinity)!==(b.stock??Infinity))return(a.stock??Infinity)-(b.stock??Infinity);return a.name.localeCompare(b.name,'es')});$('inventorySummary').textContent='Mostrando '+rows.length.toLocaleString('es-CO')+' de '+inventoryRows.length.toLocaleString('es-CO')+' variantes activas.';if(!rows.length){list.innerHTML='<div class="empty">No hay productos que coincidan con los filtros.</div>';return}list.innerHTML=rows.map(row=>{const stock=inventoryStockLabel(row),option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · '),meta=[row.categoryName||'Sin categoría',row.sku?'SKU '+row.sku:null,row.barcode?'Barras '+row.barcode:null,option].filter(Boolean).join(' · '),safeName=String(row.name||'').replace(/[&<>]/g,'').replace(/"/g,'&quot;'),safeMeta=String(meta).replace(/[&<>]/g,''),available=row.available?'A la venta':'No disponible';return'<div class="inventory-row"><div class="inventory-main"><div class="inventory-name" title="'+safeName+'">'+safeName+'</div><div class="inventory-meta">'+safeMeta+'</div></div><div class="inventory-value">'+formatMoney(row.price)+'</div><div class="inventory-value inventory-stock '+stock.cls+'">'+stock.label+'</div><div class="inventory-badge '+(row.available?'available':'unavailable')+'">'+available+'</div><div class="inventory-actions"><button class="ghost inventory-edit" type="button" data-edit-variant="'+row.variantId+'" data-edit-item="'+row.itemId+'" data-edit-store="'+String(row.storeId||'')+'">EDITAR</button></div></div>'}).join('')}
+async function loadInventory(){ $('inventoryStatus').textContent='Cargando…';$('inventoryList').innerHTML='<div class="empty">Cargando inventario…</div>';const [{data:categories,error:categoryError},{data:items,error:itemError},{data:variants,error:variantError},{data:levels,error:inventoryError},{data:syncState,error:syncError}]=await Promise.all([db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),db.from('loyverse_items').select('id,item_name,category_id,track_stock').is('deleted_at',null),db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,default_price,stores,option1_value,option2_value,option3_value').is('deleted_at',null),db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle()]);if(categoryError||itemError||variantError||inventoryError||syncError){const first=[categoryError,itemError,variantError,inventoryError,syncError].find(Boolean);$('inventoryStatus').textContent='Error';showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);return}inventoryCategories=categories||[];populateInventoryCategories();const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name])),itemMap=new Map((items||[]).map(i=>[String(i.id),i])),inventoryByVariant=new Map((levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)]));inventoryRows=(variants||[]).map(v=>{const item=itemMap.get(String(v.item_id))||{},store=inventoryStoreState(v);return{storeId:String(store?.store_id||''),variantId:String(v.variant_id),itemId:String(v.item_id),name:String(item.item_name||'Sin nombre'),categoryId:String(item.category_id||''),categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',trackStock:Boolean(item.track_stock),stock:inventoryStockInfo(v,inventoryByVariant),lowStock:store?.low_stock===null||store?.low_stock===undefined?null:Number(store.low_stock),available:store?.available_for_sale!==false,price:v.default_price,sku:String(v.sku||''),barcode:String(v.barcode||''),option1:String(v.option1_value||''),option2:String(v.option2_value||''),option3:String(v.option3_value||'')}});$('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');$('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');$('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');$('inventoryStatLevels').textContent=(levels||[]).length.toLocaleString('es-CO');$('inventoryStatus').textContent=syncState?.last_success_at?'Actualizado '+formatDate(syncState.last_success_at):'Loyverse';renderInventory()}
+async function openInventoryEditor(variantId,itemId,storeId){const backdrop=$('inventoryEditBackdrop');backdrop.classList.remove('hidden');$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent='Cargando información actual desde Loyverse…';$('inventoryEditSave').disabled=true;$('inventoryEditCancel').disabled=false;inventoryEditState={variantId,itemId,storeId};try{const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_edit',item_id:itemId,variant_id:variantId}});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo cargar el artículo.');inventoryEditState.data=data;const item=data.item||{},variant=data.variant||{};$('inventoryEditTitle').textContent='Editar · '+(item.item_name||'Artículo');$('inventoryEditSubtitle').textContent='Variante '+variantId;$('editItemName').value=item.item_name||'';$('editTrackStock').textContent=item.track_stock?'ACTIVO':'DESACTIVADO';$('editTrackStock').style.color=item.track_stock?'#b8ff39':'#ffb7b7';$('editSku').value=variant.sku||'';$('editBarcode').value=variant.barcode||'';$('editCost').value=variant.cost??'';$('editPurchaseCost').value=variant.purchase_cost??'';$('editPricingType').value=variant.default_pricing_type||'VARIABLE';$('editDefaultPrice').value=variant.default_price??'';$('editItemCategory').innerHTML='<option value="">Sin categoría</option>'+inventoryCategories.map(cat=>'<option value="'+String(cat.id).replace(/"/g,'&quot;')+'">'+String(cat.name||'').replace(/[&<>]/g,'')+'</option>').join('');$('editItemCategory').value=item.category_id||'';const stores=Array.isArray(data.stores)?data.stores:[];const overrides=Array.isArray(variant.stores)?variant.stores:[];$('editStore').innerHTML='';stores.filter(s=>overrides.some(o=>String(o.store_id)===String(s.id))).forEach(s=>{const opt=document.createElement('option');opt.value=s.id;opt.textContent=s.name||s.id;$('editStore').appendChild(opt)});if(!$('editStore').options.length)throw new Error('Loyverse no devolvió una tienda asociada a esta variante.');$('editStore').value=storeId&&[...$('editStore').options].some(o=>o.value===storeId)?storeId:$('editStore').options[0].value;populateInventoryEditStore();$('inventoryEditSave').disabled=false;updateInventoryEditPermissionHint()}catch(error){$('inventoryEditNotice').textContent=error?.message||'No se pudo cargar el artículo.';$('inventoryEditNotice').className='notice show error';$('inventoryEditSave').disabled=true}}
+function populateInventoryEditStore(){if(!inventoryEditState?.data)return;const variant=inventoryEditState.data.variant||{},storeId=$('editStore').value;const override=(Array.isArray(variant.stores)?variant.stores:[]).find(s=>String(s.store_id)===String(storeId));const level=(Array.isArray(inventoryEditState.data.inventory_levels)?inventoryEditState.data.inventory_levels:[]).find(l=>String(l.store_id)===String(storeId));if(!override) return;$('editStorePrice').value=override.price??'';$('editLowStock').value=override.low_stock??'';$('editOptimalStock').value=override.optimal_stock??'';$('editAvailable').checked=override.available_for_sale!==false;$('editStock').value=level?.in_stock??0;inventoryEditState.storeId=storeId}
+function updateInventoryEditPermissionHint(){$('inventoryEditNoEdit').classList.add('hidden');$('inventoryEditNoEdit').textContent=''}function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
+async function saveInventoryEditor(){if(!inventoryEditState?.data)return;const storeId=$('editStore').value;const stockValue=$('editStock').value.trim();if(stockValue===''){showNotice('Indica las existencias antes de guardar.',true);return}if(!confirm('Vas a modificar este artículo directamente en Loyverse. ¿Deseas continuar?'))return;const btn=$('inventoryEditSave');btn.disabled=true;$('inventoryEditCancel').disabled=true;$('inventoryEditNotice').className='notice show';$('inventoryEditNotice').textContent='Guardando cambios en Loyverse…';try{const body={action:'update_item',item_id:inventoryEditState.itemId,variant_id:inventoryEditState.variantId,store_id:storeId,item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null},variant:{sku:$('editSku').value.trim(),barcode:$('editBarcode').value.trim(),cost:$('editCost').value,purchase_cost:$('editPurchaseCost').value,default_pricing_type:$('editPricingType').value,default_price:$('editDefaultPrice').value},store:{price:$('editStorePrice').value,available_for_sale:$('editAvailable').checked,low_stock:$('editLowStock').value,optimal_stock:$('editOptimalStock').value},inventory:{stock_after:stockValue}};const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudieron guardar los cambios.');closeInventoryEditor();await loadInventory();showNotice('Cambios guardados en Loyverse y reflejados en el inventario de AvoHouse.',false)}catch(error){$('inventoryEditNotice').textContent=error?.message||'No se pudieron guardar los cambios.';$('inventoryEditNotice').className='notice show error'}finally{btn.disabled=false;$('inventoryEditCancel').disabled=false}}
 async function syncInventoryFromLoyverse(){const btn=$('inventorySyncBtn');btn.disabled=true;$('inventoryStatus').textContent='Sincronizando…';try{const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'sync'}});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo completar la sincronización.');await loadInventory();showNotice('Inventario actualizado desde Loyverse: '+Number(data.items||0).toLocaleString('es-CO')+' productos y '+Number(data.variants||0).toLocaleString('es-CO')+' variantes.',false)}catch(error){$('inventoryStatus').textContent='Error';showNotice('No se pudo sincronizar el inventario desde Loyverse: '+(error?.message||'error desconocido'),true)}finally{btn.disabled=false}}
 async function enterWithExistingSession(){ $('loginStatus').textContent='Verificando sesión…';const {data,error}=await db.auth.getSession();if(error){showLogin();$('loginStatus').textContent='No se pudo recuperar la sesión: '+error.message;return false}if(!data?.session){showLogin();$('loginStatus').textContent='No hay una sesión administrativa disponible.';return false}if(!(await isCurrentUserAdmin())){await db.auth.signOut();showLogin();$('loginStatus').textContent='La cuenta activa no tiene permisos de administración.';return false}showAdmin();await loadInventory();return true}
 async function login(event){event.preventDefault();const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return false;$('loginBtn').disabled=true;$('loginStatus').textContent='Iniciando sesión…';try{const {error}=await db.auth.signInWithPassword({email,password});if(error){$('loginStatus').textContent=error.message||'No fue posible iniciar sesión.';return false}await enterWithExistingSession();return true}finally{$('loginBtn').disabled=false}}
 async function logout(){await db.auth.signOut();showLogin()}
-$('loginForm').addEventListener('submit',login);$('inventorySearch').addEventListener('input',renderInventory);$('inventoryCategory').addEventListener('change',renderInventory);$('inventoryAvailability').addEventListener('change',renderInventory);$('inventorySyncBtn').addEventListener('click',syncInventoryFromLoyverse);$('logoutBtn').addEventListener('click',logout);enterWithExistingSession();
+$('loginForm').addEventListener('submit',login);$('inventorySearch').addEventListener('input',renderInventory);$('inventoryCategory').addEventListener('change',renderInventory);$('inventoryAvailability').addEventListener('change',renderInventory);$('inventorySyncBtn').addEventListener('click',syncInventoryFromLoyverse);$('inventoryList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-variant]');if(!button)return;openInventoryEditor(button.dataset.editVariant,button.dataset.editItem,button.dataset.editStore)});$('editStore').addEventListener('change',populateInventoryEditStore);$('inventoryEditCancel').addEventListener('click',closeInventoryEditor);$('inventoryEditSave').addEventListener('click',saveInventoryEditor);$('inventoryEditBackdrop').addEventListener('click',event=>{if(event.target.id==='inventoryEditBackdrop')closeInventoryEditor();});document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('inventoryEditBackdrop').classList.contains('hidden'))closeInventoryEditor();});$('logoutBtn').addEventListener('click',logout);enterWithExistingSession();
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../../sw.js').catch(()=>{}))}</script>
 </body>
