@@ -1,0 +1,936 @@
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+
+type SupabaseAuth = { key: string; isNewSecret: boolean };
+
+function getSupabaseAuth(): SupabaseAuth | null {
+  const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (raw) {
+    try {
+      const keys = JSON.parse(raw);
+      const key = typeof keys?.default === "string" ? keys.default.trim() : "";
+      if (key) return { key, isNewSecret: key.startsWith("sb_secret_") };
+    } catch {}
+  }
+  const legacy = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ?? "";
+  return legacy ? { key: legacy, isNewSecret: false } : null;
+}
+
+const SUPABASE_AUTH = getSupabaseAuth();
+const LOYVERSE_BASE_URL = "https://api.loyverse.com/v1.0";
+const PAGE_SIZE = 250;
+const MAX_PAGES = 100;
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+  });
+}
+
+function cleanError(value: unknown): string {
+  const message =
+    value instanceof Error ? value.message :
+    typeof value === "string" ? value :
+    JSON.stringify(value);
+  return message.slice(0, 1500);
+}
+
+function getBearer(req: Request): string | null {
+  const value = req.headers.get("authorization") ?? "";
+  return value.replace(/^Bearer\s+/i, "").trim() || null;
+}
+
+function getJwtSubject(token: string): string | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+    const payload = JSON.parse(atob(padded));
+    return typeof payload?.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+async function supabaseRequest(path: string, init: RequestInit = {}) {
+  if (!SUPABASE_URL || !SUPABASE_AUTH) {
+    throw new Error("Faltan las credenciales internas de Supabase.");
+  }
+  const headers = new Headers(init.headers);
+  headers.set("apikey", SUPABASE_AUTH.key);
+  headers.set("Content-Type", "application/json");
+  if (!SUPABASE_AUTH.isNewSecret) {
+    headers.set("Authorization", "Bearer " + SUPABASE_AUTH.key);
+  }
+  const response = await fetch(SUPABASE_URL + path, { ...init, headers });
+  const text = await response.text();
+  let body: any = null;
+  if (text) {
+    try { body = JSON.parse(text); } catch { body = text; }
+  }
+  if (!response.ok) {
+    throw new Error(`Supabase respondió ${response.status}: ${cleanError(body)}`);
+  }
+  return body;
+}
+
+async function supabaseRpc(name: string, args: Record<string, unknown>) {
+  return supabaseRequest("/rest/v1/rpc/" + encodeURIComponent(name), {
+    method: "POST",
+    body: JSON.stringify(args),
+  });
+}
+
+async function assertAdmin(req: Request) {
+  const token = getBearer(req);
+  const userId = token ? getJwtSubject(token) : null;
+  if (!userId) throw new Error("Sesión administrativa inválida.");
+
+  const rows = await supabaseRequest(
+    "/rest/v1/admin_users?select=user_id&user_id=eq." + encodeURIComponent(userId) + "&limit=1",
+    { method: "GET" },
+  );
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error("No tienes permisos de administración.");
+  }
+  return userId;
+}
+
+async function getLoyverseToken() {
+  const token = await supabaseRpc("avohouse_get_loyverse_api_token", {});
+  const value = typeof token === "string" ? token.trim() : "";
+  if (!value) throw new Error("Falta configurar loyverse_api_token.");
+  return value;
+}
+
+async function loyverseGet(token: string, path: string) {
+  const response = await fetch(LOYVERSE_BASE_URL + path, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+  });
+  const text = await response.text();
+  let body: any = null;
+  if (text) {
+    try { body = JSON.parse(text); } catch { body = text; }
+  }
+  if (!response.ok) {
+    throw new Error(`Loyverse respondió ${response.status}: ${cleanError(body)}`);
+  }
+  return body;
+}
+
+async function loyversePost(token: string, path: string, payload: unknown) {
+  const response = await fetch(LOYVERSE_BASE_URL + path, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const text = await response.text();
+  let body: any = null;
+  if (text) {
+    try { body = JSON.parse(text); } catch { body = text; }
+  }
+  if (!response.ok) {
+    throw new Error(`Loyverse respondió ${response.status}: ${cleanError(body)}`);
+  }
+  return body;
+}
+
+function finiteNumber(value: unknown, field: string): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) throw new Error(`El campo ${field} no contiene un número válido.`);
+  return n;
+}
+
+function requiredString(value: unknown, field: string, max = 200): string {
+  const s = typeof value === "string" ? value.trim() : "";
+  if (!s) throw new Error(`El campo ${field} es obligatorio.`);
+  if (s.length > max) throw new Error(`El campo ${field} supera el límite permitido.`);
+  return s;
+}
+
+async function getLiveEditData(token: string, itemId: string, variantId: string) {
+  const [item, variant, inventory] = await Promise.all([
+    loyverseGet(token, "/items/" + encodeURIComponent(itemId)),
+    loyverseGet(token, "/variants/" + encodeURIComponent(variantId)),
+    loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(variantId) + "&limit=250"),
+  ]);
+
+  const stores = await loyverseGet(token, "/stores?limit=250");
+  return {
+    item,
+    variant,
+    inventory_levels: Array.isArray(inventory?.inventory_levels) ? inventory.inventory_levels : [],
+    stores: Array.isArray(stores?.stores) ? stores.stores : [],
+  };
+}
+
+function findStoreOverride(variant: any, storeId: string) {
+  const stores = Array.isArray(variant?.stores) ? variant.stores : [];
+  return stores.find((s: any) => String(s?.store_id || "") === storeId) ?? null;
+}
+
+async function mirrorEditedItem(item: any) {
+  const row = {
+    id: item?.id,
+    handle: item?.handle ?? null,
+    item_name: String(item?.item_name ?? "").trim() || "Sin nombre",
+    description: item?.description ?? null,
+    reference_id: item?.reference_id ?? null,
+    category_id: uuidOrNull(item?.category_id),
+    track_stock: Boolean(item?.track_stock),
+    sold_by_weight: Boolean(item?.sold_by_weight),
+    is_composite: Boolean(item?.is_composite),
+    use_production: Boolean(item?.use_production),
+    primary_supplier_id: uuidOrNull(item?.primary_supplier_id),
+    tax_ids: Array.isArray(item?.tax_ids) ? item.tax_ids : [],
+    modifiers_ids: Array.isArray(item?.modifiers_ids) ? item.modifiers_ids : [],
+    form: item?.form ?? null,
+    color: item?.color ?? null,
+    image_url: item?.image_url ?? null,
+    option1_name: item?.option1_name ?? null,
+    option2_name: item?.option2_name ?? null,
+    option3_name: item?.option3_name ?? null,
+    components: Array.isArray(item?.components) ? item.components : [],
+    created_at: parseTimestamp(item?.created_at),
+    updated_at: parseTimestamp(item?.updated_at),
+    deleted_at: parseTimestamp(item?.deleted_at),
+    raw_item: item,
+    synced_at: new Date().toISOString(),
+  };
+  if (uuidOrNull(row.id)) await upsert("/rest/v1/loyverse_items?on_conflict=id", [row]);
+}
+
+async function mirrorEditedVariant(variant: any) {
+  const row = {
+    variant_id: uuidOrNull(variant?.variant_id),
+    item_id: uuidOrNull(variant?.item_id),
+    sku: variant?.sku ?? null,
+    reference_variant_id: variant?.reference_variant_id ?? null,
+    option1_value: variant?.option1_value ?? null,
+    option2_value: variant?.option2_value ?? null,
+    option3_value: variant?.option3_value ?? null,
+    barcode: variant?.barcode ?? null,
+    cost: variant?.cost ?? null,
+    purchase_cost: variant?.purchase_cost ?? null,
+    default_pricing_type: variant?.default_pricing_type ?? null,
+    default_price: variant?.default_price ?? null,
+    stores: Array.isArray(variant?.stores) ? variant.stores : [],
+    created_at: parseTimestamp(variant?.created_at),
+    updated_at: parseTimestamp(variant?.updated_at),
+    deleted_at: parseTimestamp(variant?.deleted_at),
+    raw_variant: variant,
+    synced_at: new Date().toISOString(),
+  };
+  if (uuidOrNull(row.variant_id) && uuidOrNull(row.item_id)) {
+    await upsert("/rest/v1/loyverse_item_variants?on_conflict=variant_id", [row]);
+  }
+}
+
+async function mirrorEditedInventory(levels: any[]) {
+  const rows = (Array.isArray(levels) ? levels : []).map((level: any) => ({
+    variant_id: uuidOrNull(level?.variant_id),
+    store_id: uuidOrNull(level?.store_id),
+    in_stock: Number(level?.in_stock ?? 0),
+    updated_at: parseTimestamp(level?.updated_at),
+    raw_inventory: level,
+    synced_at: new Date().toISOString(),
+  })).filter((r: any) => r.variant_id && r.store_id && Number.isFinite(r.in_stock));
+  await upsert("/rest/v1/loyverse_inventory_levels?on_conflict=variant_id,store_id", rows);
+}
+
+async function updateCatalogItem(token: string, payload: any) {
+  const itemId = requiredString(payload?.item_id, "item_id");
+  const variantId = requiredString(payload?.variant_id, "variant_id");
+  const storeId = requiredString(payload?.store_id, "store_id");
+
+  const live = await getLiveEditData(token, itemId, variantId);
+  const currentItem = live.item;
+  const currentVariant = live.variant;
+
+  if (String(currentItem?.id || "") !== itemId) throw new Error("El artículo solicitado no coincide con el artículo de Loyverse.");
+  if (String(currentVariant?.variant_id || "") !== variantId) throw new Error("La variante solicitada no coincide con la variante de Loyverse.");
+  if (String(currentVariant?.item_id || "") !== itemId) throw new Error("La variante no pertenece al artículo seleccionado.");
+
+  const storeOverride = findStoreOverride(currentVariant, storeId);
+  if (!storeOverride) throw new Error("La tienda seleccionada no existe para esta variante.");
+
+  const itemChanges = payload?.item ?? {};
+  const variantChanges = payload?.variant ?? {};
+  const storeChanges = payload?.store ?? {};
+  const inventoryChanges = payload?.inventory ?? {};
+
+  let itemChanged = false, variantChanged = false, inventoryChanged = false;
+
+  const itemName = requiredString(itemChanges?.item_name ?? currentItem?.item_name, "nombre", 64);
+  const categoryId = itemChanges?.category_id ? String(itemChanges.category_id).trim() : null;
+  if (itemName !== String(currentItem?.item_name ?? "").trim() ||
+      String(categoryId ?? "") !== String(currentItem?.category_id ?? "")) {
+    itemChanged = true;
+    await loyversePost(token, "/items", { id: itemId, item_name: itemName, category_id: categoryId });
+  }
+
+  const nextVariant: any = { ...currentVariant, variant_id: variantId, item_id: itemId };
+  if (variantChanges?.sku !== undefined) {
+    const sku = String(variantChanges.sku).trim();
+    if (!sku && String(currentVariant?.sku ?? "").trim()) throw new Error("El SKU no puede quedar vacío al editar una variante existente.");
+    if (sku.length > 40) throw new Error("El SKU no puede superar 40 caracteres.");
+    nextVariant.sku = sku || currentVariant?.sku || undefined;
+  }
+  if (variantChanges?.barcode !== undefined) {
+    const barcode = String(variantChanges.barcode).trim();
+    if (barcode.length > 128) throw new Error("El código de barras no puede superar 128 caracteres.");
+    nextVariant.barcode = barcode || currentVariant?.barcode || undefined;
+  }
+  for (const field of ["cost", "purchase_cost", "default_price"]) {
+    if (variantChanges?.[field] !== undefined && variantChanges[field] !== "") {
+      const n = finiteNumber(variantChanges[field], field);
+      if (n < 0) throw new Error(`El campo ${field} no puede ser negativo.`);
+      nextVariant[field] = n;
+    }
+  }
+  if (variantChanges?.default_pricing_type !== undefined) {
+    const pricingType = String(variantChanges.default_pricing_type);
+    if (!["FIXED", "VARIABLE"].includes(pricingType)) throw new Error("Tipo de precio no válido.");
+    nextVariant.default_pricing_type = pricingType;
+  }
+
+  const nextStore: any = { ...storeOverride, store_id: storeId };
+  if (storeChanges?.price !== undefined && storeChanges.price !== "") {
+    const price = finiteNumber(storeChanges.price, "precio");
+    if (price < 0) throw new Error("El precio no puede ser negativo.");
+    nextStore.price = price;
+  }
+  if (storeChanges?.available_for_sale !== undefined) nextStore.available_for_sale = Boolean(storeChanges.available_for_sale);
+  if (storeChanges?.low_stock !== undefined && storeChanges.low_stock !== "") {
+    const lowStock = finiteNumber(storeChanges.low_stock, "stock bajo");
+    if (lowStock < 0) throw new Error("El stock bajo no puede ser negativo.");
+    nextStore.low_stock = lowStock;
+  }
+  if (storeChanges?.optimal_stock !== undefined && storeChanges.optimal_stock !== "") {
+    const optimalStock = finiteNumber(storeChanges.optimal_stock, "stock óptimo");
+    if (optimalStock < 0) throw new Error("El stock óptimo no puede ser negativo.");
+    nextStore.optimal_stock = optimalStock;
+  }
+  nextVariant.stores = (Array.isArray(currentVariant?.stores) ? currentVariant.stores : [])
+    .map((s: any) => String(s?.store_id || "") === storeId ? nextStore : s);
+
+  const changedVariantFields =
+    String(nextVariant?.sku ?? "") !== String(currentVariant?.sku ?? "") ||
+    String(nextVariant?.barcode ?? "") !== String(currentVariant?.barcode ?? "") ||
+    Number(nextVariant?.cost ?? 0) !== Number(currentVariant?.cost ?? 0) ||
+    Number(nextVariant?.purchase_cost ?? 0) !== Number(currentVariant?.purchase_cost ?? 0) ||
+    String(nextVariant?.default_pricing_type ?? "") !== String(currentVariant?.default_pricing_type ?? "") ||
+    Number(nextVariant?.default_price ?? 0) !== Number(currentVariant?.default_price ?? 0) ||
+    JSON.stringify(nextVariant.stores) !== JSON.stringify(currentVariant.stores);
+
+  if (changedVariantFields) {
+    variantChanged = true;
+    const variantPayload: Record<string, unknown> = {
+      variant_id: variantId,
+      item_id: itemId,
+      reference_variant_id: currentVariant?.reference_variant_id ?? null,
+      option1_value: currentVariant?.option1_value ?? null,
+      option2_value: currentVariant?.option2_value ?? null,
+      option3_value: currentVariant?.option3_value ?? null,
+      sku: nextVariant?.sku ?? undefined,
+      barcode: nextVariant?.barcode ?? undefined,
+      cost: nextVariant?.cost ?? 0,
+      purchase_cost: nextVariant?.purchase_cost ?? 0,
+      default_pricing_type: nextVariant?.default_pricing_type ?? "VARIABLE",
+      default_price: nextVariant?.default_price ?? null,
+      stores: nextVariant.stores,
+    };
+    if (variantPayload.sku === undefined) delete variantPayload.sku;
+    if (variantPayload.barcode === undefined) delete variantPayload.barcode;
+    await loyversePost(token, "/variants", variantPayload);
+  }
+
+  if (inventoryChanges?.stock_after !== undefined && inventoryChanges.stock_after !== "") {
+    const stockAfter = finiteNumber(inventoryChanges.stock_after, "existencias");
+    if (stockAfter < 0) throw new Error("Las existencias no pueden ser negativas desde esta pantalla.");
+    const currentLevel = (Array.isArray(live.inventory_levels) ? live.inventory_levels : [])
+      .find((level: any) => String(level?.store_id || "") === storeId);
+    const currentStock = currentLevel ? Number(currentLevel.in_stock ?? 0) : 0;
+    if (stockAfter !== currentStock) {
+      inventoryChanged = true;
+      await loyversePost(token, "/inventory", {
+        inventory_levels: [{ variant_id: variantId, store_id: storeId, stock_after: stockAfter }],
+      });
+    }
+  }
+
+  const verified = await getLiveEditData(token, itemId, variantId);
+  const verifiedStore = findStoreOverride(verified.variant, storeId);
+  const verifiedLevel = (Array.isArray(verified.inventory_levels) ? verified.inventory_levels : [])
+    .find((level: any) => String(level?.store_id || "") === storeId);
+
+  if (itemChanged &&
+      (String(verified.item?.item_name ?? "").trim() !== itemName ||
+       String(verified.item?.category_id ?? "") !== String(categoryId ?? ""))) {
+    throw new Error("La verificación posterior a la actualización del artículo no coincidió con lo solicitado.");
+  }
+
+  if (variantChanged) {
+    const expectedSku = nextVariant?.sku;
+    const expectedBarcode = nextVariant?.barcode;
+    if ((expectedSku !== undefined && String(verified.variant?.sku ?? "") !== String(expectedSku)) ||
+        (expectedBarcode !== undefined && String(verified.variant?.barcode ?? "") !== String(expectedBarcode)) ||
+        Number(verified.variant?.cost ?? 0) !== Number(nextVariant?.cost ?? 0) ||
+        Number(verified.variant?.purchase_cost ?? 0) !== Number(nextVariant?.purchase_cost ?? 0) ||
+        Number(verified.variant?.default_price ?? 0) !== Number(nextVariant?.default_price ?? 0) ||
+        String(verified.variant?.default_pricing_type ?? "") !== String(nextVariant?.default_pricing_type ?? "") ) {
+      throw new Error("La verificación posterior a la actualización de la variante no coincidió con lo solicitado.");
+    }
+    const verifiedStore = findStoreOverride(verified.variant, storeId);
+    for (const key of ["price","available_for_sale","low_stock","optimal_stock"]) {
+      if (nextStore?.[key] !== undefined && JSON.stringify(verifiedStore?.[key]) !== JSON.stringify(nextStore?.[key])) {
+        throw new Error("La verificación posterior de la configuración de tienda no coincidió con lo solicitado.");
+      }
+    }
+  }
+
+  if (inventoryChanged) {
+    const verifiedStock = Number(verifiedLevel?.in_stock);
+    const expectedStock = Number(inventoryChanges.stock_after);
+    if (!Number.isFinite(verifiedStock) || verifiedStock !== expectedStock) {
+      throw new Error("La verificación posterior al cambio de existencias no coincidió con lo solicitado.");
+    }
+  }
+
+  await mirrorEditedItem(verified.item);
+  await mirrorEditedVariant(verified.variant);
+  await mirrorEditedInventory(verified.inventory_levels);
+
+  return {
+    ok: true,
+    item: verified.item,
+    variant: verified.variant,
+    inventory_levels: verified.inventory_levels,
+    stores: verified.stores,
+    store_id: storeId,
+    changed: { item: itemChanged, variant: variantChanged, inventory: inventoryChanged },
+    edited_at: new Date().toISOString(),
+  };
+}
+
+
+
+async function setPurchasePackSize(payload: any) {
+  const variantId = requiredString(payload?.variant_id, "variant_id");
+  const value = finiteNumber(payload?.pack_size, "presentación");
+  if (!Number.isFinite(value) || value <= 0 || value > 100000) {
+    throw new Error("La presentación debe ser un número mayor que 0.");
+  }
+
+  const rows = await supabaseRequest(
+    "/rest/v1/loyverse_item_variants?select=variant_id&variant_id=eq." + encodeURIComponent(variantId) + "&limit=1",
+    { method: "GET" },
+  );
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error("La variante no existe en el catálogo de AvoHouse.");
+  }
+
+  await supabaseRequest(
+    "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(variantId),
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ purchase_pack_size: value, synced_at: new Date().toISOString() }),
+    },
+  );
+
+  return { ok: true, variant_id: variantId, pack_size: value, saved_at: new Date().toISOString() };
+}
+
+async function createPurchaseRecord(userId: string, purchaseDate: string, notes: string | null, lines: any[], totalUnits: number) {
+  const created = await supabaseRequest("/rest/v1/avohouse_inventory_purchases", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      purchase_date: purchaseDate,
+      created_by: userId,
+      status: "processing",
+      line_count: lines.length,
+      total_units: totalUnits,
+      notes,
+    }),
+  });
+  if (!Array.isArray(created) || !created[0]?.id) {
+    throw new Error("No se pudo crear el registro de la compra.");
+  }
+  return created[0];
+}
+
+async function patchPurchase(purchaseId: string, data: Record<string, unknown>) {
+  await supabaseRequest(
+    "/rest/v1/avohouse_inventory_purchases?id=eq." + encodeURIComponent(purchaseId),
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+async function registerPurchase(token: string, userId: string, payload: any) {
+  const rawLines = Array.isArray(payload?.lines) ? payload.lines : [];
+  if (!rawLines.length) throw new Error("La compra debe tener al menos un producto.");
+  if (rawLines.length > 50) throw new Error("La compra no puede superar 50 productos.");
+
+  const purchaseDate = typeof payload?.purchase_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)
+    ? payload.purchase_date
+    : new Date().toISOString().slice(0, 10);
+  const notesRaw = typeof payload?.notes === "string" ? payload.notes.trim() : "";
+  const notes = notesRaw ? notesRaw.slice(0, 1000) : null;
+
+  const normalized = rawLines.map((line: any, index: number) => {
+    const variantId = requiredString(line?.variant_id, "producto");
+    const quantity = Number(line?.quantity);
+    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100000) {
+      throw new Error(`La cantidad de la línea ${index + 1} debe ser un entero mayor que 0.`);
+    }
+    return { variant_id: variantId, quantity };
+  });
+
+  const seen = new Set<string>();
+  for (const line of normalized) {
+    if (seen.has(line.variant_id)) throw new Error("No repitas un mismo producto dentro de la compra.");
+    seen.add(line.variant_id);
+  }
+
+  const variantIds = normalized.map((line) => line.variant_id);
+  const variantFilter = variantIds.join(",");
+  const catalogVariants = await supabaseRequest(
+    "/rest/v1/loyverse_item_variants?select=variant_id,item_id,sku,purchase_pack_size&variant_id=in.(" + encodeURIComponent(variantFilter) + ")",
+    { method: "GET" },
+  );
+  if (!Array.isArray(catalogVariants) || catalogVariants.length !== normalized.length) {
+    throw new Error("Uno o más productos ya no están disponibles en el catálogo sincronizado.");
+  }
+
+  const variantMap = new Map(catalogVariants.map((v: any) => [String(v.variant_id), v]));
+  const itemIds = [...new Set(catalogVariants.map((v: any) => String(v.item_id)).filter(Boolean))];
+  const itemFilter = itemIds.join(",");
+  const catalogItems = await supabaseRequest(
+    "/rest/v1/loyverse_items?select=id,item_name,category_id,track_stock&id=in.(" + encodeURIComponent(itemFilter) + ")",
+    { method: "GET" },
+  );
+  const itemMap = new Map((Array.isArray(catalogItems) ? catalogItems : []).map((i: any) => [String(i.id), i]));
+
+  const prepared: any[] = [];
+  for (const line of normalized) {
+    const v = variantMap.get(line.variant_id);
+    const item = v ? itemMap.get(String(v.item_id)) : null;
+    const packSize = Number(v?.purchase_pack_size);
+    if (!Number.isFinite(packSize) || packSize <= 0) {
+      throw new Error(`Configura primero la Presentación de ${item?.item_name || "este producto"}.`);
+    }
+    if (!item?.track_stock) {
+      throw new Error(`${item?.item_name || "Este producto"} no tiene seguimiento de inventario activo en Loyverse.`);
+    }
+
+    const [liveVariant, inventoryBody] = await Promise.all([
+      loyverseGet(token, "/variants/" + encodeURIComponent(line.variant_id)),
+      loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(line.variant_id) + "&limit=250"),
+    ]);
+    const stores = Array.isArray(liveVariant?.stores) ? liveVariant.stores : [];
+    const store = stores[0] || null;
+    const storeId = String(store?.store_id || "");
+    if (!storeId) throw new Error(`${item?.item_name || "El producto"} no tiene una tienda configurada en Loyverse.`);
+
+    const levels = Array.isArray(inventoryBody?.inventory_levels) ? inventoryBody.inventory_levels : [];
+    const level = levels.find((x: any) => String(x?.store_id || "") === storeId) || levels[0] || null;
+    const stockBefore = level ? Number(level.in_stock ?? 0) : 0;
+    if (!Number.isFinite(stockBefore)) throw new Error(`No se pudo determinar el stock actual de ${item?.item_name || "este producto"}.`);
+
+    const unitsReceived = line.quantity * packSize;
+    const stockAfter = stockBefore + unitsReceived;
+    prepared.push({
+      variant_id: line.variant_id,
+      item_id: String(v.item_id),
+      product_name: String(item?.item_name || "Sin nombre"),
+      sku: v?.sku ?? null,
+      pack_size: packSize,
+      presentation_quantity: line.quantity,
+      units_received: unitsReceived,
+      stock_before: stockBefore,
+      stock_after: stockAfter,
+      store_id: storeId,
+    });
+  }
+
+  const totalUnits = prepared.reduce((sum, line) => sum + Number(line.units_received), 0);
+  const purchase = await createPurchaseRecord(userId, purchaseDate, notes, prepared, totalUnits);
+
+  try {
+    const lineRows = prepared.map((line, index) => ({
+      purchase_id: purchase.id,
+      line_number: index + 1,
+      variant_id: line.variant_id,
+      item_id: line.item_id,
+      product_name: line.product_name,
+      sku: line.sku,
+      pack_size: line.pack_size,
+      presentation_quantity: line.presentation_quantity,
+      units_received: line.units_received,
+      stock_before: line.stock_before,
+      stock_after: line.stock_after,
+    }));
+
+    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(lineRows),
+    });
+
+    await loyversePost(token, "/inventory", {
+      inventory_levels: prepared.map((line) => ({
+        variant_id: line.variant_id,
+        store_id: line.store_id,
+        stock_after: line.stock_after,
+      })),
+    });
+
+    for (const line of prepared) {
+      const verifyBody = await loyverseGet(
+        token,
+        "/inventory?variant_ids=" + encodeURIComponent(line.variant_id) + "&limit=250",
+      );
+      const levels = Array.isArray(verifyBody?.inventory_levels) ? verifyBody.inventory_levels : [];
+      const verified = levels.find((x: any) => String(x?.store_id || "") === line.store_id) || levels[0] || null;
+      const verifiedStock = Number(verified?.in_stock);
+      if (!Number.isFinite(verifiedStock) || verifiedStock !== Number(line.stock_after)) {
+        throw new Error(`La verificación de stock de ${line.product_name} no coincidió con la compra registrada.`);
+      }
+    }
+
+    await patchPurchase(purchase.id, {
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      error_message: null,
+    });
+
+    return {
+      ok: true,
+      purchase_id: purchase.id,
+      purchase_number: purchase.purchase_number,
+      purchase_date: purchaseDate,
+      line_count: prepared.length,
+      total_units: totalUnits,
+      lines: prepared.map((line) => ({
+        product_name: line.product_name,
+        presentation_quantity: line.presentation_quantity,
+        pack_size: line.pack_size,
+        units_received: line.units_received,
+        stock_before: line.stock_before,
+        stock_after: line.stock_after,
+      })),
+      completed_at: new Date().toISOString(),
+    };
+  } catch (error) {
+    try {
+      await patchPurchase(purchase.id, {
+        status: "failed",
+        error_message: cleanError(error),
+      });
+    } catch {}
+    throw error;
+  }
+}
+
+async function upsert(path: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return;
+  await supabaseRequest(path, {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(rows),
+  });
+}
+
+function parseTimestamp(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const d = new Date(value);
+  return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+}
+
+function uuidOrNull(value: unknown): string | null {
+  const s = typeof value === "string" ? value.trim() : "";
+  return s || null;
+}
+
+async function syncCategories(token: string) {
+  const body = await loyverseGet(token, "/categories");
+  const rows = (Array.isArray(body?.categories) ? body.categories : [])
+    .map((c: any) => ({
+      id: c?.id,
+      name: String(c?.name ?? "").trim() || "Sin nombre",
+      color: c?.color ?? null,
+      created_at: parseTimestamp(c?.created_at),
+      deleted_at: parseTimestamp(c?.deleted_at),
+      raw_category: c,
+      synced_at: new Date().toISOString(),
+    }))
+    .filter((r: any) => uuidOrNull(r.id));
+  await upsert("/rest/v1/loyverse_categories?on_conflict=id", rows);
+  return rows.length;
+}
+
+async function syncItemsAndVariants(token: string) {
+  let cursor: string | null = null;
+  let pages = 0;
+  let items = 0;
+  let variants = 0;
+  let finished = false;
+
+  while (pages < MAX_PAGES) {
+    const params = new URLSearchParams({
+      limit: String(PAGE_SIZE),
+      show_deleted: "true",
+    });
+    if (cursor) params.set("cursor", cursor);
+
+    const body = await loyverseGet(token, "/items?" + params.toString());
+    const list = Array.isArray(body?.items) ? body.items : [];
+
+    const itemRows = list.map((item: any) => ({
+      id: item?.id,
+      handle: item?.handle ?? null,
+      item_name: String(item?.item_name ?? "").trim() || "Sin nombre",
+      description: item?.description ?? null,
+      reference_id: item?.reference_id ?? null,
+      category_id: uuidOrNull(item?.category_id),
+      track_stock: Boolean(item?.track_stock),
+      sold_by_weight: Boolean(item?.sold_by_weight),
+      is_composite: Boolean(item?.is_composite),
+      use_production: Boolean(item?.use_production),
+      primary_supplier_id: uuidOrNull(item?.primary_supplier_id),
+      tax_ids: Array.isArray(item?.tax_ids) ? item.tax_ids : [],
+      modifiers_ids: Array.isArray(item?.modifiers_ids) ? item.modifiers_ids : [],
+      form: item?.form ?? null,
+      color: item?.color ?? null,
+      image_url: item?.image_url ?? null,
+      option1_name: item?.option1_name ?? null,
+      option2_name: item?.option2_name ?? null,
+      option3_name: item?.option3_name ?? null,
+      components: Array.isArray(item?.components) ? item.components : [],
+      created_at: parseTimestamp(item?.created_at),
+      updated_at: parseTimestamp(item?.updated_at),
+      deleted_at: parseTimestamp(item?.deleted_at),
+      raw_item: item,
+      synced_at: new Date().toISOString(),
+    })).filter((r: any) => uuidOrNull(r.id));
+
+    await upsert("/rest/v1/loyverse_items?on_conflict=id", itemRows);
+    items += itemRows.length;
+
+    const variantRows: Record<string, unknown>[] = [];
+    for (const item of list) {
+      const itemId = uuidOrNull(item?.id);
+      if (!itemId || !Array.isArray(item?.variants)) continue;
+      for (const v of item.variants) {
+        const variantId = uuidOrNull(v?.variant_id);
+        if (!variantId) continue;
+        variantRows.push({
+          variant_id: variantId,
+          item_id: itemId,
+          sku: v?.sku ?? null,
+          reference_variant_id: v?.reference_variant_id ?? null,
+          option1_value: v?.option1_value ?? null,
+          option2_value: v?.option2_value ?? null,
+          option3_value: v?.option3_value ?? null,
+          barcode: v?.barcode ?? null,
+          cost: v?.cost ?? null,
+          purchase_cost: v?.purchase_cost ?? null,
+          default_pricing_type: v?.default_pricing_type ?? null,
+          default_price: v?.default_price ?? null,
+          stores: Array.isArray(v?.stores) ? v.stores : [],
+          created_at: parseTimestamp(v?.created_at),
+          updated_at: parseTimestamp(v?.updated_at),
+          deleted_at: parseTimestamp(v?.deleted_at),
+          raw_variant: v,
+          synced_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    await upsert("/rest/v1/loyverse_item_variants?on_conflict=variant_id", variantRows);
+    variants += variantRows.length;
+
+    pages += 1;
+    const next = typeof body?.cursor === "string" ? body.cursor.trim() : "";
+    if (!next) {
+      finished = true;
+      break;
+    }
+    cursor = next;
+  }
+
+  return { pages, items, variants, finished };
+}
+
+async function syncInventory(token: string) {
+  let cursor: string | null = null;
+  let pages = 0;
+  let count = 0;
+  let finished = false;
+
+  while (pages < MAX_PAGES) {
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+    if (cursor) params.set("cursor", cursor);
+
+    const body = await loyverseGet(token, "/inventory?" + params.toString());
+    const levels = Array.isArray(body?.inventory_levels) ? body.inventory_levels : [];
+
+    const rows = levels.map((level: any) => ({
+      variant_id: uuidOrNull(level?.variant_id),
+      store_id: uuidOrNull(level?.store_id),
+      in_stock: Number(level?.in_stock ?? 0),
+      updated_at: parseTimestamp(level?.updated_at),
+      raw_inventory: level,
+      synced_at: new Date().toISOString(),
+    })).filter((r: any) =>
+      r.variant_id && r.store_id && Number.isFinite(r.in_stock)
+    );
+
+    await upsert(
+      "/rest/v1/loyverse_inventory_levels?on_conflict=variant_id,store_id",
+      rows,
+    );
+    count += rows.length;
+
+    pages += 1;
+    const next = typeof body?.cursor === "string" ? body.cursor.trim() : "";
+    if (!next) {
+      finished = true;
+      break;
+    }
+    cursor = next;
+  }
+
+  return { pages, count, finished };
+}
+
+async function logStart() {
+  await supabaseRequest(
+    "/rest/v1/loyverse_catalog_sync_state?sync_key=eq.catalog",
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        last_started_at: new Date().toISOString(),
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
+}
+
+async function logSuccess(data: { items:number; variants:number; categories:number; inventory:number }) {
+  await supabaseRequest(
+    "/rest/v1/loyverse_catalog_sync_state?sync_key=eq.catalog",
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        last_success_at: new Date().toISOString(),
+        last_items_count: data.items,
+        last_variants_count: data.variants,
+        last_categories_count: data.categories,
+        last_inventory_count: data.inventory,
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
+}
+
+async function logError(message: string) {
+  await supabaseRequest(
+    "/rest/v1/loyverse_catalog_sync_state?sync_key=eq.catalog",
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        last_error: message.slice(0, 1500),
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  try {
+    await assertAdmin(req);
+    const body = await req.json().catch(() => ({}));
+    const action = String(body?.action || "sync").trim().toLowerCase();
+    const token = await getLoyverseToken();
+
+    if (action === "get_edit") {
+      const itemId = requiredString(body?.item_id, "item_id");
+      const variantId = requiredString(body?.variant_id, "variant_id");
+      const data = await getLiveEditData(token, itemId, variantId);
+      return json({ ok: true, ...data });
+    }
+
+    if (action === "update_item") {
+      return json(await updateCatalogItem(token, body));
+    }
+
+    if (action === "set_pack_size") {
+      return json(await setPurchasePackSize(body));
+    }
+
+    if (action === "register_purchase") {
+      const userId = await assertAdmin(req);
+      return json(await registerPurchase(token, userId, body));
+    }
+
+    if (action !== "sync") return json({ ok: false, error: "Acción no reconocida." }, 400);
+
+    await logStart();
+    const categories = await syncCategories(token);
+    const itemSync = await syncItemsAndVariants(token);
+    const inventorySync = await syncInventory(token);
+
+    if (!itemSync.finished || !inventorySync.finished) {
+      throw new Error("La sincronización alcanzó el límite de páginas antes de completarse.");
+    }
+
+    await logSuccess({
+      categories,
+      items: itemSync.items,
+      variants: itemSync.variants,
+      inventory: inventorySync.count,
+    });
+
+    return json({
+      ok: true,
+      categories,
+      items: itemSync.items,
+      variants: itemSync.variants,
+      inventory_levels: inventorySync.count,
+      completed_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    const message = cleanError(error);
+    try { await logError(message); } catch {}
+    return json({ ok: false, error: message }, 403);
+  }
+});
