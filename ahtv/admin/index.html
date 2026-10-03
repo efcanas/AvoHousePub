@@ -275,9 +275,7 @@
     }
 
     .admin-song-search {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
+      display: block;
       margin-top: 12px;
     }
 
@@ -332,10 +330,6 @@
     }
 
     @media (max-width: 640px) {
-      .admin-song-search {
-        grid-template-columns: 1fr;
-      }
-
       .admin-song-row {
         align-items: flex-start;
         flex-direction: column;
@@ -509,7 +503,9 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../cuenta/admin/?v=20260927-5" class="home-button">CENTRO DE CONTROL</a>
+      <a href="../../cuenta/admin/?v=20260927-5" class="home-button">CC</a>
+      <a href="../../cuenta/comunicaciones/" class="home-button">COMUNICACIONES</a>
+      <a href="../../cuenta/admin/?v=20260927-5#inventoryCard" class="home-button">INVENTARIO</a>
       <button id="logoutBtn" class="danger hidden">CERRAR SESIÓN</button>
     </div>
   </header>
@@ -560,8 +556,7 @@
       </div>
       <div class="meta">Sin límite de solicitudes, sin restricción de repetición y funciona aunque las solicitudes de clientes estén cerradas.</div>
       <div class="admin-song-search">
-        <input id="adminSongSearch" type="search" placeholder="Artista o canción…" autocomplete="off">
-        <button id="adminSongSearchBtn" class="primary" type="button">BUSCAR</button>
+        <input id="adminSongSearch" type="search" placeholder="Escribe al menos 2 letras de artista o canción…" autocomplete="off" aria-label="Buscar canción o artista">
       </div>
       <div id="adminSongResults" class="admin-song-results"></div>
       <div id="adminSongStatus" class="admin-song-status"></div>
@@ -711,6 +706,15 @@
     nowTitleEl.textContent = "";
     nowMetaEl.textContent = "";
     nowMetaEl.className = "now-meta";
+    const adminSearchInput = document.getElementById("adminSongSearch");
+    if (adminSearchInput) {
+      adminSearchInput.value = "";
+      clearTimeout(adminSongSearchTimer);
+    }
+    const adminSearchResults = document.getElementById("adminSongResults");
+    if (adminSearchResults) adminSearchResults.innerHTML = "";
+    const adminSearchStatus = document.getElementById("adminSongStatus");
+    if (adminSearchStatus) adminSearchStatus.textContent = "";
     currentRequestMode = "automatico";
     requestsEnabled = true;
     requestModeValueEl.textContent = "";
@@ -837,6 +841,8 @@
     })[ch]);
   }
 
+  let adminSongSearchTimer = null;
+
   async function searchAdminSongs() {
     const input = document.getElementById("adminSongSearch");
     const results = document.getElementById("adminSongResults");
@@ -850,7 +856,10 @@
       return;
     }
 
-    const safe = q.replace(/,/g, " ");
+    status.className = "admin-song-status muted";
+    status.textContent = "Buscando…";
+
+    const safe = q.replace(/[,()%]/g, " ").replace(/\s+/g, " ").trim();
     const filter = `artist.ilike.%${safe}%,title.ilike.%${safe}%`;
 
     const { data, error } = await db
@@ -877,6 +886,7 @@
       return;
     }
 
+    status.className = "admin-song-status muted";
     status.textContent = "";
     results.innerHTML = data.map(song =>
       '<div class="admin-song-row">'+
@@ -891,6 +901,13 @@
     results.querySelectorAll(".admin-queue-btn").forEach((btn,index)=>{
       btn.addEventListener("click",()=>queueAdminSong(data[index],btn));
     });
+  }
+
+  function scheduleAdminSongSearch() {
+    clearTimeout(adminSongSearchTimer);
+    adminSongSearchTimer = setTimeout(() => {
+      searchAdminSongs();
+    }, 180);
   }
 
   async function queueAdminSong(song, button) {
@@ -1551,12 +1568,12 @@
 
   loginBtn.addEventListener("click", () => login());
 
-  const adminSongSearchBtn = document.getElementById("adminSongSearchBtn");
   const adminSongSearch = document.getElementById("adminSongSearch");
-  adminSongSearchBtn.addEventListener("click", searchAdminSongs);
+  adminSongSearch.addEventListener("input", scheduleAdminSongSearch);
   adminSongSearch.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
+      clearTimeout(adminSongSearchTimer);
       searchAdminSongs();
     }
   });
