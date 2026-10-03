@@ -18,6 +18,7 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.64);z-inde
 .header-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
 .home-button,.header button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;padding:9px 15px;border:1px solid rgba(255,255,255,.20);border-radius:30px;font-size:.8em;background:rgba(255,255,255,.04);cursor:pointer}
 .home-button:hover,.header button:hover{background:#fff;color:#111}
+.home-button.active{border-color:#b8ff39;background:rgba(184,255,57,.14);color:#b8ff39;font-weight:800}
 #logoutBtn{border-color:#ff5d5d;color:#ff5d5d;background:rgba(255,93,93,.08)}
 #logoutBtn:hover{background:rgba(255,93,93,.15);color:#ff5d5d;border-color:#ff5d5d}
 .card{background:rgba(21,23,28,.95);border:1px solid #2c3038;border-radius:18px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25);margin:12px 0}
@@ -110,8 +111,9 @@ button:disabled{opacity:.45;cursor:default}
   <div class="header-actions">
     <a href="../../ahtv/admin/" class="home-button">AHtv</a>
     <a href="../admin/" class="home-button">CC</a>
+    <a href="../comunicaciones/" class="home-button active">COMUNICACIONES</a>
     <a href="../inventario/" class="home-button">INVENTARIO</a>
-    <button id="logoutBtn" class="hidden">CERRAR SESIÓN</button>
+    <button id="logoutBtn" class="hidden" type="button">CERRAR SESIÓN</button>
   </div>
 </header>
 
