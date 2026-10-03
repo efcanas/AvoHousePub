@@ -40,8 +40,15 @@ button{font:inherit}
 .promo-form #createPromoBtn{width:100%;justify-self:stretch;align-self:end;white-space:nowrap}
 .danger-button{border:1px solid #ff5d5d;background:rgba(255,93,93,.08);color:#ff5d5d;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}
 .danger-button:hover{background:rgba(255,93,93,.15)}
-.customer-delete{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:center}
-.customer-delete .danger-button{width:max-content}
+.customer-actions{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.customer-actions button{width:max-content}
+.customer-edit-status{min-height:18px;margin-top:8px;text-align:center;font-size:12px}
+.edit-control{width:100%}
+.edit-whatsapp-same{display:flex;align-items:center;gap:7px;color:#d6d9df;font-size:12px;margin-top:4px}
+.edit-whatsapp-same input{width:auto;margin:0}
+.edit-document-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.edit-document-grid input,.edit-document-grid select{margin:0}
+@media(max-width:620px){.edit-document-grid{grid-template-columns:1fr}}
 
 button:disabled{opacity:.45;cursor:default}
 .search-row{display:grid;grid-template-columns:1fr auto;gap:8px}
@@ -213,40 +220,6 @@ button:disabled{opacity:.45;cursor:default}
 }
 
 
-.inventory-toolbar{display:grid;grid-template-columns:minmax(0,1.5fr) 180px 180px auto;gap:8px;margin-bottom:12px}
-.inventory-toolbar input,.inventory-toolbar select,.inventory-toolbar button{margin:0}
-.inventory-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
-.inventory-list{display:flex;flex-direction:column;gap:6px}
-.inventory-row{display:grid;grid-template-columns:minmax(0,1.7fr) 110px 120px 130px;gap:12px;align-items:center;padding:11px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.025)}
-.inventory-main{min-width:0}
-.inventory-name{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.inventory-meta{margin-top:3px;color:#8f96a3;font-size:11px;line-height:1.4}
-.inventory-value{font-size:13px;text-align:right;white-space:nowrap}
-.inventory-stock{font-weight:800}
-.inventory-stock.low{color:#e8d59a}
-.inventory-stock.zero{color:#ffb7b7}
-.inventory-stock.ok{color:#b8f5b8}
-.inventory-stock.na{color:#8f96a3}
-.inventory-badge{justify-self:end;font-size:10px;border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:5px 8px;white-space:nowrap;color:#cfd2d8}
-.inventory-badge.available{color:#b8f5b8;border-color:rgba(184,245,184,.25)}
-.inventory-badge.unavailable{color:#ffb7b7;border-color:rgba(255,93,93,.25)}
-.inventory-summary{color:#8f96a3;font-size:11px;line-height:1.5;margin-top:10px}
-@media(max-width:820px){
-  .inventory-toolbar{grid-template-columns:1fr 1fr}
-  .inventory-toolbar button{grid-column:1/-1}
-  .inventory-stats{grid-template-columns:1fr 1fr}
-  .inventory-row{grid-template-columns:1fr 100px 110px}
-  .inventory-badge{grid-column:3}
-}
-@media(max-width:620px){
-  .inventory-toolbar{grid-template-columns:1fr}
-  .inventory-toolbar button{grid-column:auto}
-  .inventory-stats{grid-template-columns:1fr 1fr}
-  .inventory-row{grid-template-columns:1fr 1fr;gap:7px}
-  .inventory-value{text-align:left}
-  .inventory-badge{justify-self:start;grid-column:auto}
-}
-
 .rewards-admin{margin-top:14px}
 .rewards-admin-list{display:flex;flex-direction:column;gap:8px}
 .reward-admin-item{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -269,7 +242,7 @@ button:disabled{opacity:.45;cursor:default}
   <div class="header-subtitle">Administración de clientes y AvoPuntos</div>
   <div class="header-actions">
     <a href="../../ahtv/admin/" class="home-button">AHtv</a>
-    <a href="../comunicaciones/" class="home-button">COMUNICACIONES</a>\n    <a href="#inventoryCard" class="home-button">INVENTARIO</a>
+    <a href="../comunicaciones/" class="home-button">COMUNICACIONES</a>\n    <a href="../inventario/" class="home-button">INVENTARIO</a>
     <button id="logoutBtn" class="hidden">CERRAR SESIÓN</button>
   </div>
 </header>
@@ -332,40 +305,6 @@ button:disabled{opacity:.45;cursor:default}
     <div id="results" class="results" style="margin-top:14px"></div>
   </section>
 
-  <section id="inventoryCard" class="card">
-    <div class="panel-heading">
-      <h2 class="panel-title">Inventario</h2>
-      <span id="inventoryStatus" class="panel-tag">Loyverse</span>
-    </div>
-    <div class="helper">Consulta el catálogo sincronizado desde Loyverse. Esta pantalla no modifica existencias ni productos en Loyverse.</div>
-    <div class="inventory-toolbar" style="margin-top:12px">
-      <input id="inventorySearch" type="search" placeholder="Buscar producto, SKU o código de barras" autocomplete="off">
-      <select id="inventoryCategory">
-        <option value="">Todas las categorías</option>
-      </select>
-      <select id="inventoryAvailability">
-        <option value="">Todos</option>
-        <option value="available">Disponibles para la venta</option>
-        <option value="unavailable">No disponibles para la venta</option>
-        <option value="tracked">Controlan inventario</option>
-        <option value="low">Stock bajo</option>
-        <option value="zero">Sin existencia</option>
-      </select>
-      <button id="inventorySyncBtn" class="primary" type="button">SINCRONIZAR DESDE LV</button>
-    </div>
-
-    <div class="inventory-stats">
-      <div class="stat"><div class="stat-label">Variantes</div><div id="inventoryStatVariants" class="stat-value">—</div></div>
-      <div class="stat"><div class="stat-label">A la venta</div><div id="inventoryStatAvailable" class="stat-value">—</div></div>
-      <div class="stat"><div class="stat-label">Con inventario</div><div id="inventoryStatTracked" class="stat-value">—</div></div>
-      <div class="stat"><div class="stat-label">Niveles de stock</div><div id="inventoryStatLevels" class="stat-value">—</div></div>
-    </div>
-
-    <div id="inventoryList" class="inventory-list"></div>
-    <div id="inventorySummary" class="inventory-summary"></div>
-  </section>
-
-
   <section id="clientArea" class="hidden">
     <div class="client-grid">
       <section class="card">
@@ -374,19 +313,64 @@ button:disabled{opacity:.45;cursor:default}
           <span id="clientStatus" class="panel-tag">—</span>
         </div>
         <div class="info-grid">
-          <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Nombre completo</span><span id="infoFullName" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Correo electrónico</span><span id="infoEmail" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Celular</span><span id="infoPhone" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">WhatsApp</span><span id="infoWhatsapp" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Instagram</span><span id="infoInstagram" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Facebook</span><span id="infoFacebook" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Fecha de nacimiento</span><span id="infoBirth" class="info-value">—</span></div>
-          <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>        </div>
-        <div class="customer-delete">
+          <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">—</span><div class="helper">El nickname no se puede modificar.</div></div>
+          <div class="info">
+            <span class="info-label">Nombre completo</span>
+            <span id="infoFullName" class="info-value edit-view" data-edit-view="editFullName">—</span>
+            <input id="editFullName" class="edit-control hidden" type="text" maxlength="160" autocomplete="name">
+          </div>
+          <div class="info">
+            <span class="info-label">Correo electrónico</span>
+            <span id="infoEmail" class="info-value edit-view" data-edit-view="editEmail">—</span>
+            <input id="editEmail" class="edit-control hidden" type="email" maxlength="254" autocomplete="email">
+            <div class="helper">También actualiza el correo de acceso del cliente.</div>
+          </div>
+          <div class="info">
+            <span class="info-label">Celular</span>
+            <span id="infoPhone" class="info-value edit-view" data-edit-view="editPhone">—</span>
+            <input id="editPhone" class="edit-control hidden" type="tel" maxlength="40" autocomplete="tel">
+          </div>
+          <div class="info">
+            <span class="info-label">WhatsApp</span>
+            <span id="infoWhatsapp" class="info-value edit-view" data-edit-view="editWhatsapp">—</span>
+            <label class="edit-whatsapp-same edit-control hidden"><input id="editWhatsappSame" type="checkbox"> Igual al celular</label>
+            <input id="editWhatsapp" class="edit-control hidden" type="tel" maxlength="40" autocomplete="tel">
+          </div>
+          <div class="info">
+            <span class="info-label">Instagram</span>
+            <span id="infoInstagram" class="info-value edit-view" data-edit-view="editInstagram">—</span>
+            <input id="editInstagram" class="edit-control hidden" type="text" maxlength="160" autocomplete="off" placeholder="@usuario o enlace">
+          </div>
+          <div class="info">
+            <span class="info-label">Facebook</span>
+            <span id="infoFacebook" class="info-value">—</span>
+            <div class="helper">Se gestiona mediante la verificación de Facebook.</div>
+          </div>
+          <div class="info">
+            <span class="info-label">Documento</span>
+            <span id="infoDocument" class="info-value edit-view" data-edit-view="editDocument">—</span>
+            <div class="edit-document-grid edit-control hidden">
+              <select id="editDocumentType" aria-label="Tipo de documento">
+                <option value="Cédula de ciudadanía">Cédula de ciudadanía</option>
+                <option value="Cédula de extranjería">Cédula de extranjería</option>
+                <option value="Pasaporte">Pasaporte</option>
+              </select>
+              <input id="editDocumentNumber" type="text" maxlength="40" autocomplete="off" placeholder="Número de documento">
+            </div>
+          </div>
+          <div class="info">
+            <span class="info-label">Fecha de nacimiento</span>
+            <span id="infoBirth" class="info-value edit-view" data-edit-view="editBirthDate">—</span>
+            <input id="editBirthDate" class="edit-control hidden" type="date">
+          </div>
+          <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
+        </div>
+        <div class="customer-actions">
+          <button id="editCustomerBtn" class="ghost" type="button">EDITAR DATOS</button>
+          <button id="cancelEditCustomerBtn" class="ghost hidden" type="button">CANCELAR</button>
           <button id="deleteCustomerBtn" class="danger-button" type="button">ELIMINAR CUENTA</button>
         </div>
+        <div id="customerEditStatus" class="customer-edit-status"></div>
       </section>
 
       <section class="card balance-card">
@@ -584,9 +568,7 @@ let historyMode='recent';
 let historyMovements=[];
 let emailHistoryMode='recent';
 let emailHistoryRows=[];
-let inventoryRows=[];
-let inventoryCategories=[];
-
+let customerEditing=false;
 const $=id=>document.getElementById(id);
 
 function showNotice(message,error=false){
@@ -1006,198 +988,6 @@ function escapeHtml(value){
   return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
-function inventoryStoreState(variant){
-  const stores=Array.isArray(variant?.stores)?variant.stores:[];
-  return stores[0]||{};
-}
-
-function inventoryStockInfo(variant,inventoryByVariant){
-  const stores=Array.isArray(variant?.stores)?variant.stores:[];
-  const storeIds=stores.map(s=>String(s?.store_id||'').trim()).filter(Boolean);
-  let stock=null;
-  for(const storeId of storeIds){
-    const key=String(variant.variant_id)+'|'+storeId;
-    if(inventoryByVariant.has(key)){
-      stock=Number(inventoryByVariant.get(key));
-      break;
-    }
-  }
-  return stock;
-}
-
-function inventoryStockLabel(row){
-  if(!row.trackStock) return {label:'Sin controlar',cls:'na'};
-  if(row.stock===null) return {label:'Sin dato',cls:'na'};
-  if(row.stock<=0) return {label:'0',cls:'zero'};
-  if(row.lowStock!==null && Number.isFinite(row.lowStock) && row.stock<=row.lowStock){
-    return {label:row.stock.toLocaleString('es-CO'),cls:'low'};
-  }
-  return {label:row.stock.toLocaleString('es-CO'),cls:'ok'};
-}
-
-function populateInventoryCategories(){
-  const select=$('inventoryCategory');
-  if(!select)return;
-  select.innerHTML='<option value="">Todas las categorías</option>'+
-    inventoryCategories.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</option>').join('');
-}
-
-function renderInventory(){
-  const list=$('inventoryList');
-  if(!list)return;
-
-  const term=$('inventorySearch').value.trim().toLowerCase();
-  const category=$('inventoryCategory').value;
-  const availability=$('inventoryAvailability').value;
-
-  let rows=inventoryRows.filter(row=>{
-    if(category && row.categoryId!==category)return false;
-    if(term){
-      const hay=[row.name,row.sku,row.barcode,row.categoryName,row.option1,row.option2,row.option3]
-        .filter(Boolean).join(' ').toLowerCase();
-      if(!hay.includes(term))return false;
-    }
-    if(availability==='available' && !row.available)return false;
-    if(availability==='unavailable' && row.available)return false;
-    if(availability==='tracked' && !row.trackStock)return false;
-    if(availability==='low' && !(row.trackStock && row.stock!==null && row.stock>0 && row.lowStock!==null && row.stock<=row.lowStock))return false;
-    if(availability==='zero' && !(row.trackStock && row.stock!==null && row.stock<=0))return false;
-    return true;
-  });
-
-  rows.sort((a,b)=>{
-    if(a.trackStock!==b.trackStock)return a.trackStock?-1:1;
-    if((a.stock??Infinity)!==(b.stock??Infinity))return (a.stock??Infinity)-(b.stock??Infinity);
-    return a.name.localeCompare(b.name,'es');
-  });
-
-  $('inventorySummary').textContent=
-    'Mostrando '+rows.length.toLocaleString('es-CO')+
-    ' de '+inventoryRows.length.toLocaleString('es-CO')+' variantes activas.';
-
-  if(!rows.length){
-    list.innerHTML='<div class="empty">No hay productos que coincidan con los filtros.</div>';
-    return;
-  }
-
-  list.innerHTML=rows.map(row=>{
-    const stock=inventoryStockLabel(row);
-    const option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · ');
-    const meta=[row.categoryName||'Sin categoría',row.sku?'SKU '+row.sku:null, row.barcode?'Barras '+row.barcode:null, option].filter(Boolean).join(' · ');
-    return '<div class="inventory-row">'+
-      '<div class="inventory-main">'+
-        '<div class="inventory-name" title="'+escapeHtml(row.name)+'">'+escapeHtml(row.name)+'</div>'+
-        '<div class="inventory-meta">'+escapeHtml(meta)+'</div>'+
-      '</div>'+
-      '<div class="inventory-value">'+formatMoney(row.price)+'</div>'+
-      '<div class="inventory-value inventory-stock '+stock.cls+'">'+stock.label+'</div>'+
-      '<div class="inventory-badge '+(row.available?'available':'unavailable')+'">'+(row.available?'A la venta':'No disponible')+'</div>'+
-    '</div>';
-  }).join('');
-}
-
-async function loadInventory(){
-  const status=$('inventoryStatus');
-  const list=$('inventoryList');
-  if(!list)return;
-
-  status.textContent='Cargando…';
-  list.innerHTML='<div class="empty">Cargando inventario…</div>';
-
-  const [
-    {data:categories,error:categoryError},
-    {data:items,error:itemError},
-    {data:variants,error:variantError},
-    {data:levels,error:inventoryError},
-    {data:syncState,error:syncError}
-  ]=await Promise.all([
-    db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),
-    db.from('loyverse_items').select('id,item_name,category_id,track_stock').is('deleted_at',null),
-    db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,default_price,stores,option1_value,option2_value,option3_value').is('deleted_at',null),
-    db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),
-    db.from('loyverse_catalog_sync_state').select('last_success_at,last_items_count,last_variants_count,last_categories_count,last_inventory_count,last_error').eq('sync_key','catalog').maybeSingle()
-  ]);
-
-  if(categoryError||itemError||variantError||inventoryError||syncError){
-    status.textContent='Error';
-    list.innerHTML='';
-    const first=[categoryError,itemError,variantError,inventoryError,syncError].find(Boolean);
-    showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);
-    return;
-  }
-
-  inventoryCategories=categories||[];
-  populateInventoryCategories();
-
-  const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name]));
-  const itemMap=new Map((items||[]).map(i=>[String(i.id),i]));
-
-  const inventoryByVariant=new Map(
-    (levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)])
-  );
-
-  inventoryRows=(variants||[]).map(v=>{
-    const item=itemMap.get(String(v.item_id))||{};
-    const store=inventoryStoreState(v);
-    return {
-      variantId:String(v.variant_id),
-      itemId:String(v.item_id),
-      name:String(item.item_name||'Sin nombre'),
-      categoryId:String(item.category_id||''),
-      categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',
-      trackStock:Boolean(item.track_stock),
-      stock:inventoryStockInfo(v,inventoryByVariant),
-      lowStock:store?.low_stock===null || store?.low_stock===undefined ? null : Number(store.low_stock),
-      available:store?.available_for_sale!==false,
-      price:v.default_price,
-      sku:String(v.sku||''),
-      barcode:String(v.barcode||''),
-      option1:String(v.option1_value||''),
-      option2:String(v.option2_value||''),
-      option3:String(v.option3_value||'')
-    };
-  });
-
-  const available=inventoryRows.filter(r=>r.available).length;
-  const tracked=inventoryRows.filter(r=>r.trackStock).length;
-  setText('inventoryStatVariants',inventoryRows.length.toLocaleString('es-CO'));
-  setText('inventoryStatAvailable',available.toLocaleString('es-CO'));
-  setText('inventoryStatTracked',tracked.toLocaleString('es-CO'));
-  setText('inventoryStatLevels',(levels||[]).length.toLocaleString('es-CO'));
-
-  if(syncState?.last_success_at){
-    status.textContent='Actualizado '+formatDate(syncState.last_success_at,true);
-  }else{
-    status.textContent='Loyverse';
-  }
-  if(syncState?.last_error){
-    $('inventorySummary').textContent+=' · Último error: '+String(syncState.last_error).slice(0,220);
-  }
-
-  renderInventory();
-}
-
-async function syncInventoryFromLoyverse(){
-  const btn=$('inventorySyncBtn');
-  if(!btn)return;
-  btn.disabled=true;
-  $('inventoryStatus').textContent='Sincronizando…';
-  hideNotice();
-
-  try{
-    const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'sync'}});
-    if(error)throw error;
-    if(!data?.ok)throw new Error(data?.error||'No se pudo completar la sincronización.');
-    await loadInventory();
-    showNotice('Inventario actualizado desde Loyverse: '+Number(data.items||0).toLocaleString('es-CO')+' productos y '+Number(data.variants||0).toLocaleString('es-CO')+' variantes.',false);
-  }catch(error){
-    $('inventoryStatus').textContent='Error';
-    showNotice('No se pudo sincronizar el inventario desde Loyverse: '+(error?.message||'error desconocido'),true);
-  }finally{
-    btn.disabled=false;
-  }
-}
-
 async function loadPointsSettings(){
   const {data,error}=await db.rpc('avopuntos_admin_get_settings');
   if(error){
@@ -1267,6 +1057,112 @@ async function togglePromotion(id,currentActive){
   }
   await loadPointsSettings();
 }
+function populateCustomerEditFields(profile){
+  if(!profile)return;
+  $('editFullName').value=profile.full_name||'';
+  $('editEmail').value=profile.email||'';
+  $('editPhone').value=profile.phone||'';
+  $('editWhatsappSame').checked=Boolean(profile.whatsapp_same);
+  $('editWhatsapp').value=profile.whatsapp_same ? (profile.phone||'') : (profile.whatsapp||'');
+  $('editWhatsapp').disabled=Boolean(profile.whatsapp_same);
+  $('editInstagram').value=profile.instagram||'';
+  $('editDocumentType').value=profile.document_type||'Cédula de ciudadanía';
+  $('editDocumentNumber').value=profile.document_number||'';
+  $('editBirthDate').value=profile.birth_date||'';
+}
+function setCustomerEditMode(active){
+  customerEditing=Boolean(active);
+  document.querySelectorAll('[data-edit-view]').forEach(el=>el.classList.toggle('hidden',customerEditing));
+  document.querySelectorAll('.edit-control').forEach(el=>el.classList.toggle('hidden',!customerEditing));
+  $('editWhatsapp').disabled=!customerEditing || $('editWhatsappSame').checked;
+  $('editCustomerBtn').textContent=customerEditing?'GUARDAR CAMBIOS':'EDITAR DATOS';
+  $('cancelEditCustomerBtn').classList.toggle('hidden',!customerEditing);
+  $('deleteCustomerBtn').disabled=customerEditing;
+  $('customerEditStatus').textContent=customerEditing?'Modifica los datos permitidos y guarda los cambios.':'';
+  $('customerEditStatus').className='customer-edit-status muted';
+}
+function enterCustomerEditMode(){
+  if(!selectedProfile)return;
+  populateCustomerEditFields(selectedProfile);
+  setCustomerEditMode(true);
+}
+function cancelCustomerEditMode(){
+  if(!customerEditing)return;
+  setCustomerEditMode(false);
+}
+async function saveCustomerData(){
+  if(!selectedProfile)return;
+  const fullName=$('editFullName').value.trim();
+  const email=$('editEmail').value.trim().toLowerCase();
+  const phone=$('editPhone').value.trim();
+  const whatsappSame=$('editWhatsappSame').checked;
+  const whatsapp=$('editWhatsapp').value.trim();
+  const instagram=$('editInstagram').value.trim();
+  const documentType=$('editDocumentType').value;
+  const documentNumber=$('editDocumentNumber').value.trim();
+  const birthDate=$('editBirthDate').value||null;
+
+  if(!fullName||!email||!phone||!documentNumber){
+    $('customerEditStatus').textContent='Completa nombre, correo, celular y documento.';
+    $('customerEditStatus').className='customer-edit-status error';
+    return;
+  }
+  if(!whatsappSame&&!whatsapp){
+    $('customerEditStatus').textContent='Indica el WhatsApp o marca «Igual al celular».';
+    $('customerEditStatus').className='customer-edit-status error';
+    return;
+  }
+
+  $('editCustomerBtn').disabled=true;
+  $('cancelEditCustomerBtn').disabled=true;
+  $('deleteCustomerBtn').disabled=true;
+  $('customerEditStatus').textContent='Guardando cambios…';
+  $('customerEditStatus').className='customer-edit-status muted';
+  hideNotice();
+
+  const {data,error}=await db.rpc('avopuntos_admin_update_customer_profile',{
+    p_profile_id:selectedProfile.id,
+    p_full_name:fullName,
+    p_email:email,
+    p_phone:phone,
+    p_whatsapp_same:whatsappSame,
+    p_whatsapp:whatsapp,
+    p_instagram:instagram||null,
+    p_document_type:documentType,
+    p_document_number:documentNumber,
+    p_birth_date:birthDate
+  });
+
+  if(error){
+    $('editCustomerBtn').disabled=false;
+    $('cancelEditCustomerBtn').disabled=false;
+    $('deleteCustomerBtn').disabled=false;
+    $('customerEditStatus').textContent=error.message||'No se pudieron guardar los cambios.';
+    $('customerEditStatus').className='customer-edit-status error';
+    return;
+  }
+
+  const updated=data?.profile;
+  if(!updated?.id){
+    $('editCustomerBtn').disabled=false;
+    $('cancelEditCustomerBtn').disabled=false;
+    $('deleteCustomerBtn').disabled=false;
+    $('customerEditStatus').textContent='La actualización terminó sin devolver el perfil actualizado.';
+    $('customerEditStatus').className='customer-edit-status error';
+    return;
+  }
+
+  selectedProfile={...selectedProfile,...updated};
+  customerEditing=false;
+  await loadClient(selectedProfile);
+  showNotice(
+    data?.email_changed
+      ? 'Datos actualizados. El correo de acceso del cliente también fue actualizado; Loyverse quedó programado para sincronizar los cambios.'
+      : 'Datos actualizados correctamente. Loyverse quedó programado para sincronizar los cambios.',
+    false
+  );
+}
+
 async function deleteSelectedCustomer(){
   if(!selectedProfile?.id)return;
 
@@ -1785,6 +1681,7 @@ async function loadCustomerRewardsAdmin(){
 async function loadClient(profile){
   hideNotice();
   selectedProfile=profile;
+  setCustomerEditMode(false);
   $('clientArea').classList.remove('hidden');
 
   setText('infoUsername',profile.username||'—');
@@ -2081,6 +1978,16 @@ $('searchInput').addEventListener('input',()=>{
 });
 
 $('historyYear').addEventListener('change',populateHistoryMonths);
+$('editCustomerBtn').addEventListener('click',()=>customerEditing?saveCustomerData():enterCustomerEditMode());
+$('cancelEditCustomerBtn').addEventListener('click',cancelCustomerEditMode);
+$('editWhatsappSame').addEventListener('change',()=>{
+  const same=$('editWhatsappSame').checked;
+  $('editWhatsapp').disabled=same;
+  if(same) $('editWhatsapp').value=$('editPhone').value;
+});
+$('editPhone').addEventListener('input',()=>{
+  if($('editWhatsappSame').checked) $('editWhatsapp').value=$('editPhone').value;
+});
 $('saveBaseRateBtn').addEventListener('click',saveBaseRate);
 $('createPromoBtn').addEventListener('click',createPromotion);
 $('saveCustomerRuleBtn').addEventListener('click',saveCustomerRule);
