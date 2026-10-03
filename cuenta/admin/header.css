@@ -1,0 +1,92 @@
+/* Mundo AH · encabezado común de Administración */
+.header{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  z-index:1000;
+  text-align:center;
+  padding:25px 20px 15px;
+  background:rgba(0,0,0,.86);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.header .logo{
+  width:260px;
+  max-width:90%;
+  height:auto;
+  margin:0 auto 8px;
+  display:block;
+}
+.header-title{
+  font-size:1.35em;
+  line-height:1.2;
+  letter-spacing:3px;
+  margin:0 0 6px;
+  color:#d4af37;
+  font-weight:800;
+}
+.header-subtitle{
+  color:#9ca3af;
+  font-size:13px;
+  line-height:15px;
+  height:30px;
+  margin:0 0 14px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  overflow:hidden;
+}
+.header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.home-button,.header button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  color:#fff;
+  padding:10px 16px;
+  border:1px solid rgba(255,255,255,.20);
+  border-radius:30px;
+  font-size:.82em;
+  line-height:1.2;
+  background:rgba(255,255,255,.04);
+  cursor:pointer;
+}
+.home-button:hover,.header button:hover{
+  background:#fff;
+  color:#111;
+}
+.home-button.active{
+  border-color:#b8ff39;
+  background:rgba(184,255,57,.14);
+  color:#b8ff39;
+  font-weight:800;
+}
+#logoutBtn{
+  border-color:#ff5d5d;
+  color:#ff5d5d;
+  background:rgba(255,93,93,.08);
+}
+#logoutBtn:hover{
+  background:rgba(255,93,93,.15);
+  color:#ff5d5d;
+  border-color:#ff5d5d;
+}
+@media(max-width:640px){
+  .header{
+    padding:18px 15px 12px;
+  }
+  .header .logo{
+    width:200px;
+    max-width:90%;
+  }
+  .header-title{
+    font-size:1.1em;
+  }
+}
