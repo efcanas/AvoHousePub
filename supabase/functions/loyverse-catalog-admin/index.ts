@@ -325,6 +325,13 @@ async function updateCatalogItem(token: string, payload: any) {
     if (optimalStock < 0) throw new Error("El stock óptimo no puede ser negativo.");
     nextStore.optimal_stock = optimalStock;
   }
+
+  // AHP maneja un único precio porque existe una sola tienda.
+  // Cuando se edita el precio base, el precio de la tienda debe quedar idéntico.
+  if (variantChanges?.default_price !== undefined && variantChanges.default_price !== "") {
+    nextStore.price = Number(nextVariant.default_price);
+  }
+
   nextVariant.stores = (Array.isArray(currentVariant?.stores) ? currentVariant.stores : [])
     .map((s: any) => String(s?.store_id || "") === storeId ? nextStore : s);
 
