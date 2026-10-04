@@ -535,11 +535,31 @@ try{
   $('inventoryEditCancel').addEventListener('click',closeInventoryEditor);
   $('inventoryEditSave').addEventListener('click',saveInventoryEditor);
   $('inventoryEditBackdrop').addEventListener('click',event=>{if(event.target.id==='inventoryEditBackdrop')closeInventoryEditor()});
+  $('purchaseHistoryYear').addEventListener('change',()=>refreshPurchaseHistoryMonths(purchaseHistoryAll.purchases||[]));
+  $('purchaseHistorySearchBtn').addEventListener('click',filterPurchaseHistory);
+  $('purchaseHistorySearch').addEventListener('keydown',event=>{if(event.key==='Enter')filterPurchaseHistory()});
+  document.querySelectorAll('[data-purchase-limit]').forEach(btn=>btn.addEventListener('click',()=>{purchaseHistoryRecentLimit=Number(btn.dataset.purchaseLimit)||10;purchaseHistoryMode='recent';markPurchaseLimit();renderPurchaseHistory((purchaseHistoryAll.purchases||[]).slice(0,purchaseHistoryRecentLimit),'recent')}));
+  $('purchaseHistoryList').addEventListener('click',event=>{const row=event.target.closest('[data-purchase-id]');if(row)openPurchaseDetail(row.dataset.purchaseId)});
+  $('purchaseHistoryList').addEventListener('keydown',event=>{const row=event.target.closest('[data-purchase-id]');if(row&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openPurchaseDetail(row.dataset.purchaseId)}});
+  $('purchaseDetailBackdrop').addEventListener('click',event=>{
+    if(event.target.id==='purchaseDetailBackdrop'){$('purchaseDetailBackdrop').classList.add('hidden');return}
+    const close=event.target.closest('[data-purchase-detail-close]');if(close){$('purchaseDetailBackdrop').classList.add('hidden');return}
+    const edit=event.target.closest('[data-purchase-edit]');if(edit&&purchaseHistorySelected){renderPurchaseEdit(purchaseHistorySelected);return}
+    const del=event.target.closest('[data-purchase-delete]');if(del){deleteSelectedPurchase();return}
+    const cancel=event.target.closest('[data-purchase-detail-cancel]');if(cancel&&purchaseHistorySelected){renderPurchaseDetail(purchaseHistorySelected);return}
+    const save=event.target.closest('[data-purchase-edit-save]');if(save){saveEditedPurchase();return}
+    const addEdit=event.target.closest('#editPurchaseAddLine');if(addEdit){addEditPurchaseLine({});return}
+    const removeEdit=event.target.closest('[data-edit-remove]');if(removeEdit){removeEdit.closest('.purchase-edit-line')?.remove();return}
+  });
+  $('purchaseDetailBackdrop').addEventListener('input',event=>{if(event.target.matches('[data-edit-quantity],[data-edit-pack],[data-edit-value]')){const row=event.target.closest('.purchase-edit-line');if(row)updateEditPurchaseLine(row)}});
+  $('purchaseDetailBackdrop').addEventListener('change',event=>{if(event.target.matches('[data-edit-product]')){const row=event.target.closest('.purchase-edit-line');if(row)updateEditPurchaseLine(row)}});
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&!$('inventoryEditBackdrop').classList.contains('hidden'))closeInventoryEditor();
-    if(event.key==='Escape'&&!$('purchaseBackdrop').classList.contains('hidden'))closePurchaseModal();if(event.key==='Escape'&&!$('purchaseDetailBackdrop').classList.contains('hidden'))$('purchaseDetailBackdrop').classList.add('hidden');
+    if(event.key==='Escape'&&!$('purchaseBackdrop').classList.contains('hidden'))closePurchaseModal();
+    if(event.key==='Escape'&&!$('purchaseDetailBackdrop').classList.contains('hidden'))$('purchaseDetailBackdrop').classList.add('hidden');
   });
-  $('purchaseHistoryList').addEventListener('click',event=>{const row=event.target.closest('[data-purchase-history-row]');if(row)row.classList.toggle('open')});$('purchaseHistoryList').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.closest('[data-purchase-history-row]')){event.preventDefault();event.target.closest('[data-purchase-history-row]').classList.toggle('open')}});$('purchaseHistoryYear').addEventListener('change',()=>refreshPurchaseHistoryMonths(purchaseHistoryAll.purchases||[]));$('purchaseHistorySearchBtn').addEventListener('click',filterPurchaseHistory);$('purchaseHistoryRecentBtn').addEventListener('click',()=>{refreshPurchaseHistoryMonths(purchaseHistoryAll.purchases||[]);renderPurchaseHistory((purchaseHistoryAll.purchases||[]).slice(0,10),'recent')});$('purchaseHistoryList').addEventListener('click',event=>{const row=event.target.closest('[data-purchase-history-row]');if(row)row.classList.toggle('open')});$('purchaseHistoryList').addEventListener('keydown',event=>{const row=event.target.closest('[data-purchase-history-row]');if(row&&(event.key==='Enter'||event.key===' ')){event.preventDefault();row.classList.toggle('open')}});$('logoutBtn').addEventListener('click',logout);
+  $('logoutBtn').addEventListener('click',logout);
+
 }catch(error){
   console.error('Error conectando controles de Inventario:',error);
 }
