@@ -170,17 +170,10 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 }
 
 
-.session-gate{position:fixed;inset:0;z-index:2500;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.58);backdrop-filter:blur(8px)}
-.session-gate-card{width:min(460px,100%);padding:22px 24px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(21,23,28,.96);box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}
-.session-gate-title{font-size:17px;font-weight:800}
-.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
-.session-gate-fallback{margin-top:14px}
-
 </style>
-  <link rel="stylesheet" href="../admin/header.css?v=20261004-2">
+  <link rel="stylesheet" href="../admin/header.css?v=20261004-4">
 </head>
 <body>
-<div id="sessionGate" class="session-gate" style="display:flex"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div id="sessionGateStatus" class="session-gate-status">Verificando sesión…</div><div class="session-gate-fallback hidden"><button id="sessionGateLogin" class="ghost" type="button">MOSTRAR ACCESO</button></div></div></div>
 <main class="page">
 <header class="header">
   <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
@@ -191,11 +184,11 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
     <a href="../admin/?v=20261004-2" class="home-button">CC</a>
     <a href="../comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
     <a href="../inventario/?v=20261004-2" class="home-button active">INVENTARIO</a>
-    <button id="logoutBtn" class="hidden" type="button">CERRAR SESIÓN</button>
+    <button id="logoutBtn" type="button">CERRAR SESIÓN</button>
   </div>
 </header>
 <div class="shell">
-<section id="loginCard" class="card" style="max-width:470px;margin-left:auto;margin-right:auto">
+<section id="loginCard" class="card hidden" style="max-width:470px;margin-left:auto;margin-right:auto">
   <div class="panel-heading"><h2 class="panel-title">Acceso administrativo</h2><span class="panel-tag">Inventario</span></div>
   <form id="loginForm">
     <input id="email" type="email" placeholder="Correo" autocomplete="username" required>
@@ -204,7 +197,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
   </form>
   <div id="loginStatus" class="helper" style="text-align:center">Verificando sesión…</div>
 </section>
-<section id="adminArea" class="hidden">
+<section id="adminArea">
   <div id="notice" class="notice" role="status"></div>
   <section class="card">
     <div class="panel-heading"><h2 class="panel-title">Inventario</h2><span id="inventoryStatus" class="panel-tag">Loyverse</span></div>
@@ -359,15 +352,15 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'}});
+try{const rawSession=window.localStorage.getItem('sb-tjarildqqxtjmafpiyuz-auth-token');if(rawSession){const parsed=JSON.parse(rawSession);if(parsed?.access_token){$('loginCard')?.classList.add('hidden');$('adminArea')?.classList.remove('hidden');$('logoutBtn')?.classList.remove('hidden')}}}catch{}
 let inventoryRows=[],inventoryCategories=[],inventoryEditState=null;const $=id=>document.getElementById(id);
 function showNotice(message,error){const el=$('notice');el.textContent=message;el.className='notice show'+(error?' error':'')}
 function formatMoney(value){const n=Number(value);return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—'}
 function formatDate(value){if(!value)return'—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(d)}
 async function isCurrentUserAdmin(){const {data:userData,error:userError}=await db.auth.getUser();if(userError||!userData?.user)return false;const {data:admin,error}=await db.from('admin_users').select('user_id').eq('user_id',userData.user.id).maybeSingle();return!error&&Boolean(admin)}
-function hideSessionGate(){const gate=document.getElementById('sessionGate');if(gate){gate.classList.add('hidden');gate.style.display='none'}}
-function showSessionGate(status='Verificando sesión…'){const gate=document.getElementById('sessionGate');if(gate){gate.classList.remove('hidden');gate.style.display='flex';const statusEl=document.getElementById('sessionGateStatus');if(statusEl)statusEl.textContent=status}}
-function showLogin(){$('loginCard').classList.remove('hidden');$('adminArea').classList.add('hidden');$('logoutBtn').classList.add('hidden');hideSessionGate()}
-function showAdmin(){$('loginCard').classList.add('hidden');$('adminArea').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');hideSessionGate()}
+}
+function showLogin(){$('loginCard').classList.remove('hidden');$('adminArea').classList.add('hidden');$('logoutBtn').classList.add('hidden')}
+function showAdmin(){$('loginCard').classList.add('hidden');$('adminArea').classList.remove('hidden');$('logoutBtn').classList.remove('hidden')}
 function inventoryStoreState(variant){const stores=Array.isArray(variant?.stores)?variant.stores:[];return stores[0]||{}}
 function inventoryStockInfo(variant,map){const stores=Array.isArray(variant?.stores)?variant.stores:[];for(const store of stores){const key=String(variant.variant_id)+'|'+String(store?.store_id||'');if(map.has(key))return Number(map.get(key))}return null}
 function inventoryStockLabel(row){if(!row.trackStock)return{label:'Sin controlar',cls:'na'};if(row.stock===null)return{label:'Sin dato',cls:'na'};if(row.stock<0)return{label:row.stock.toLocaleString('es-CO'),cls:'negative'};if(row.stock===0)return{label:'0',cls:'zero'};if(row.lowStock!==null&&Number.isFinite(row.lowStock)&&row.stock<=row.lowStock)return{label:row.stock.toLocaleString('es-CO'),cls:'low'};return{label:row.stock.toLocaleString('es-CO'),cls:'ok'}}
@@ -393,7 +386,7 @@ async function savePurchasePackSize(input){const variantId=input.dataset.packVar
 async function syncInventoryFromLoyverse(){const btn=$('inventorySyncBtn');btn.disabled=true;$('inventoryStatus').textContent='Sincronizando…';try{const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'sync'}});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo completar la sincronización.');await loadInventory();showNotice('Inventario actualizado desde Loyverse: '+Number(data.items||0).toLocaleString('es-CO')+' productos y '+Number(data.variants||0).toLocaleString('es-CO')+' variantes.',false)}catch(error){$('inventoryStatus').textContent='Error';showNotice('No se pudo sincronizar el inventario desde Loyverse: '+(error?.message||'error desconocido'),true)}finally{btn.disabled=false}}
 let sessionGateTimer=null;
 function armSessionGateFallback(){clearTimeout(sessionGateTimer);sessionGateTimer=setTimeout(()=>{if(!$('adminArea').classList.contains('hidden')||!$('loginCard').classList.contains('hidden'))return;$('sessionGateStatus').textContent='No se pudo comprobar la sesión automáticamente.';$('sessionGateFallback')?.classList.remove('hidden');},8000)}
-async function enterWithExistingSession(){ showSessionGate('Verificando sesión…');armSessionGateFallback();$('loginStatus').textContent='Verificando sesión…';const {data,error}=await db.auth.getSession();if(error){showLogin();$('loginStatus').textContent='No se pudo recuperar la sesión: '+error.message;return false}if(!data?.session){showLogin();$('loginStatus').textContent='No hay una sesión administrativa disponible.';return false}if(!(await isCurrentUserAdmin())){await db.auth.signOut();showLogin();$('loginStatus').textContent='La cuenta activa no tiene permisos de administración.';return false}showAdmin();await loadInventory();return true}
+async function enterWithExistingSession(){ $('loginStatus').textContent='Verificando sesión…';const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('La verificación de sesión tardó demasiado.')),5000));try{const result=await Promise.race([db.auth.getSession(),timeout]);const {data,error}=result;if(error)throw error;if(!data?.session){showLogin();$('loginStatus').textContent='No hay una sesión administrativa disponible.';return false}if(!(await isCurrentUserAdmin())){await db.auth.signOut();showLogin();$('loginStatus').textContent='La cuenta activa no tiene permisos de administración.';return false}showAdmin();await loadInventory();return true}catch(error){showLogin();$('loginStatus').textContent=error?.message||'No se pudo verificar la sesión.';return false}}
 async function login(event){event.preventDefault();const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return false;$('loginBtn').disabled=true;$('loginStatus').textContent='Iniciando sesión…';try{const {error}=await db.auth.signInWithPassword({email,password});if(error){$('loginStatus').textContent=error.message||'No fue posible iniciar sesión.';return false}await enterWithExistingSession();return true}finally{$('loginBtn').disabled=false}}
 async function logout(){await db.auth.signOut();showLogin()}
 $('loginForm').addEventListener('submit',login);$('inventorySearch').addEventListener('input',renderInventory);$('inventoryCategory').addEventListener('change',renderInventory);$('inventoryAvailability').addEventListener('change',renderInventory);$('inventorySyncBtn').addEventListener('click',syncInventoryFromLoyverse);$('purchaseOpenBtn').addEventListener('click',openPurchaseModal);$('purchaseCancel').addEventListener('click',closePurchaseModal);$('purchaseSave').addEventListener('click',savePurchase);$('purchaseAddLine').addEventListener('click',()=>{addPurchaseLine();updatePurchaseTotal()});$('purchaseLines').addEventListener('change',event=>{if(event.target.matches('[data-purchase-product],[data-purchase-quantity],[data-purchase-pack],[data-purchase-value]'))updatePurchaseTotal()});$('purchaseLines').addEventListener('input',event=>{if(event.target.matches('[data-purchase-quantity],[data-purchase-pack],[data-purchase-value]'))updatePurchaseTotal()});$('purchaseLines').addEventListener('click',event=>{const remove=event.target.closest('[data-purchase-remove]');if(!remove)return;remove.closest('.purchase-line')?.remove();if(!$('purchaseLines').children.length)addPurchaseLine();updatePurchaseTotal()});$('purchaseBackdrop').addEventListener('click',event=>{if(event.target.id==='purchaseBackdrop')closePurchaseModal()});$('inventoryList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-variant]');if(!button)return;openInventoryEditor(button.dataset.editVariant,button.dataset.editItem,button.dataset.editStore)});$('inventoryList').addEventListener('change',event=>{const input=event.target.closest('[data-pack-variant]');if(input)savePurchasePackSize(input)});$('editStore').addEventListener('change',populateInventoryEditStore);$('inventoryEditCancel').addEventListener('click',closeInventoryEditor);$('inventoryEditSave').addEventListener('click',saveInventoryEditor);$('inventoryEditBackdrop').addEventListener('click',event=>{if(event.target.id==='inventoryEditBackdrop')closeInventoryEditor();});document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('inventoryEditBackdrop').classList.contains('hidden'))closeInventoryEditor();if(event.key==='Escape'&&!$('purchaseBackdrop').classList.contains('hidden'))closePurchaseModal();});$('logoutBtn').addEventListener('click',logout);$('sessionGateLogin')?.addEventListener('click',()=>{clearTimeout(sessionGateTimer);$('sessionGateFallback')?.classList.add('hidden');$('sessionGateStatus').textContent='';showLogin();$('loginStatus').textContent='Inicia sesión para continuar.'});window.addEventListener('error',event=>{if(!$('adminArea').classList.contains('hidden')||!$('loginCard').classList.contains('hidden'))return;$('sessionGateStatus').textContent='Se produjo un error al cargar Administración.';$('sessionGateFallback')?.classList.remove('hidden');});enterWithExistingSession();
