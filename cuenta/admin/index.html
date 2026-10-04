@@ -323,7 +323,7 @@ button:disabled{opacity:.45;cursor:default}
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
 <body>
-<div id="sessionGate" class="session-gate"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div class="session-gate-status">Verificando sesión…</div></div></div>
+<div id="sessionGate" class="session-gate" style="display:flex"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div class="session-gate-status">Verificando sesión…</div></div></div>
 <main class="page">
 <header class="header">
   <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
@@ -1965,8 +1965,8 @@ async function isCurrentUserAdmin(){
   return (await checkCurrentUserAdmin()).isAdmin;
 }
 
-function hideSessionGate(){document.getElementById('sessionGate')?.classList.add('hidden')}
-async function enterWithExistingSession(){document.getElementById('sessionGate')?.classList.remove('hidden');
+function hideSessionGate(){const gate=document.getElementById('sessionGate');if(gate){gate.classList.add('hidden');gate.style.display='none'}}}
+async function enterWithExistingSession(){document.getElementById('sessionGate')?.classList.remove('hidden');document.getElementById('sessionGate')?.style.setProperty('display','flex');
   $('loginStatus').className='status';
   $('loginStatus').textContent='Verificando la sesión…';
 
