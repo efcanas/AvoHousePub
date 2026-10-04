@@ -182,10 +182,16 @@ button:disabled{opacity:.45;cursor:default}
   }
 }
 
+
+.session-gate{position:fixed;inset:0;z-index:2500;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.58);backdrop-filter:blur(8px)}
+.session-gate-card{width:min(460px,100%);padding:22px 24px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(21,23,28,.96);box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}
+.session-gate-title{font-size:17px;font-weight:800}.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
+
 </style>
   <link rel="stylesheet" href="../admin/header.css?v=20261002-1">
 </head>
 <body>
+<div id="sessionGate" class="session-gate"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div class="session-gate-status">Verificando sesión…</div></div></div>
 <main class="page">
 <header class="header">
   <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
@@ -657,17 +663,24 @@ els.refreshHistoryBtn.addEventListener('click',loadHistory);
 const rememberedEmail=localStorage.getItem('avohouse_admin_email');
 if(rememberedEmail)els.email.value=rememberedEmail;
 
+function hideSessionGate(){document.getElementById('sessionGate')?.classList.add('hidden')}
 async function boot(){
   try{
+    document.getElementById('sessionGate')?.classList.remove('hidden');
     const {data}=await supabaseClient.auth.getSession();
     if(!data?.session){
-      els.adminArea.classList.add('hidden');els.loginCard.classList.remove('hidden');els.logoutBtn.classList.add('hidden');return;
+      els.adminArea.classList.add('hidden');els.loginCard.classList.remove('hidden');els.logoutBtn.classList.add('hidden');hideSessionGate();return;
     }
     els.loginCard.classList.add('hidden');els.adminArea.classList.remove('hidden');els.logoutBtn.classList.remove('hidden');
     clearNotice();
     await loadTemplates();
     await loadHistory();
+    hideSessionGate();
   }catch(e){
+    hideSessionGate();
+    els.loginCard.classList.remove('hidden');
+    els.adminArea.classList.add('hidden');
+    els.logoutBtn.classList.add('hidden');
     els.loginStatus.textContent='No se pudo cargar Comunicaciones.';
     showNotice(e.message,'error');
   }
