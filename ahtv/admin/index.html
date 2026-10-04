@@ -591,6 +591,7 @@
   <link rel="stylesheet" href="../../cuenta/admin/header.css?v=20261002-1">
 </head>
 <body>
+<div id="sessionGate" class="session-gate"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div id="sessionGateStatus" class="session-gate-status">Verificando sesión…</div></div></div>
 <main>
   <header class="header">
     <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
@@ -605,7 +606,7 @@
     </div>
   </header>
 
-  <section id="loginCard" class="card hidden">
+  <section id="loginCard" class="card">
     <h2>Acceso</h2>
     <input id="email" type="email" placeholder="Correo" autocomplete="username">
     <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
@@ -781,12 +782,14 @@
   }
 
   function showAdmin() {
+    document.getElementById('sessionGate')?.classList.add('hidden');
     loginCard.classList.add("hidden");
     adminArea.classList.remove("hidden");
     logoutBtn.classList.remove("hidden");
   }
 
   function showLogin() {
+    document.getElementById('sessionGate')?.classList.add('hidden');
     loginCard.classList.remove("hidden");
     adminArea.classList.add("hidden");
     logoutBtn.classList.add("hidden");
