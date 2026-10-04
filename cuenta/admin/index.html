@@ -314,10 +314,16 @@ button:disabled{opacity:.45;cursor:default}
   }
 }
 
+
+.session-gate{position:fixed;inset:0;z-index:2500;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.58);backdrop-filter:blur(8px)}
+.session-gate-card{width:min(460px,100%);padding:22px 24px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(21,23,28,.96);box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}
+.session-gate-title{font-size:17px;font-weight:800}.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
+
 </style>
   <link rel="stylesheet" href="./header.css?v=20261002-1">
 </head>
 <body>
+<div id="sessionGate" class="session-gate"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div class="session-gate-status">Verificando sesión…</div></div></div>
 <main class="page">
 <header class="header">
   <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
@@ -1957,7 +1963,8 @@ async function isCurrentUserAdmin(){
   return (await checkCurrentUserAdmin()).isAdmin;
 }
 
-async function enterWithExistingSession(){
+function hideSessionGate(){document.getElementById('sessionGate')?.classList.add('hidden')}
+async function enterWithExistingSession(){document.getElementById('sessionGate')?.classList.remove('hidden');
   $('loginStatus').className='status';
   $('loginStatus').textContent='Verificando la sesión…';
 
@@ -2087,7 +2094,7 @@ $('emailHistoryRecentBtn').addEventListener('click',loadRecentEmailHistory);
 $('emailHistoryYear').addEventListener('change',populateEmailHistoryMonths);
 $('emailModalClose').addEventListener('click',()=>{$('emailModal').hidden=true});
 $('emailModal').addEventListener('click',e=>{if(e.target===$('emailModal'))$('emailModal').hidden=true});
-$('logoutBtn').addEventListener('click',logout);
+window.addEventListener('error',()=>{document.getElementById('sessionGate')?.classList.add('hidden')});$('logoutBtn').addEventListener('click',logout);
 $('receiptClose').addEventListener('click',()=>{$('receiptModal').hidden=true});
 $('receiptModal').addEventListener('click',e=>{if(e.target===$('receiptModal'))$('receiptModal').hidden=true});
 document.addEventListener('keydown',e=>{
