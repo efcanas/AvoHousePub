@@ -177,7 +177,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 .session-gate-fallback{margin-top:14px}
 
 </style>
-  <link rel="stylesheet" href="../admin/header.css?v=20261002-1">
+  <link rel="stylesheet" href="../admin/header.css?v=20261004-2">
 </head>
 <body>
 <div id="sessionGate" class="session-gate"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div id="sessionGateStatus" class="session-gate-status">Verificando sesión…</div><div class="session-gate-fallback hidden"><button id="sessionGateLogin" class="ghost" type="button">MOSTRAR ACCESO</button></div></div></div>
@@ -187,10 +187,10 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
   <div class="header-title">Inventario</div>
   <div class="header-subtitle">Administración · Catálogo sincronizado desde Loyverse</div>
   <div class="header-actions">
-    <a href="../../ahtv/admin/" class="home-button">AHtv</a>
-    <a href="../admin/" class="home-button">CC</a>
-    <a href="../comunicaciones/" class="home-button">COMUNICACIONES</a>
-    <a href="../inventario/" class="home-button active">INVENTARIO</a>
+    <a href="../../ahtv/admin/?v=20261004-2" class="home-button">AHtv</a>
+    <a href="../admin/?v=20261004-2" class="home-button">CC</a>
+    <a href="../comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
+    <a href="../inventario/?v=20261004-2" class="home-button active">INVENTARIO</a>
     <button id="logoutBtn" class="hidden" type="button">CERRAR SESIÓN</button>
   </div>
 </header>
@@ -364,7 +364,6 @@ function showNotice(message,error){const el=$('notice');el.textContent=message;e
 function formatMoney(value){const n=Number(value);return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—'}
 function formatDate(value){if(!value)return'—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(d)}
 async function isCurrentUserAdmin(){const {data:userData,error:userError}=await db.auth.getUser();if(userError||!userData?.user)return false;const {data:admin,error}=await db.from('admin_users').select('user_id').eq('user_id',userData.user.id).maybeSingle();return!error&&Boolean(admin)}
-function showLogin(){$('loginCard').classList.remove('hidden');$('adminArea').classList.add('hidden');$('logoutBtn').classList.add('hidden')}
 function hideSessionGate(){const gate=$('sessionGate');if(gate)gate.classList.add('hidden')}
 function showSessionGate(status='Verificando sesión…'){const gate=$('sessionGate');if(!gate)return;gate.classList.remove('hidden');$('sessionGateStatus').textContent=status}
 function showLogin(){$('loginCard').classList.remove('hidden');$('adminArea').classList.add('hidden');$('logoutBtn').classList.add('hidden');hideSessionGate()}
