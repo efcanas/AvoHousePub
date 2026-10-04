@@ -191,7 +191,7 @@ button:disabled{opacity:.45;cursor:default}
   <link rel="stylesheet" href="../admin/header.css?v=20261004-2">
 </head>
 <body>
-<div id="sessionGate" class="session-gate"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div class="session-gate-status">Verificando sesión…</div></div></div>
+<div id="sessionGate" class="session-gate" style="display:flex"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div class="session-gate-status">Verificando sesión…</div></div></div>
 <main class="page">
 <header class="header">
   <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
@@ -663,10 +663,10 @@ els.refreshHistoryBtn.addEventListener('click',loadHistory);
 const rememberedEmail=localStorage.getItem('avohouse_admin_email');
 if(rememberedEmail)els.email.value=rememberedEmail;
 
-function hideSessionGate(){document.getElementById('sessionGate')?.classList.add('hidden')}
+function hideSessionGate(){const gate=document.getElementById('sessionGate');if(gate){gate.classList.add('hidden');gate.style.display='none'}}}
 async function boot(){
   try{
-    document.getElementById('sessionGate')?.classList.remove('hidden');
+    document.getElementById('sessionGate')?.classList.remove('hidden');document.getElementById('sessionGate')?.style.setProperty('display','flex');
     const {data}=await supabaseClient.auth.getSession();
     if(!data?.session){
       els.adminArea.classList.add('hidden');els.loginCard.classList.remove('hidden');els.logoutBtn.classList.add('hidden');hideSessionGate();return;
