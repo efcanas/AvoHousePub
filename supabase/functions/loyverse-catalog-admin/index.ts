@@ -163,18 +163,27 @@ function requiredString(value: unknown, field: string, max = 200): string {
 }
 
 async function getLiveEditData(token: string, itemId: string, variantId: string) {
-  const [item, variant, inventory] = await Promise.all([
+  const [item, variant, inventory, stores, purchaseRows] = await Promise.all([
     loyverseGet(token, "/items/" + encodeURIComponent(itemId)),
     loyverseGet(token, "/variants/" + encodeURIComponent(variantId)),
     loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(variantId) + "&limit=250"),
+    loyverseGet(token, "/stores?limit=250"),
+    supabaseRequest(
+      "/rest/v1/loyverse_item_variants?select=variant_id,purchase_pack_size,purchase_presentation_cost&variant_id=eq." +
+        encodeURIComponent(variantId) + "&limit=1",
+      { method: "GET" },
+    ),
   ]);
-
-  const stores = await loyverseGet(token, "/stores?limit=250");
+  const purchase = Array.isArray(purchaseRows) && purchaseRows[0] ? purchaseRows[0] : {};
   return {
     item,
     variant,
     inventory_levels: Array.isArray(inventory?.inventory_levels) ? inventory.inventory_levels : [],
     stores: Array.isArray(stores?.stores) ? stores.stores : [],
+    purchase_settings: {
+      pack_size: purchase?.purchase_pack_size ?? null,
+      presentation_cost: purchase?.purchase_presentation_cost ?? null,
+    },
   };
 }
 
@@ -272,8 +281,9 @@ async function updateCatalogItem(token: string, payload: any) {
   const variantChanges = payload?.variant ?? {};
   const storeChanges = payload?.store ?? {};
   const inventoryChanges = payload?.inventory ?? {};
+  const purchaseChanges = payload?.purchase ?? {};
 
-  let itemChanged = false, variantChanged = false, inventoryChanged = false;
+  let itemChanged = false, variantChanged = false, inventoryChanged = false, purchaseSettingsChanged = false;
 
   const itemName = requiredString(itemChanges?.item_name ?? currentItem?.item_name, "nombre", 64);
   const categoryId = itemChanges?.category_id ? String(itemChanges.category_id).trim() : null;
@@ -284,6 +294,40 @@ async function updateCatalogItem(token: string, payload: any) {
   }
 
   const nextVariant: any = { ...currentVariant, variant_id: variantId, item_id: itemId };
+  const currentPurchaseSettings = live.purchase_settings ?? {};
+  const hasPackInput = purchaseChanges?.pack_size !== undefined;
+  const hasPresentationCostInput = purchaseChanges?.presentation_cost !== undefined;
+  let nextPackSize = currentPurchaseSettings?.pack_size === null || currentPurchaseSettings?.pack_size === undefined
+    ? null : Number(currentPurchaseSettings.pack_size);
+  let nextPresentationCost = currentPurchaseSettings?.presentation_cost === null || currentPurchaseSettings?.presentation_cost === undefined
+    ? null : Number(currentPurchaseSettings.presentation_cost);
+
+  if (hasPackInput || hasPresentationCostInput) {
+    const packRaw = String(purchaseChanges?.pack_size ?? "").trim();
+    const presentationRaw = String(purchaseChanges?.presentation_cost ?? "").trim();
+    if ((packRaw !== "" || presentationRaw !== "") && (packRaw === "" || presentationRaw === "")) {
+      throw new Error("Para calcular el costo unitario debes indicar las unidades por presentación y el costo de compra.");
+    }
+    if (packRaw === "" && presentationRaw === "") {
+      nextPackSize = null;
+      nextPresentationCost = null;
+    } else {
+      const pack = Number(packRaw);
+      const presentationCost = Number(presentationRaw);
+      if (!Number.isInteger(pack) || pack <= 0 || pack > 100000) {
+        throw new Error("Las unidades por presentación deben ser un entero mayor que 0.");
+      }
+      if (!Number.isFinite(presentationCost) || presentationCost < 0 || presentationCost > 1000000000) {
+        throw new Error("El costo de compra debe ser un número válido no negativo.");
+      }
+      nextPackSize = pack;
+      nextPresentationCost = presentationCost;
+      const unitCost = presentationCost / pack;
+      nextVariant.cost = unitCost;
+      nextVariant.purchase_cost = unitCost;
+    }
+  }
+
   if (variantChanges?.sku !== undefined) {
     const sku = String(variantChanges.sku).trim();
     if (!sku && String(currentVariant?.sku ?? "").trim()) throw new Error("El SKU no puede quedar vacío al editar una variante existente.");
@@ -366,6 +410,12 @@ async function updateCatalogItem(token: string, payload: any) {
     await loyversePost(token, "/variants", variantPayload);
   }
 
+  const currentPackComparable = currentPurchaseSettings?.pack_size === null || currentPurchaseSettings?.pack_size === undefined ? null : Number(currentPurchaseSettings.pack_size);
+  const currentPresentationComparable = currentPurchaseSettings?.presentation_cost === null || currentPurchaseSettings?.presentation_cost === undefined ? null : Number(currentPurchaseSettings.presentation_cost);
+  purchaseSettingsChanged =
+    nextPackSize !== currentPackComparable ||
+    nextPresentationCost !== currentPresentationComparable;
+
   if (inventoryChanges?.stock_after !== undefined && inventoryChanges.stock_after !== "") {
     const stockAfter = finiteNumber(inventoryChanges.stock_after, "existencias");
     if (stockAfter < 0) throw new Error("Las existencias no pueden ser negativas desde esta pantalla.");
@@ -418,6 +468,27 @@ async function updateCatalogItem(token: string, payload: any) {
     }
   }
 
+  if (purchaseSettingsChanged) {
+    const saved = await supabaseRequest(
+      "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(variantId),
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          purchase_pack_size: nextPackSize,
+          purchase_presentation_cost: nextPresentationCost,
+          synced_at: new Date().toISOString(),
+        }),
+      },
+    );
+    const savedRow = Array.isArray(saved) ? saved[0] : null;
+    const savedPack = savedRow?.purchase_pack_size === null || savedRow?.purchase_pack_size === undefined ? null : Number(savedRow.purchase_pack_size);
+    const savedPresentation = savedRow?.purchase_presentation_cost === null || savedRow?.purchase_presentation_cost === undefined ? null : Number(savedRow.purchase_presentation_cost);
+    if (savedPack !== nextPackSize || savedPresentation !== nextPresentationCost) {
+      throw new Error("La verificación posterior de la presentación y el costo de compra no coincidió con lo solicitado.");
+    }
+  }
+
   await mirrorEditedItem(verified.item);
   await mirrorEditedVariant(verified.variant);
   await mirrorEditedInventory(verified.inventory_levels);
@@ -429,7 +500,7 @@ async function updateCatalogItem(token: string, payload: any) {
     inventory_levels: verified.inventory_levels,
     stores: verified.stores,
     store_id: storeId,
-    changed: { item: itemChanged, variant: variantChanged, inventory: inventoryChanged },
+    changed: { item: itemChanged, variant: variantChanged, inventory: inventoryChanged, purchase_settings: purchaseSettingsChanged },
     edited_at: new Date().toISOString(),
   };
 }
