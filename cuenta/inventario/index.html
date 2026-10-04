@@ -196,7 +196,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
     <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" required>
     <button id="loginBtn" class="primary" type="submit" style="width:100%;margin-top:8px">ENTRAR</button>
   </form>
-  <div id="loginStatus" class="helper" style="text-align:center">Verificando sesión…</div>
+  <div id="loginStatus" class="helper" style="text-align:center">Inicia sesión para continuar.</div>
 </section>
 <section id="adminArea" class="hidden">
   <div id="notice" class="notice" role="status"></div>
@@ -352,7 +352,8 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 'use strict';
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'}});
+const { createClient } = supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'}});
 let inventoryRows=[],inventoryCategories=[],inventoryEditState=null;const $=id=>document.getElementById(id);
 function showNotice(message,error){const el=$('notice');el.textContent=message;el.className='notice show'+(error?' error':'')}
 function formatMoney(value){const n=Number(value);return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—'}
@@ -416,9 +417,8 @@ try{
   console.error('Error conectando controles de Inventario:',error);
 }
 
-</script>
-
 enterWithExistingSession();
+</script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../../sw.js').catch(()=>{}))}</script>
 </body>
 </html>
