@@ -361,7 +361,7 @@ let inventoryRows=[],inventoryCategories=[],inventoryEditState=null;const $=id=>
 function showNotice(message,error){const el=$('notice');el.textContent=message;el.className='notice show'+(error?' error':'')}
 function formatMoney(value){const n=Number(value);return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—'}
 function formatDate(value){if(!value)return'—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(d)}
-async function isCurrentUserAdmin(){const {data:userData,error:userError}=await db.auth.getUser();if(userError||!userData?.user)return false;const {data:admin,error}=await db.from('admin_users').select('user_id').eq('user_id',userData.user.id).maybeSingle();return!error&&Boolean(admin)}
+async function isCurrentUserAdmin(){const {data:userData,error:userError}=await db.auth.getUser();if(userError||!userData?.user)return false;const {data:admin,error:adminError}=await db.from('admin_users').select('user_id').eq('user_id',userData.user.id).maybeSingle();return!adminError&&Boolean(admin)}
 function showLogin(){$('loginCard').classList.remove('hidden');$('adminArea').classList.add('hidden');$('logoutBtn').classList.add('hidden')}
 function showAdmin(){$('loginCard').classList.add('hidden');$('adminArea').classList.remove('hidden');$('logoutBtn').classList.remove('hidden')}
 function inventoryStoreState(variant){const stores=Array.isArray(variant?.stores)?variant.stores:[];return stores[0]||{}}
