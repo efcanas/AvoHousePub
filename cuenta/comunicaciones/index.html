@@ -663,7 +663,7 @@ els.refreshHistoryBtn.addEventListener('click',loadHistory);
 const rememberedEmail=localStorage.getItem('avohouse_admin_email');
 if(rememberedEmail)els.email.value=rememberedEmail;
 
-function hideSessionGate(){const gate=document.getElementById('sessionGate');if(gate){gate.classList.add('hidden');gate.style.display='none'}}}
+function hideSessionGate(){const gate=document.getElementById('sessionGate');if(gate){gate.classList.add('hidden');gate.style.display='none'}}
 async function boot(){
   try{
     document.getElementById('sessionGate')?.classList.remove('hidden');document.getElementById('sessionGate')?.style.setProperty('display','flex');
