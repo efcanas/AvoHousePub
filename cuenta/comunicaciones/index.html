@@ -201,7 +201,7 @@ button:disabled{opacity:.45;cursor:default}
 </header>
 
 <div class="shell">
-<section id="loginCard" class="card auth-card">
+<section id="loginCard" class="card hidden auth-card">
   <div class="panel-heading"><h2 class="panel-title">Acceso administrativo</h2><span class="panel-tag">Comunicaciones</span></div>
   <form id="loginForm">
     <input id="email" type="email" placeholder="Correo" autocomplete="username" required>
@@ -337,7 +337,7 @@ button:disabled{opacity:.45;cursor:default}
 const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const FUNCTION_URL=SUPABASE_URL+'/functions/v1/avohouse-communications';
-const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'}});
 
 const els={
   loginCard:document.getElementById('loginCard'),adminArea:document.getElementById('adminArea'),
