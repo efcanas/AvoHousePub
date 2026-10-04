@@ -582,6 +582,11 @@
   }
 }
 
+
+.session-gate{position:fixed;inset:0;z-index:2500;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.58);backdrop-filter:blur(8px)}
+.session-gate-card{width:min(460px,100%);padding:22px 24px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(21,23,28,.96);box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}
+.session-gate-title{font-size:17px;font-weight:800}.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
+
 </style>
   <link rel="stylesheet" href="../../cuenta/admin/header.css?v=20261002-1">
 </head>
@@ -1629,7 +1634,9 @@
     }
   }
 
-  async function init() {
+  function hideSessionGate(){document.getElementById('sessionGate')?.classList.add('hidden')}
+async function init() {
+    document.getElementById('sessionGate')?.classList.remove('hidden');
     restoreAdminEmail();
     const { data } = await db.auth.getSession();
 
@@ -1641,6 +1648,7 @@
         return;
       }
       showAdmin();
+      hideSessionGate();
       const returnTo=new URLSearchParams(window.location.search).get("returnTo");
       const destination=returnTo?safeReturnTo(returnTo):null;
       if(destination){
@@ -1653,6 +1661,7 @@
       await startRealtime();
     } else {
       showLogin();
+      hideSessionGate();
     }
   }
 
