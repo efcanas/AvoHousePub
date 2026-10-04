@@ -456,198 +456,86 @@ async function setPurchasePackSize(payload: any) {
   return { ok: true, variant_id: variantId, pack_size: value, saved_at: new Date().toISOString() };
 }
 
-async function createPurchaseRecord(userId: string, purchaseDate: string, notes: string | null, lines: any[], totalUnits: number) {
+async function createPurchaseRecord(userId: string, purchaseDate: string, notes: string | null, lines: any[], totalUnits: number, totalValue: number) {
   const created = await supabaseRequest("/rest/v1/avohouse_inventory_purchases", {
     method: "POST",
     headers: { Prefer: "return=representation" },
-    body: JSON.stringify({
-      purchase_date: purchaseDate,
-      created_by: userId,
-      status: "processing",
-      line_count: lines.length,
-      total_units: totalUnits,
-      notes,
-    }),
+    body: JSON.stringify({ purchase_date: purchaseDate, created_by: userId, status: "processing", line_count: lines.length, total_units: totalUnits, total_value: totalValue, notes }),
   });
-  if (!Array.isArray(created) || !created[0]?.id) {
-    throw new Error("No se pudo crear el registro de la compra.");
-  }
+  if (!Array.isArray(created) || !created[0]?.id) throw new Error("No se pudo crear el registro de la compra.");
   return created[0];
 }
 
 async function patchPurchase(purchaseId: string, data: Record<string, unknown>) {
-  await supabaseRequest(
-    "/rest/v1/avohouse_inventory_purchases?id=eq." + encodeURIComponent(purchaseId),
-    {
-      method: "PATCH",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(data),
-    },
-  );
+  await supabaseRequest("/rest/v1/avohouse_inventory_purchases?id=eq." + encodeURIComponent(purchaseId), {
+    method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(data),
+  });
 }
 
 async function registerPurchase(token: string, userId: string, payload: any) {
   const rawLines = Array.isArray(payload?.lines) ? payload.lines : [];
   if (!rawLines.length) throw new Error("La compra debe tener al menos un producto.");
   if (rawLines.length > 50) throw new Error("La compra no puede superar 50 productos.");
-
-  const purchaseDate = typeof payload?.purchase_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)
-    ? payload.purchase_date
-    : new Date().toISOString().slice(0, 10);
+  const purchaseDate = typeof payload?.purchase_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date) ? payload.purchase_date : new Date().toISOString().slice(0, 10);
   const notesRaw = typeof payload?.notes === "string" ? payload.notes.trim() : "";
   const notes = notesRaw ? notesRaw.slice(0, 1000) : null;
-
   const normalized = rawLines.map((line: any, index: number) => {
     const variantId = requiredString(line?.variant_id, "producto");
     const quantity = Number(line?.quantity);
-    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100000) {
-      throw new Error(`La cantidad de la línea ${index + 1} debe ser un entero mayor que 0.`);
-    }
-    return { variant_id: variantId, quantity };
+    const packSize = Number(line?.pack_size);
+    const purchaseValue = Number(line?.purchase_value_per_presentation);
+    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100000) throw new Error("La cantidad de la línea " + (index + 1) + " debe ser un entero mayor que 0.");
+    if (!Number.isInteger(packSize) || packSize <= 0 || packSize > 100000) throw new Error("La Presentación de la línea " + (index + 1) + " debe ser un entero mayor que 0.");
+    if (!Number.isFinite(purchaseValue) || purchaseValue <= 0 || purchaseValue > 1000000000) throw new Error("El Valor compra de la línea " + (index + 1) + " debe ser mayor que 0.");
+    return { variant_id: variantId, quantity, pack_size: packSize, purchase_value_per_presentation: purchaseValue };
   });
-
   const seen = new Set<string>();
-  for (const line of normalized) {
-    if (seen.has(line.variant_id)) throw new Error("No repitas un mismo producto dentro de la compra.");
-    seen.add(line.variant_id);
-  }
-
+  for (const line of normalized) { if (seen.has(line.variant_id)) throw new Error("No repitas un mismo producto dentro de la compra."); seen.add(line.variant_id); }
   const variantIds = normalized.map((line) => line.variant_id);
-  const variantFilter = variantIds.join(",");
-  const catalogVariants = await supabaseRequest(
-    "/rest/v1/loyverse_item_variants?select=variant_id,item_id,sku,purchase_pack_size&variant_id=in.(" + encodeURIComponent(variantFilter) + ")",
-    { method: "GET" },
-  );
-  if (!Array.isArray(catalogVariants) || catalogVariants.length !== normalized.length) {
-    throw new Error("Uno o más productos ya no están disponibles en el catálogo sincronizado.");
-  }
-
+  const catalogVariants = await supabaseRequest("/rest/v1/loyverse_item_variants?select=variant_id,item_id,sku&variant_id=in.(" + encodeURIComponent(variantIds.join(",")) + ")", { method: "GET" });
+  if (!Array.isArray(catalogVariants) || catalogVariants.length !== normalized.length) throw new Error("Uno o más productos ya no están disponibles en el catálogo sincronizado.");
   const variantMap = new Map(catalogVariants.map((v: any) => [String(v.variant_id), v]));
   const itemIds = [...new Set(catalogVariants.map((v: any) => String(v.item_id)).filter(Boolean))];
-  const itemFilter = itemIds.join(",");
-  const catalogItems = await supabaseRequest(
-    "/rest/v1/loyverse_items?select=id,item_name,category_id,track_stock&id=in.(" + encodeURIComponent(itemFilter) + ")",
-    { method: "GET" },
-  );
+  const catalogItems = await supabaseRequest("/rest/v1/loyverse_items?select=id,item_name,category_id,track_stock&id=in.(" + encodeURIComponent(itemIds.join(",")) + ")", { method: "GET" });
   const itemMap = new Map((Array.isArray(catalogItems) ? catalogItems : []).map((i: any) => [String(i.id), i]));
-
   const prepared: any[] = [];
   for (const line of normalized) {
     const v = variantMap.get(line.variant_id);
     const item = v ? itemMap.get(String(v.item_id)) : null;
-    const packSize = Number(v?.purchase_pack_size);
-    if (!Number.isFinite(packSize) || packSize <= 0) {
-      throw new Error(`Configura primero la Presentación de ${item?.item_name || "este producto"}.`);
-    }
-    if (!item?.track_stock) {
-      throw new Error(`${item?.item_name || "Este producto"} no tiene seguimiento de inventario activo en Loyverse.`);
-    }
-
-    const [liveVariant, inventoryBody] = await Promise.all([
-      loyverseGet(token, "/variants/" + encodeURIComponent(line.variant_id)),
-      loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(line.variant_id) + "&limit=250"),
-    ]);
+    if (!item?.track_stock) throw new Error(String(item?.item_name || "Este producto") + " no tiene seguimiento de inventario activo en Loyverse.");
+    const [liveVariant, inventoryBody] = await Promise.all([loyverseGet(token, "/variants/" + encodeURIComponent(line.variant_id)), loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(line.variant_id) + "&limit=250")]);
     const stores = Array.isArray(liveVariant?.stores) ? liveVariant.stores : [];
     const store = stores[0] || null;
     const storeId = String(store?.store_id || "");
-    if (!storeId) throw new Error(`${item?.item_name || "El producto"} no tiene una tienda configurada en Loyverse.`);
-
+    if (!storeId) throw new Error(String(item?.item_name || "El producto") + " no tiene una tienda configurada en Loyverse.");
     const levels = Array.isArray(inventoryBody?.inventory_levels) ? inventoryBody.inventory_levels : [];
     const level = levels.find((x: any) => String(x?.store_id || "") === storeId) || levels[0] || null;
     const stockBefore = level ? Number(level.in_stock ?? 0) : 0;
-    if (!Number.isFinite(stockBefore)) throw new Error(`No se pudo determinar el stock actual de ${item?.item_name || "este producto"}.`);
-
-    const unitsReceived = line.quantity * packSize;
+    if (!Number.isFinite(stockBefore)) throw new Error("No se pudo determinar el stock actual de " + String(item?.item_name || "este producto") + ".");
+    const unitsReceived = line.quantity * line.pack_size;
+    const unitCost = line.purchase_value_per_presentation / line.pack_size;
+    const lineTotal = line.quantity * line.purchase_value_per_presentation;
     const stockAfter = stockBefore + unitsReceived;
-    prepared.push({
-      variant_id: line.variant_id,
-      item_id: String(v.item_id),
-      product_name: String(item?.item_name || "Sin nombre"),
-      sku: v?.sku ?? null,
-      pack_size: packSize,
-      presentation_quantity: line.quantity,
-      units_received: unitsReceived,
-      stock_before: stockBefore,
-      stock_after: stockAfter,
-      store_id: storeId,
-    });
+    prepared.push({ variant_id: line.variant_id, item_id: String(v.item_id), product_name: String(item?.item_name || "Sin nombre"), sku: v?.sku ?? null, pack_size: line.pack_size, presentation_quantity: line.quantity, purchase_value_per_presentation: line.purchase_value_per_presentation, unit_cost: unitCost, line_total: lineTotal, units_received: unitsReceived, stock_before: stockBefore, stock_after: stockAfter, store_id: storeId });
   }
-
   const totalUnits = prepared.reduce((sum, line) => sum + Number(line.units_received), 0);
-  const purchase = await createPurchaseRecord(userId, purchaseDate, notes, prepared, totalUnits);
-
+  const totalValue = prepared.reduce((sum, line) => sum + Number(line.line_total), 0);
+  const purchase = await createPurchaseRecord(userId, purchaseDate, notes, prepared, totalUnits, totalValue);
   try {
-    const lineRows = prepared.map((line, index) => ({
-      purchase_id: purchase.id,
-      line_number: index + 1,
-      variant_id: line.variant_id,
-      item_id: line.item_id,
-      product_name: line.product_name,
-      sku: line.sku,
-      pack_size: line.pack_size,
-      presentation_quantity: line.presentation_quantity,
-      units_received: line.units_received,
-      stock_before: line.stock_before,
-      stock_after: line.stock_after,
-    }));
-
-    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines", {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(lineRows),
-    });
-
-    await loyversePost(token, "/inventory", {
-      inventory_levels: prepared.map((line) => ({
-        variant_id: line.variant_id,
-        store_id: line.store_id,
-        stock_after: line.stock_after,
-      })),
-    });
-
+    const lineRows = prepared.map((line, index) => ({ purchase_id: purchase.id, line_number: index + 1, variant_id: line.variant_id, item_id: line.item_id, product_name: line.product_name, sku: line.sku, pack_size: line.pack_size, presentation_quantity: line.presentation_quantity, purchase_value_per_presentation: line.purchase_value_per_presentation, unit_cost: line.unit_cost, line_total: line.line_total, units_received: line.units_received, stock_before: line.stock_before, stock_after: line.stock_after }));
+    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(lineRows) });
+    await loyversePost(token, "/inventory", { inventory_levels: prepared.map((line) => ({ variant_id: line.variant_id, store_id: line.store_id, stock_after: line.stock_after })) });
     for (const line of prepared) {
-      const verifyBody = await loyverseGet(
-        token,
-        "/inventory?variant_ids=" + encodeURIComponent(line.variant_id) + "&limit=250",
-      );
+      const verifyBody = await loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(line.variant_id) + "&limit=250");
       const levels = Array.isArray(verifyBody?.inventory_levels) ? verifyBody.inventory_levels : [];
       const verified = levels.find((x: any) => String(x?.store_id || "") === line.store_id) || levels[0] || null;
       const verifiedStock = Number(verified?.in_stock);
-      if (!Number.isFinite(verifiedStock) || verifiedStock !== Number(line.stock_after)) {
-        throw new Error(`La verificación de stock de ${line.product_name} no coincidió con la compra registrada.`);
-      }
+      if (!Number.isFinite(verifiedStock) || verifiedStock !== Number(line.stock_after)) throw new Error("La verificación de stock de " + line.product_name + " no coincidió con la compra registrada.");
     }
-
-    await patchPurchase(purchase.id, {
-      status: "completed",
-      completed_at: new Date().toISOString(),
-      error_message: null,
-    });
-
-    return {
-      ok: true,
-      purchase_id: purchase.id,
-      purchase_number: purchase.purchase_number,
-      purchase_date: purchaseDate,
-      line_count: prepared.length,
-      total_units: totalUnits,
-      lines: prepared.map((line) => ({
-        product_name: line.product_name,
-        presentation_quantity: line.presentation_quantity,
-        pack_size: line.pack_size,
-        units_received: line.units_received,
-        stock_before: line.stock_before,
-        stock_after: line.stock_after,
-      })),
-      completed_at: new Date().toISOString(),
-    };
+    await patchPurchase(purchase.id, { status: "completed", completed_at: new Date().toISOString(), error_message: null });
+    return { ok: true, purchase_id: purchase.id, purchase_number: purchase.purchase_number, purchase_date: purchaseDate, line_count: prepared.length, total_units: totalUnits, total_value: totalValue, lines: prepared.map((line) => ({ product_name: line.product_name, presentation_quantity: line.presentation_quantity, pack_size: line.pack_size, purchase_value_per_presentation: line.purchase_value_per_presentation, unit_cost: line.unit_cost, line_total: line.line_total, units_received: line.units_received, stock_before: line.stock_before, stock_after: line.stock_after })), completed_at: new Date().toISOString() };
   } catch (error) {
-    try {
-      await patchPurchase(purchase.id, {
-        status: "failed",
-        error_message: cleanError(error),
-      });
-    } catch {}
+    try { await patchPurchase(purchase.id, { status: "failed", error_message: cleanError(error) }); } catch {}
     throw error;
   }
 }
