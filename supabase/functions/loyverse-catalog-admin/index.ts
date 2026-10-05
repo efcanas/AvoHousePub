@@ -265,11 +265,14 @@ async function createCatalogItem(token: string, payload: any) {
   const itemName = requiredString(payload?.item_name, "nombre", 64);
   const categoryId = requiredString(payload?.category_id, "categoría", 64);
   const productType = String(payload?.product_type || "regular").trim().toLowerCase();
-  if (!["regular", "composite", "insumo"].includes(productType)) {
+  if (!["regular", "composite"].includes(productType)) {
     throw new Error("Tipo de producto no válido.");
   }
 
-  const storeBody = await loyverseGet(token, "/stores?limit=250");
+  const [storeBody, categoryBody] = await Promise.all([
+    loyverseGet(token, "/stores?limit=250"),
+    loyverseGet(token, "/categories?limit=250"),
+  ]);
   const stores = (Array.isArray(storeBody?.stores) ? storeBody.stores : [])
     .filter((store: any) => store?.id && !store?.deleted_at);
   if (stores.length !== 1) {
@@ -281,10 +284,14 @@ async function createCatalogItem(token: string, payload: any) {
   }
   const storeId = String(stores[0].id);
 
+  const category = (Array.isArray(categoryBody?.categories) ? categoryBody.categories : [])
+    .find((entry: any) => String(entry?.id || "") === categoryId);
+  if (!category) throw new Error("La categoría seleccionada no existe en Loyverse.");
+  const isInsumosCategory = String(category?.name || "").trim().toLowerCase() === "insumos";
+
   const isComposite = productType === "composite";
-  const isInsumo = productType === "insumo";
-  const trackStock = productType === "regular" ? Boolean(payload?.track_stock) : false;
-  const availableForSale = isInsumo ? false : payload?.available_for_sale !== false;
+  const trackStock = isComposite || isInsumosCategory ? false : Boolean(payload?.track_stock);
+  const availableForSale = isInsumosCategory ? false : payload?.available_for_sale !== false;
 
   let unitCost: number | null = null;
   let packSize: number | null = null;
@@ -296,7 +303,7 @@ async function createCatalogItem(token: string, payload: any) {
       throw new Error("El costo de compra debe ser un número válido no negativo.");
     }
 
-    if (isInsumo) {
+    if (isInsumosCategory) {
       packSize = 1;
       presentationCost = purchaseCost;
       unitCost = purchaseCost;
@@ -312,7 +319,7 @@ async function createCatalogItem(token: string, payload: any) {
   }
 
   let price = 0;
-  if (!isInsumo) {
+  if (!isInsumosCategory) {
     price = finiteNumber(payload?.price, "precio");
     if (price < 0 || price > 1000000000) {
       throw new Error("El precio debe ser un número válido no negativo.");
