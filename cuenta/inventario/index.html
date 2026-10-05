@@ -774,7 +774,6 @@ try{
   $('purchaseBackdrop').addEventListener('click',event=>{if(event.target.id==='purchaseBackdrop')closePurchaseModal()});
   $('inventoryList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-variant]');if(!button)return;openInventoryEditor(button.dataset.editVariant,button.dataset.editItem)});
   $('inventoryList').addEventListener('change',event=>{const input=event.target.closest('[data-pack-variant]');if(input)savePurchasePackSize(input)});
-  $('editStore').addEventListener('change',populateInventoryEditStore);
   $('editPurchasePackSize').addEventListener('input',updateInventoryEditUnitCost);
   $('editPresentationCost').addEventListener('input',updateInventoryEditUnitCost);
   $('editComponentsAdd').addEventListener('click',()=>addInventoryEditComponent({quantity:1}));
@@ -814,8 +813,6 @@ try{
 }
 
 enterWithExistingSession();
-</script>
-
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../../sw.js').catch(()=>{}))}</script>
 </body>
