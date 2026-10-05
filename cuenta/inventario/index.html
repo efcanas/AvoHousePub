@@ -147,6 +147,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 #editItemCategory{height:51px;min-height:51px;line-height:21px;box-sizing:border-box}
 .inventory-section-title{margin:16px 0 9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;font-weight:900}
 .inventory-readonly{height:51px;min-height:51px;box-sizing:border-box;margin-top:5px;padding:0 13px;display:flex;align-items:center;border:1px solid #2c3038;border-radius:13px;background:#101217;color:#bfc5cf;font-size:13px}
+.inventory-track-toggle{justify-content:center;font-weight:900;user-select:none;-webkit-tap-highlight-color:transparent}
 .inventory-warning{margin-top:10px;padding:10px 12px;border:1px solid rgba(232,213,154,.25);border-radius:11px;background:rgba(232,213,154,.06);color:#ddd1a4;font-size:12px;line-height:1.5}
 .inventory-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:18px}
 .inventory-modal-actions button{margin:0}
@@ -561,7 +562,8 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
             <select id="editItemCategory"></select>
           </div>
           <div class="inventory-field">
-            <label class="inventory-check" for="editTrackStock"><input id="editTrackStock" type="checkbox"> Controlar inventario</label>
+            <span class="field-label">Control de inventario</span>
+            <div id="editTrackStock" class="inventory-readonly inventory-track-toggle" role="button" tabindex="0" aria-pressed="false">DESACTIVADO</div>
             <div id="editTrackHelper" class="inventory-component-helper">Cuando está activo, AvoHouse podrá registrar existencias y definir el stock bajo de este producto.</div>
           </div>
         </div>
@@ -1162,7 +1164,7 @@ async function openInventoryEditor(variantId,itemId){
     const listCost=Number(listRow?.cost),liveCost=Number(variant.cost);
     inventoryEditState.isComposite=Boolean(item.is_composite);
     inventoryEditState.baseUnitCost=Number.isFinite(listCost)&&listCost>=0?listCost:(Number.isFinite(liveCost)&&liveCost>=0?liveCost:NaN);
-    $('editTrackStock').checked=Boolean(item.track_stock);
+    setInventoryEditTrackStock(Boolean(item.track_stock));
 
     $('inventoryEditTitle').textContent='Editar · '+(item.item_name||'Artículo');
     $('inventoryEditSubtitle').textContent=inventoryEditState.isComposite?'Producto compuesto · costo unitario calculado por receta':'Variante '+variantId;
@@ -1209,6 +1211,16 @@ async function openInventoryEditor(variantId,itemId){
   }
 }
 function updateInventoryEditPermissionHint(){$('inventoryEditNoEdit').classList.add('hidden');$('inventoryEditNoEdit').textContent=''}
+function setInventoryEditTrackStock(active){
+  const enabled=Boolean(active);
+  const el=$('editTrackStock');
+  if(!el)return;
+  el.dataset.active=enabled?'1':'0';
+  el.textContent=enabled?'ACTIVO':'DESACTIVADO';
+  el.setAttribute('aria-pressed',enabled?'true':'false');
+  el.style.color=enabled?'#b8ff39':'#ffb7b7';
+  el.style.cursor='pointer';
+}
 function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
 function updateInventoryEditCategoryUI(){
   if(!inventoryEditState?.data)return;
@@ -1218,8 +1230,9 @@ function updateInventoryEditCategoryUI(){
   const canTrackStock=!isInsumos&&!composite;
   $('editAvailable').disabled=isInsumos;
   if(isInsumos)$('editAvailable').checked=false;
-  $('editTrackStock').disabled=!canTrackStock;
-  if(!canTrackStock)$('editTrackStock').checked=false;
+  if(!canTrackStock)setInventoryEditTrackStock(false);
+  $('editTrackStock').style.pointerEvents=canTrackStock?'auto':'none';
+  $('editTrackStock').style.opacity=canTrackStock?'1':'0.5';
   $('editTrackHelper').textContent=canTrackStock
     ? 'Cuando está activo, AvoHouse podrá registrar existencias y definir el stock bajo de este producto.'
     : composite
@@ -1231,7 +1244,7 @@ function updateInventoryEditCategoryUI(){
   $('editPurchasePackSize').disabled=isInsumos||composite;
   $('editContentMl').disabled=composite;
   $('editPurchaseSettingsFields').classList.toggle('hidden',composite);
-  $('inventoryEditInventorySection').classList.toggle('hidden',!canTrackStock||!$('editTrackStock').checked);
+  $('inventoryEditInventorySection').classList.toggle('hidden',!canTrackStock||$('editTrackStock').dataset.active!=='1');
   $('editPresentationCostLabel').textContent=isInsumos?'Costo de compra por presentación':'Costo de compra';
   $('editUnitCostLabel').textContent=isInsumos?'Costo por ml':'Costo unitario';
   if(isInsumos)$('editPurchasePackSize').value='1';
@@ -1287,7 +1300,7 @@ async function saveInventoryEditor(){
     if(!Number.isInteger(pack)||pack<=0){$('inventoryEditNotice').textContent='Las unidades por presentación deben ser un entero mayor que 0.';$('inventoryEditNotice').className='notice show error';return}
     if(!Number.isFinite(presentation)||presentation<0){$('inventoryEditNotice').textContent='El costo de compra no puede ser negativo.';$('inventoryEditNotice').className='notice show error';return}
   }
-  const disablingTrackStock=!composite&&!isInsumos&&Boolean(inventoryEditState.data.item?.track_stock)&&!$('editTrackStock').checked;
+  const disablingTrackStock=!composite&&!isInsumos&&Boolean(inventoryEditState.data.item?.track_stock)&&$('editTrackStock').dataset.active!=='1';
   const confirmMessage=disablingTrackStock
     ? 'Vas a desactivar el control de inventario de este artículo. Loyverse pondrá sus existencias en 0. ¿Deseas continuar?'
     : 'Vas a modificar este artículo directamente en Loyverse. ¿Deseas continuar?';
@@ -1299,7 +1312,7 @@ async function saveInventoryEditor(){
       action:'update_item',
       item_id:inventoryEditState.itemId,
       variant_id:inventoryEditState.variantId,
-      item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null,track_stock:!composite&&!isInsumos&&$('editTrackStock').checked},
+      item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null,track_stock:!composite&&!isInsumos&&$('editTrackStock').dataset.active==='1'},
       variant:{default_price:$('editDefaultPrice').value},
       store:{available_for_sale:isInsumos?false:$('editAvailable').checked,low_stock:$('editLowStock').value,optimal_stock:$('editOptimalStock').value},
       inventory:composite?{}:{stock_after:stockValue},
@@ -1477,7 +1490,8 @@ try{
     if(next&&row.contains(next))return;
     setTimeout(()=>hideInventoryComponentResults(row),160);
   });
-  $('editTrackStock').addEventListener('change',updateInventoryEditCategoryUI);
+  $('editTrackStock').addEventListener('click',()=>{if($('editTrackStock').style.pointerEvents==='none')return;setInventoryEditTrackStock($('editTrackStock').dataset.active!=='1');updateInventoryEditCategoryUI()});
+  $('editTrackStock').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&$('editTrackStock').style.pointerEvents!=='none'){event.preventDefault();$('editTrackStock').click()}});
   $('editComponentsList').addEventListener('click',event=>{
     const remove=event.target.closest('[data-edit-component-remove]');
     if(remove){
