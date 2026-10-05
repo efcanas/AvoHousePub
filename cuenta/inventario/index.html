@@ -119,6 +119,28 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 .inventory-modal-body{padding:18px}
 .inventory-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .inventory-create-name-label{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:22px}.inventory-create-available{display:inline-flex;align-items:center;gap:7px;margin:0;color:#cfd2d8;font-size:12px;white-space:nowrap;cursor:pointer}.inventory-create-available input{width:auto;margin:0;accent-color:#b8ff39}.inventory-create-available input:disabled{cursor:default}
+.inventory-modal input:not([type="checkbox"]),.inventory-modal select,.inventory-readonly{height:51px;min-height:51px;box-sizing:border-box}
+.inventory-modal input:not([type="checkbox"]),.inventory-modal select{padding:15px 16px}
+.inventory-modal .inventory-field input,.inventory-modal .inventory-field select{margin-top:5px}
+.inventory-name-availability{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:22px}
+.inventory-name-availability-toggle{display:inline-flex;align-items:center;gap:7px;margin:0;color:#cfd2d8;font-size:12px;white-space:nowrap;cursor:pointer}
+.inventory-name-availability-toggle input{width:auto!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;accent-color:#b8ff39}
+.inventory-name-availability-toggle input:disabled{cursor:default}
+.inventory-components-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.inventory-components-footer .purchase-add-line{margin-top:0;height:42px}
+.inventory-components-total{height:42px;min-height:42px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:0;padding:0 14px;border:1px solid rgba(184,255,57,.24);border-radius:10px;background:rgba(184,255,57,.06);color:#9ca3af;font-size:12px;white-space:nowrap}
+.inventory-components-total strong{color:#b8ff39;font-size:12px;font-weight:900}
+.inventory-component-control,.inventory-component-cost,.inventory-component-remove{height:51px;min-height:51px}
+.inventory-component-control{padding:15px 12px!important}
+.inventory-component-cost{margin-top:5px;padding:15px 7px}
+.inventory-component-remove{margin-top:5px}
+.purchase-modal input:not([type="checkbox"]),.purchase-modal select,.purchase-line-readonly,.insumo-purchase-readonly,.purchase-line-remove{height:51px;min-height:51px;box-sizing:border-box}
+.purchase-modal input:not([type="checkbox"]),.purchase-modal select{padding:15px 16px}
+.purchase-line input,.purchase-line select,.insumo-purchase-line input,.insumo-purchase-line select{padding:15px 8px;font-size:14px}
+.purchase-line-readonly,.insumo-purchase-readonly{padding:15px 8px}
+.purchase-line-remove{padding:0}
+@media(max-width:620px){.inventory-components-footer{align-items:stretch}.inventory-components-footer .purchase-add-line,.inventory-components-total{flex:1}.inventory-component-row{grid-template-columns:1fr 1fr}.inventory-component-search{grid-column:1/-1}.inventory-component-remove{justify-self:start}}
+
 .inventory-form-full{grid-column:1/-1}
 .inventory-field label,.inventory-check{display:block}
 .inventory-field input,.inventory-field select{margin:5px 0 0}
@@ -428,9 +450,9 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
         <div class="inventory-section-title">Artículo</div>
         <div class="inventory-form-grid">
           <div class="inventory-field inventory-form-full">
-            <div class="inventory-create-name-label">
+            <div class="inventory-name-availability">
               <label class="field-label" for="createItemName">Nombre</label>
-              <label class="inventory-create-available" for="inventoryCreateAvailable">
+              <label class="inventory-name-availability-toggle" for="inventoryCreateAvailable">
                 <input id="inventoryCreateAvailable" type="checkbox" checked>
                 <span>Disponible para la venta</span>
               </label>
@@ -481,8 +503,10 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
           <div class="inventory-section-title">Composición</div>
           <div class="inventory-component-helper">Agrega los componentes y la cantidad que utiliza una unidad del producto. El costo unitario se calcula automáticamente.</div>
           <div id="inventoryCreateComponentsList" class="inventory-components"></div>
-          <button id="inventoryCreateComponentsAdd" class="ghost purchase-add-line" type="button">+ AGREGAR COMPONENTE</button>
-          <div class="inventory-components-total"><span>Costo de la composición</span><strong id="inventoryCreateComponentsTotal">$0</strong></div>
+          <div class="inventory-components-footer">
+            <button id="inventoryCreateComponentsAdd" class="ghost purchase-add-line" type="button">+ AGREGAR COMPONENTE</button>
+            <div class="inventory-components-total"><span>Costo de la composición</span><strong id="inventoryCreateComponentsTotal">$0</strong></div>
+          </div>
         </div>
 
         <div id="inventoryCreateInventorySection">
@@ -527,7 +551,13 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
         <div class="inventory-section-title">Artículo</div>
         <div class="inventory-form-grid">
           <div class="inventory-field inventory-form-full">
-            <label class="field-label" for="editItemName">Nombre</label>
+            <div class="inventory-name-availability">
+              <label class="field-label" for="editItemName">Nombre</label>
+              <label class="inventory-name-availability-toggle" for="editAvailable">
+                <input id="editAvailable" type="checkbox">
+                <span>Disponible para la venta</span>
+              </label>
+            </div>
             <input id="editItemName" maxlength="64">
           </div>
           <div class="inventory-field">
@@ -570,8 +600,10 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
           <div class="inventory-section-title">Composición</div>
           <div class="inventory-component-helper">Edita los componentes y la cantidad que utiliza una unidad del producto. El costo unitario se recalcula automáticamente.</div>
           <div id="editComponentsList" class="inventory-components"></div>
-          <button id="editComponentsAdd" class="ghost purchase-add-line" type="button">+ AGREGAR COMPONENTE</button>
-          <div class="inventory-components-total"><span>Costo de la composición</span><strong id="editComponentsTotal">$0</strong></div>
+          <div class="inventory-components-footer">
+            <button id="editComponentsAdd" class="ghost purchase-add-line" type="button">+ AGREGAR COMPONENTE</button>
+            <div class="inventory-components-total"><span>Costo de la composición</span><strong id="editComponentsTotal">$0</strong></div>
+          </div>
         </div>
 
         <div id="inventoryEditInventorySection">
@@ -591,14 +623,6 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
             </div>
           </div>
         </div>
-        <div class="inventory-section-title">Venta</div>
-        <div class="inventory-form-grid">
-          <div class="inventory-field">
-            <span class="field-label">Disponibilidad</span>
-            <label class="inventory-check"><input id="editAvailable" type="checkbox"> Disponible para la venta</label>
-          </div>
-        </div>
-
         <div id="inventoryEditNoEdit" class="inventory-no-edit hidden" style="margin-top:10px"></div>
         <div class="inventory-modal-actions">
           <button id="inventoryEditCancel" class="ghost" type="button">CANCELAR</button>
@@ -1179,6 +1203,7 @@ async function openInventoryEditor(variantId,itemId){
     $('editLowStock').value=override.low_stock??'';
     $('editOptimalStock').value=override.optimal_stock??'';
     $('editAvailable').checked=override.available_for_sale!==false;
+    updateInventoryEditCategoryUI();
     const level=(Array.isArray(data.inventory_levels)?data.inventory_levels:[]).find(l=>String(l.store_id)===String(override.store_id));
     $('editStock').value=level?.in_stock??0;
 
@@ -1193,6 +1218,25 @@ async function openInventoryEditor(variantId,itemId){
 }
 function updateInventoryEditPermissionHint(){$('inventoryEditNoEdit').classList.add('hidden');$('inventoryEditNoEdit').textContent=''}
 function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
+function updateInventoryEditCategoryUI(){
+  if(!inventoryEditState?.data)return;
+  const categoryName=String($('editItemCategory')?.selectedOptions?.[0]?.textContent||'').trim().toLowerCase();
+  const isInsumos=categoryName==='insumos';
+  const composite=Boolean(inventoryEditState.isComposite);
+  $('editAvailable').disabled=isInsumos;
+  if(isInsumos)$('editAvailable').checked=false;
+  $('editPackField').classList.toggle('hidden',isInsumos||composite);
+  $('editContentMlField').classList.toggle('hidden',!isInsumos||composite);
+  $('editPriceField').classList.toggle('hidden',isInsumos);
+  $('editPurchasePackSize').disabled=isInsumos||composite;
+  $('editContentMl').disabled=composite;
+  $('editPurchaseSettingsFields').classList.toggle('hidden',composite);
+  $('inventoryEditInventorySection').classList.toggle('hidden',composite||isInsumos||!Boolean(inventoryEditState.data.item?.track_stock));
+  $('editPresentationCostLabel').textContent=isInsumos?'Costo de compra por presentación':'Costo de compra';
+  $('editUnitCostLabel').textContent=isInsumos?'Costo por ml':'Costo unitario';
+  if(isInsumos)$('editPurchasePackSize').value='1';
+  updateInventoryEditUnitCost();
+}
 function updateInventoryEditUnitCost(){
   if(inventoryEditState?.isComposite)return updateInventoryEditComponents();
   const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState?.variantId));
@@ -1216,7 +1260,8 @@ async function saveInventoryEditor(){
   if(!inventoryEditState?.data)return;
   const composite=Boolean(inventoryEditState.isComposite);
   const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState.variantId));
-  const isInsumos=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos';
+  const selectedCategoryName=String($('editItemCategory')?.selectedOptions?.[0]?.textContent||'').trim().toLowerCase();
+  const isInsumos=selectedCategoryName==='insumos';
   const stockValue=$('editStock').value.trim();
   let components=null;
   try{if(composite)components=readInventoryEditComponents()}catch(error){
@@ -1442,6 +1487,10 @@ try{
       selectInventoryComponent(row,result.dataset.editComponentResult);
     }
   });
+  $('editItemCategory').addEventListener('change',updateInventoryEditCategoryUI);
+  $('editContentMl').addEventListener('input',updateInventoryEditUnitCost);
+  $('editPurchasePackSize').addEventListener('input',updateInventoryEditUnitCost);
+  $('editPresentationCost').addEventListener('input',updateInventoryEditUnitCost);
   $('inventoryEditCancel').addEventListener('click',closeInventoryEditor);
   $('inventoryEditSave').addEventListener('click',saveInventoryEditor);
   $('inventoryEditBackdrop').addEventListener('click',event=>{if(event.target.id==='inventoryEditBackdrop')closeInventoryEditor()});
