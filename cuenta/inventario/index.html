@@ -118,6 +118,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 .inventory-modal-subtitle{margin-top:4px;color:#9ca3af;font-size:12px;line-height:1.5}
 .inventory-modal-body{padding:18px}
 .inventory-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.inventory-create-name-label{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:22px}.inventory-create-available{display:inline-flex;align-items:center;gap:7px;margin:0;color:#cfd2d8;font-size:12px;white-space:nowrap;cursor:pointer}.inventory-create-available input{width:auto;margin:0;accent-color:#b8ff39}.inventory-create-available input:disabled{cursor:default}
 .inventory-form-full{grid-column:1/-1}
 .inventory-field label,.inventory-check{display:block}
 .inventory-field input,.inventory-field select{margin:5px 0 0}
@@ -427,7 +428,13 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
         <div class="inventory-section-title">Artículo</div>
         <div class="inventory-form-grid">
           <div class="inventory-field inventory-form-full">
-            <label class="field-label" for="createItemName">Nombre</label>
+            <div class="inventory-create-name-label">
+              <label class="field-label" for="createItemName">Nombre</label>
+              <label class="inventory-create-available" for="inventoryCreateAvailable">
+                <input id="inventoryCreateAvailable" type="checkbox" checked>
+                <span>Disponible para la venta</span>
+              </label>
+            </div>
             <input id="createItemName" maxlength="64" autocomplete="off">
           </div>
           <div class="inventory-field">
@@ -439,7 +446,6 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
             <select id="inventoryCreateType">
               <option value="regular">Producto</option>
               <option value="composite">Producto compuesto</option>
-              <option value="insumo">Insumo</option>
             </select>
           </div>
         </div>
@@ -496,14 +502,6 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
               <label class="field-label" for="createOptimalStock">Stock óptimo</label>
               <input id="createOptimalStock" type="number" step="0.001" min="0" inputmode="decimal">
             </div>
-          </div>
-        </div>
-
-        <div id="inventoryCreateSaleSection" class="inventory-section-title">Venta</div>
-        <div id="inventoryCreateAvailabilityField" class="inventory-form-grid">
-          <div class="inventory-field">
-            <span class="field-label">Disponibilidad</span>
-            <label class="inventory-check"><input id="inventoryCreateAvailable" type="checkbox" checked> Disponible para la venta</label>
           </div>
         </div>
 
@@ -769,43 +767,46 @@ function updateInventoryCreateStockVisibility(){
   const tracked=$('inventoryCreateTrackStock').checked;
   $('inventoryCreateStockFields').classList.toggle('hidden',!tracked);
 }
+function inventoryCreateIsInsumosCategory(){
+  const select=$('createItemCategory');
+  const option=select?.selectedOptions?.[0];
+  return String(option?.textContent||'').trim().toLowerCase()==='insumos';
+}
+function updateInventoryCreateCategoryRules(){
+  const insumos=inventoryCreateIsInsumosCategory();
+  $('inventoryCreateAvailable').disabled=insumos;
+  if(insumos)$('inventoryCreateAvailable').checked=false;
+  $('inventoryCreateTrackStock').disabled=insumos||$('inventoryCreateType').value==='composite';
+  if(insumos||$('inventoryCreateType').value==='composite')$('inventoryCreateTrackStock').checked=false;
+  $('createPackField').classList.toggle('hidden',insumos||$('inventoryCreateType').value==='composite');
+  if(insumos){
+    $('createPurchasePackSize').value='1';
+  }else if($('createPurchasePackSize').value==='1'&&$('createPurchasePackSize').dataset.forcedInsumos==='1'){
+    $('createPurchasePackSize').value='';
+  }
+  $('createPurchasePackSize').disabled=insumos;
+  $('createPresentationCostLabel').textContent=insumos?'Costo de compra por botella':'Costo de compra';
+  $('inventoryCreateStockFields').classList.toggle('hidden',insumos||!$('inventoryCreateTrackStock').checked);
+}
 function updateInventoryCreateType(){
   const type=$('inventoryCreateType').value;
   const composite=type==='composite';
-  const insumo=type==='insumo';
+  const insumos=inventoryCreateIsInsumosCategory();
   $('inventoryCreateSubtitle').textContent=composite
     ? 'Crea un producto compuesto con receta directamente en Loyverse.'
-    : insumo
-      ? 'Crea un insumo de compra que no se vende directamente.'
+    : insumos
+      ? 'Crea un producto de la categoría Insumos sin venta directa.'
       : 'Crea un producto de venta independiente directamente en Loyverse.';
   $('inventoryCreateTypeHelper').textContent=composite
     ? 'El costo unitario se obtiene de la composición y el producto no controla inventario, igual que los compuestos actuales de AvoHouse.'
-    : insumo
-      ? 'Los insumos no se venden directamente ni controlan inventario. El costo indicado se utiliza como costo de compra por botella.'
+    : insumos
+      ? 'Los productos de la categoría Insumos no se venden directamente ni controlan inventario. El costo indicado se utilizará como costo de compra por botella.'
       : 'Producto de venta independiente con costo de compra y, opcionalmente, control de inventario.';
   $('createPurchaseSettingsFields').classList.toggle('hidden',composite);
   $('inventoryCreateComponentsSection').classList.toggle('hidden',!composite);
-  $('inventoryCreateInventorySection').classList.toggle('hidden',composite||insumo);
-  $('inventoryCreateSaleSection').classList.toggle('hidden',insumo);
-  $('inventoryCreateAvailabilityField').classList.toggle('hidden',insumo);
-  $('createPackField').classList.toggle('hidden',insumo);
-  $('createPresentationCostLabel').textContent=insumo?'Costo de compra por botella':'Costo de compra';
-  $('inventoryCreateTrackStock').disabled=composite||insumo;
-  if(composite||insumo){
-    $('inventoryCreateTrackStock').checked=false;
-  }else{
-    $('inventoryCreateTrackStock').disabled=false;
-  }
-  $('inventoryCreateAvailable').disabled=insumo;
-  $('inventoryCreateAvailable').checked=!insumo;
-  if(insumo){
-    $('createPurchasePackSize').value='1';
-    $('createInitialStock').value='0';
-  }else if($('createPurchasePackSize').value==='1'&&$('inventoryCreateType').dataset.previousType==='insumo'){
-    $('createPurchasePackSize').value='';
-  }
-  $('inventoryCreateType').dataset.previousType=type;
-  updateInventoryCreateStockVisibility();
+  $('inventoryCreateInventorySection').classList.toggle('hidden',composite||insumos);
+  if(composite||insumos)$('inventoryCreateTrackStock').checked=false;
+  updateInventoryCreateCategoryRules();
   updateInventoryCreateUnitCost();
 }
 function updateInventoryCreateUnitCost(){
@@ -983,7 +984,7 @@ async function saveInventoryCreate(){
   const packRaw=$('createPurchasePackSize').value.trim();
   const costRaw=$('createPresentationCost').value.trim();
   const composite=type==='composite';
-  const insumo=type==='insumo';
+  const insumos=inventoryCreateIsInsumosCategory();
   if(!name){
     $('inventoryCreateNotice').textContent='Indica el nombre del producto.';
     $('inventoryCreateNotice').className='notice show error';return;
@@ -992,15 +993,15 @@ async function saveInventoryCreate(){
     $('inventoryCreateNotice').textContent='Selecciona una categoría.';
     $('inventoryCreateNotice').className='notice show error';return;
   }
-  if(!insumo&&priceRaw===''){
+  if(!insumos&&priceRaw===''){
     $('inventoryCreateNotice').textContent='Indica el precio de venta.';
     $('inventoryCreateNotice').className='notice show error';return;
   }
   if(!composite&&costRaw===''){
-    $('inventoryCreateNotice').textContent=insumo?'Indica el costo de compra por botella.':'Indica el costo de compra.';
+    $('inventoryCreateNotice').textContent=insumos?'Indica el costo de compra por botella.':'Indica el costo de compra.';
     $('inventoryCreateNotice').className='notice show error';return;
   }
-  if(!composite&&!insumo&&packRaw===''){
+  if(!composite&&!insumos&&packRaw===''){
     $('inventoryCreateNotice').textContent='Indica las unidades por presentación.';
     $('inventoryCreateNotice').className='notice show error';return;
   }
@@ -1015,48 +1016,27 @@ async function saveInventoryCreate(){
       $('inventoryCreateNotice').className='notice show error';return;
     }
   }
-  if(!composite&&!insumo){
-    const pack=Number(packRaw),cost=Number(costRaw);
-    if(!Number.isInteger(pack)||pack<=0){
+  if(!composite){
+    const pack=insumos?1:Number(packRaw),cost=Number(costRaw);
+    if(!insumos&&(!Number.isInteger(pack)||pack<=0)){
       $('inventoryCreateNotice').textContent='Las unidades por presentación deben ser un entero mayor que 0.';
       $('inventoryCreateNotice').className='notice show error';return;
     }
     if(!Number.isFinite(cost)||cost<0){
-      $('inventoryCreateNotice').textContent='El costo de compra no puede ser negativo.';
+      $('inventoryCreateNotice').textContent='El costo de compra'+(insumos?' por botella':'')+' no puede ser negativo.';
       $('inventoryCreateNotice').className='notice show error';return;
     }
   }
-  if(insumo){
-    const cost=Number(costRaw);
-    if(!Number.isFinite(cost)||cost<0){
-      $('inventoryCreateNotice').textContent='El costo de compra por botella no puede ser negativo.';
-      $('inventoryCreateNotice').className='notice show error';return;
-    }
+  if(!composite&&!insumos&&!Number.isFinite(Number(priceRaw))){
+    $('inventoryCreateNotice').textContent='El precio de venta no es válido.';
+    $('inventoryCreateNotice').className='notice show error';return;
   }
-  if(!composite){
-    const price=Number(priceRaw);
-    if(!insumo&&(!Number.isFinite(price)||price<0)){
-      $('inventoryCreateNotice').textContent='El precio de venta no puede ser negativo.';
-      $('inventoryCreateNotice').className='notice show error';return;
-    }
+  if(composite&&!Number.isFinite(Number(priceRaw))){
+    $('inventoryCreateNotice').textContent='El precio de venta no es válido.';
+    $('inventoryCreateNotice').className='notice show error';return;
   }
-  if(!composite&&$('inventoryCreateTrackStock').checked){
-    const initial=Number($('createInitialStock').value||0),low=$('createLowStock').value.trim(),optimal=$('createOptimalStock').value.trim();
-    if(!Number.isFinite(initial)||initial<0){
-      $('inventoryCreateNotice').textContent='Las existencias iniciales no pueden ser negativas.';
-      $('inventoryCreateNotice').className='notice show error';return;
-    }
-    if(low!==''&&(!Number.isFinite(Number(low))||Number(low)<0)){
-      $('inventoryCreateNotice').textContent='El stock bajo no puede ser negativo.';
-      $('inventoryCreateNotice').className='notice show error';return;
-    }
-    if(optimal!==''&&(!Number.isFinite(Number(optimal))||Number(optimal)<0)){
-      $('inventoryCreateNotice').textContent='El stock óptimo no puede ser negativo.';
-      $('inventoryCreateNotice').className='notice show error';return;
-    }
-  }
-  if(!confirm('Se creará este producto directamente en Loyverse. ¿Deseas continuar?'))return;
   const btn=$('inventoryCreateSave');
+  if(!confirm('Se creará este producto directamente en Loyverse. ¿Deseas continuar?'))return;
   btn.disabled=true;$('inventoryCreateCancel').disabled=true;
   $('inventoryCreateNotice').className='notice show';
   $('inventoryCreateNotice').textContent='Creando producto en Loyverse…';
@@ -1066,14 +1046,14 @@ async function saveInventoryCreate(){
       product_type:type,
       item_name:name,
       category_id:categoryId,
-      price:insumo?0:Number(priceRaw),
+      price:insumos?0:Number(priceRaw),
       purchase_cost:Number(costRaw),
-      pack_size:insumo?1:Number(packRaw),
-      track_stock:!composite&&!insumo&&$('inventoryCreateTrackStock').checked,
-      initial_stock:!composite&&!insumo?Number($('createInitialStock').value||0):0,
-      low_stock:!composite&&!insumo?$('createLowStock').value:'',
-      optimal_stock:!composite&&!insumo?$('createOptimalStock').value:'',
-      available_for_sale:insumo?false:$('inventoryCreateAvailable').checked,
+      pack_size:insumos?1:Number(packRaw),
+      track_stock:!composite&&!insumos&&$('inventoryCreateTrackStock').checked,
+      initial_stock:!composite&&!insumos?Number($('createInitialStock').value||0):0,
+      low_stock:!composite&&!insumos?$('createLowStock').value:'',
+      optimal_stock:!composite&&!insumos?$('createOptimalStock').value:'',
+      available_for_sale:insumos?false:$('inventoryCreateAvailable').checked,
       components:components||[],
     };
     const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});
@@ -1274,6 +1254,7 @@ try{
   $('inventoryCreateCancel').addEventListener('click',closeInventoryCreateModal);
   $('inventoryCreateSave').addEventListener('click',saveInventoryCreate);
   $('inventoryCreateType').addEventListener('change',updateInventoryCreateType);
+  $('createItemCategory').addEventListener('change',updateInventoryCreateType);
   $('inventoryCreateTrackStock').addEventListener('change',updateInventoryCreateStockVisibility);
   $('createPurchasePackSize').addEventListener('input',updateInventoryCreateUnitCost);
   $('createPresentationCost').addEventListener('input',updateInventoryCreateUnitCost);
