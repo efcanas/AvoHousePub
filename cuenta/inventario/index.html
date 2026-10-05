@@ -542,21 +542,25 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 
         <div class="inventory-section-title">Costos y precio de venta</div>
         <div id="editPurchaseSettingsFields" class="inventory-form-grid">
-          <div class="inventory-field">
+          <div id="editPackField" class="inventory-field">
             <label class="field-label" for="editPurchasePackSize">Unidades por presentación</label>
             <input id="editPurchasePackSize" type="number" step="1" min="1" inputmode="numeric">
           </div>
+          <div id="editContentMlField" class="inventory-field hidden">
+            <label class="field-label" for="editContentMl">Contenido de la presentación (ml)</label>
+            <input id="editContentMl" type="number" step="0.001" min="0.001" inputmode="decimal">
+          </div>
           <div class="inventory-field">
-            <label class="field-label" for="editPresentationCost">Costo de compra</label>
-            <input id="editPresentationCost" type="number" step="1" min="0" inputmode="numeric">
+            <label id="editPresentationCostLabel" class="field-label" for="editPresentationCost">Costo de compra</label>
+            <input id="editPresentationCost" type="number" step="1" min="0" inputmode="decimal">
           </div>
         </div>
         <div class="inventory-form-grid">
           <div class="inventory-field">
-            <label class="field-label" for="editUnitCost">Costo unitario</label>
+            <label id="editUnitCostLabel" class="field-label" for="editUnitCost">Costo unitario</label>
             <input id="editUnitCost" type="text" readonly aria-readonly="true">
           </div>
-          <div class="inventory-field">
+          <div id="editPriceField" class="inventory-field">
             <label class="field-label" for="editDefaultPrice">Precio de venta</label>
             <input id="editDefaultPrice" type="number" step="0.01" min="0">
           </div>
@@ -1148,11 +1152,19 @@ async function openInventoryEditor(variantId,itemId){
     $('editTrackStock').style.color=item.track_stock?'#b8ff39':'#ffb7b7';
 
     const isComposite=inventoryEditState.isComposite;
+    const isInsumos=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos';
     $('editPurchaseSettingsFields').classList.toggle('hidden',isComposite);
-    $('editPurchasePackSize').disabled=isComposite;
+    $('editPackField').classList.toggle('hidden',isInsumos||isComposite);
+    $('editContentMlField').classList.toggle('hidden',!isInsumos||isComposite);
+    $('editPriceField').classList.toggle('hidden',isInsumos);
+    $('editPurchasePackSize').disabled=isComposite||isInsumos;
     $('editPresentationCost').disabled=isComposite;
-    $('editPurchasePackSize').value=isComposite?'':(purchase.pack_size??'');
+    $('editContentMl').disabled=isComposite;
+    $('editPurchasePackSize').value=isComposite?'':(isInsumos?'1':(purchase.pack_size??''));
+    $('editContentMl').value=isInsumos?(purchase.content_ml??''):'';
     $('editPresentationCost').value=isComposite?'':(purchase.presentation_cost??'');
+    $('editPresentationCostLabel').textContent=isInsumos?'Costo de compra por presentación':'Costo de compra';
+    $('editUnitCostLabel').textContent=isInsumos?'Costo por ml':'Costo unitario';
 
     $('editComponentsSection').classList.toggle('hidden',!isComposite);
     if(isComposite)renderInventoryEditComponents();
@@ -1183,40 +1195,52 @@ function updateInventoryEditPermissionHint(){$('inventoryEditNoEdit').classList.
 function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
 function updateInventoryEditUnitCost(){
   if(inventoryEditState?.isComposite)return updateInventoryEditComponents();
-  const packRaw=$('editPurchasePackSize').value.trim(),presentationRaw=$('editPresentationCost').value.trim(),pack=Number(packRaw),presentation=Number(presentationRaw),base=Number(inventoryEditState?.baseUnitCost);
+  const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState?.variantId));
+  const isInsumos=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos';
+  const presentationRaw=$('editPresentationCost').value.trim(),presentation=Number(presentationRaw);
+  if(isInsumos){
+    const content=Number($('editContentMl').value||0);
+    const base=Number(inventoryEditState?.baseUnitCost);
+    const valid=presentationRaw!==''&&Number.isFinite(presentation)&&presentation>=0&&Number.isFinite(content)&&content>0;
+    const unit=valid?presentation/content:(Number.isFinite(base)?base:0);
+    $('editUnitCost').value=unit>=0&&Number.isFinite(unit)?formatMoney(unit)+' / ml':'—';
+    return unit;
+  }
+  const packRaw=$('editPurchasePackSize').value.trim(),pack=Number(packRaw),base=Number(inventoryEditState?.baseUnitCost);
   const unit=packRaw!==''&&presentationRaw!==''&&Number.isFinite(pack)&&pack>0&&Number.isFinite(presentation)&&presentation>=0?presentation/pack:(Number.isFinite(base)?base:0);
   $('editUnitCost').value=unit>=0&&Number.isFinite(unit)?formatMoney(unit):'—';
   return unit;
 }
+
 async function saveInventoryEditor(){
   if(!inventoryEditState?.data)return;
   const composite=Boolean(inventoryEditState.isComposite);
+  const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState.variantId));
+  const isInsumos=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos';
   const stockValue=$('editStock').value.trim();
   let components=null;
   try{if(composite)components=readInventoryEditComponents()}catch(error){
     $('inventoryEditNotice').textContent=error?.message||'Revisa la composición.';
-    $('inventoryEditNotice').className='notice show error';
-    return;
-  }
-  const packRaw=$('editPurchasePackSize').value.trim(),presentationRaw=$('editPresentationCost').value.trim();
-  if(!composite&&Boolean(inventoryEditState.data.item?.track_stock)&&stockValue===''){
-    $('inventoryEditNotice').textContent='Indica las existencias antes de guardar.';
     $('inventoryEditNotice').className='notice show error';return;
   }
-  if(!composite&&((packRaw!==''||presentationRaw!=='')&&(packRaw===''||presentationRaw===''))){
+  const packRaw=$('editPurchasePackSize').value.trim(),contentRaw=$('editContentMl').value.trim(),presentationRaw=$('editPresentationCost').value.trim();
+  if(!composite&&isInsumos&&(contentRaw===''||presentationRaw==='')){
+    $('inventoryEditNotice').textContent='Para un producto de la categoría Insumos debes indicar el contenido de la presentación y el costo de compra.';
+    $('inventoryEditNotice').className='notice show error';return;
+  }
+  if(!composite&&!isInsumos&&((packRaw!==''||presentationRaw!=='')&&(packRaw===''||presentationRaw===''))){
     $('inventoryEditNotice').textContent='Para calcular el costo unitario debes indicar las unidades por presentación y el costo de compra.';
     $('inventoryEditNotice').className='notice show error';return;
   }
-  if(!composite&&(packRaw!==''||presentationRaw!=='')){
+  if(!composite&&isInsumos){
+    const content=Number(contentRaw),presentation=Number(presentationRaw);
+    if(!Number.isFinite(content)||content<=0){$('inventoryEditNotice').textContent='El contenido de la presentación debe ser mayor que 0 ml.';$('inventoryEditNotice').className='notice show error';return}
+    if(!Number.isFinite(presentation)||presentation<0){$('inventoryEditNotice').textContent='El costo de compra no puede ser negativo.';$('inventoryEditNotice').className='notice show error';return}
+  }
+  if(!composite&&!isInsumos&&(packRaw!==''||presentationRaw!=='')){
     const pack=Number(packRaw),presentation=Number(presentationRaw);
-    if(!Number.isInteger(pack)||pack<=0){
-      $('inventoryEditNotice').textContent='Las unidades por presentación deben ser un entero mayor que 0.';
-      $('inventoryEditNotice').className='notice show error';return;
-    }
-    if(!Number.isFinite(presentation)||presentation<0){
-      $('inventoryEditNotice').textContent='El costo de compra no puede ser negativo.';
-      $('inventoryEditNotice').className='notice show error';return;
-    }
+    if(!Number.isInteger(pack)||pack<=0){$('inventoryEditNotice').textContent='Las unidades por presentación deben ser un entero mayor que 0.';$('inventoryEditNotice').className='notice show error';return}
+    if(!Number.isFinite(presentation)||presentation<0){$('inventoryEditNotice').textContent='El costo de compra no puede ser negativo.';$('inventoryEditNotice').className='notice show error';return}
   }
   if(!confirm('Vas a modificar este artículo directamente en Loyverse. ¿Deseas continuar?'))return;
   const btn=$('inventoryEditSave');btn.disabled=true;$('inventoryEditCancel').disabled=true;
@@ -1228,22 +1252,20 @@ async function saveInventoryEditor(){
       variant_id:inventoryEditState.variantId,
       item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null},
       variant:{default_price:$('editDefaultPrice').value},
-      store:{available_for_sale:$('editAvailable').checked,low_stock:$('editLowStock').value,optimal_stock:$('editOptimalStock').value},
+      store:{available_for_sale:isInsumos?false:$('editAvailable').checked,low_stock:$('editLowStock').value,optimal_stock:$('editOptimalStock').value},
       inventory:composite?{}:{stock_after:stockValue},
-      purchase:composite?{}:{pack_size:packRaw,presentation_cost:presentationRaw}
+      purchase:composite?{}:{pack_size:isInsumos?'1':packRaw,presentation_cost:presentationRaw,presentation_content_ml:isInsumos?Number(contentRaw):null}
     };
     if(composite)body.item.components=components;
     const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});
     if(error)throw error;
     if(!data?.ok)throw new Error(data?.error||'No se pudieron guardar los cambios.');
-    closeInventoryEditor();
-    await loadInventory();
+    closeInventoryEditor();await loadInventory();
     showNotice('Cambios guardados en Loyverse y reflejados en el inventario de AvoHouse.',false);
-  }catch(error){
-    $('inventoryEditNotice').textContent=error?.message||'No se pudieron guardar los cambios.';
-    $('inventoryEditNotice').className='notice show error';
-  }finally{btn.disabled=false;$('inventoryEditCancel').disabled=false}
+  }catch(error){$('inventoryEditNotice').textContent=error?.message||'No se pudieron guardar los cambios.';$('inventoryEditNotice').className='notice show error'}
+  finally{btn.disabled=false;$('inventoryEditCancel').disabled=false}
 }
+
 function insumoProducts(){return inventoryRows.filter(r=>r.categoryName==='Insumos'&&!r.trackStock).sort((a,b)=>{const c=a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true});if(c!==0)return c;return [a.option1,a.option2,a.option3].filter(Boolean).join(' · ').localeCompare([b.option1,b.option2,b.option3].filter(Boolean).join(' · '),'es',{sensitivity:'base',numeric:true})})}
 function insumoProductLabel(row){const option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · ');return [row.name,option].filter(Boolean).join(' · ')}
 function insumoOptionsHtml(selectedId=''){return '<option value="">Selecciona un insumo</option>'+insumoProducts().map(r=>'<option value="'+r.variantId+'" '+(r.variantId===selectedId?'selected':'')+'>'+String(insumoProductLabel(r)).replace(/[&<>]/g,'')+'</option>').join('')}
@@ -1350,6 +1372,7 @@ try{
   $('inventoryList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-variant]');if(!button)return;openInventoryEditor(button.dataset.editVariant,button.dataset.editItem)});
   $('inventoryList').addEventListener('change',event=>{const input=event.target.closest('[data-pack-variant]');if(input)savePurchasePackSize(input)});
   $('editPurchasePackSize').addEventListener('input',updateInventoryEditUnitCost);
+  $('editContentMl').addEventListener('input',updateInventoryEditUnitCost);
   $('editPresentationCost').addEventListener('input',updateInventoryEditUnitCost);
   $('editComponentsAdd').addEventListener('click',()=>addInventoryEditComponent({quantity:1}));
   $('editComponentsList').addEventListener('input',event=>{
