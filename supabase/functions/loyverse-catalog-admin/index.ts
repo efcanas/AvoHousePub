@@ -800,98 +800,75 @@ async function applyPurchaseInventoryDelta(token: string, deltas: Map<string, nu
   return new Map(updates.map((x) => [x.variant_id, x]));
 }
 
-async function updatePurchase(token: string, userId: string, payload: any) {
-  const purchaseId = requiredString(payload?.purchase_id, "purchase_id");
-  const purchase = await getPurchaseForAdmin(purchaseId);
-  if (purchase.status !== "completed") throw new Error("Solo se pueden modificar compras completadas.");
+async function getPreviousInsumoPurchaseCost(variantId:string,purchaseId:string,oldLine:any){
+  const recorded=Number(oldLine?.previous_purchase_cost);
+  if(Number.isFinite(recorded)&&recorded>=0)return recorded;
+  const prior=await supabaseRequest(
+    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost&variant_id=eq."+encodeURIComponent(variantId)+"&purchase_id=neq."+encodeURIComponent(purchaseId)+"&order=purchase_id.desc&limit=1",
+    {method:"GET"}
+  );
+  if(Array.isArray(prior)&&prior[0]&&Number.isFinite(Number(prior[0].unit_cost))&&Number(prior[0].unit_cost)>=0)return Number(prior[0].unit_cost);
+  return null;
+}
 
-  const oldLines = await getPurchaseLinesForAdmin(purchaseId);
-  const normalized = await normalizePurchaseLines(payload?.lines);
-  const purchaseDate = typeof payload?.purchase_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date) ? payload.purchase_date : purchase.purchase_date;
-  const notesRaw = typeof payload?.notes === "string" ? payload.notes.trim() : "";
-  const notes = notesRaw ? notesRaw.slice(0, 1000) : null;
-  const { deltas, preparedNew, storeAndStock } = await preparePurchaseLinesForDelta(token, normalized, oldLines);
-  const totalUnits = preparedNew.reduce((sum, line) => sum + Number(line.units_received), 0);
-  const totalValue = preparedNew.reduce((sum, line) => sum + Number(line.line_total), 0);
-
-  const inventoryChanges = await applyPurchaseInventoryDelta(token, deltas, storeAndStock);
-
-  try {
-    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq." + encodeURIComponent(purchaseId), {
-      method: "DELETE",
-    });
-
-    const lineRows = preparedNew.map((line, index) => {
-      const state = storeAndStock.get(line.variant_id);
-      const change = inventoryChanges.get(line.variant_id);
-      const delta = Number(deltas.get(line.variant_id) || 0);
-      const stockBefore = Number(state.stockBefore);
-      const stockAfter = stockBefore + delta;
-      return {
-        purchase_id: purchaseId,
-        line_number: index + 1,
-        variant_id: line.variant_id,
-        item_id: line.item_id,
-        product_name: line.product_name,
-        sku: line.sku,
-        pack_size: line.pack_size,
-        presentation_quantity: line.presentation_quantity,
-        purchase_total_value: line.purchase_total_value,
-        unit_cost: line.unit_cost,
-        line_total: line.line_total,
-        units_received: line.units_received,
-        stock_before: change ? stockBefore : stockAfter,
-        stock_after: change ? stockAfter : stockAfter,
-      };
-    });
-
-    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines", {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(lineRows),
-    });
-
-    await patchPurchase(purchaseId, {
-      purchase_date: purchaseDate,
-      status: "completed",
-      line_count: preparedNew.length,
-      total_units: totalUnits,
-      total_value: totalValue,
-      notes,
-      updated_at: new Date().toISOString(),
-      updated_by: userId,
-      completed_at: purchase.completed_at || new Date().toISOString(),
-      error_message: null,
-    });
-
-    return { ok: true, purchase_id: purchaseId, purchase_number: purchase.purchase_number, purchase_date: purchaseDate, line_count: preparedNew.length, total_units: totalUnits, total_value: totalValue, updated_at: new Date().toISOString() };
-  } catch (error) {
-    throw error;
+async function restoreRemovedInsumoCosts(token:string,purchaseId:string,oldLines:any[],newVariantIds:Set<string>){
+  for(const old of oldLines){
+    const variantId=String(old.variant_id||"");
+    const isInsumo=Number(old?.presentation_content_ml)>0;
+    if(!variantId||!isInsumo||newVariantIds.has(variantId))continue;
+    const previous=await getPreviousInsumoPurchaseCost(variantId,purchaseId,old);
+    if(previous===null)throw new Error("No se pudo determinar el costo anterior del insumo "+String(old.product_name||variantId)+" para revertir esta modificación.");
+    await setInsumoPurchaseCost(token,variantId,previous);
   }
 }
 
-async function deletePurchase(token: string, userId: string, payload: any) {
-  const purchaseId = requiredString(payload?.purchase_id, "purchase_id");
-  const purchase = await getPurchaseForAdmin(purchaseId);
-  if (purchase.status !== "completed") throw new Error("La compra ya no está activa.");
+async function updatePurchase(token:string,userId:string,payload:any){
+  const purchaseId=requiredString(payload?.purchase_id,"purchase_id");
+  const purchase=await getPurchaseForAdmin(purchaseId);
+  if(purchase.status!=="completed")throw new Error("Solo se pueden modificar compras completadas.");
+  const oldLines=await getPurchaseLinesForAdmin(purchaseId);
+  const normalized=await normalizePurchaseLines(payload?.lines);
+  const {preparedNew,storeAndStock,deltas,insumoUpdates}=await preparePurchaseLinesForDelta(token,normalized,oldLines);
+  const totalUnits=preparedNew.reduce((sum,line)=>sum+Number(line.units_received),0);
+  const totalValue=preparedNew.reduce((sum,line)=>sum+Number(line.line_total),0);
+  const newVariantIds=new Set(preparedNew.map(line=>String(line.variant_id)));
+  const inventoryChanges=await applyPurchaseInventoryDelta(token,deltas,storeAndStock);
+  try{
+    await restoreRemovedInsumoCosts(token,purchaseId,oldLines,newVariantIds);
+    for(const [variantId,update] of insumoUpdates.entries())await setInsumoPurchaseCost(token,variantId,Number(update.purchaseCost));
+    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq."+encodeURIComponent(purchaseId),{method:"DELETE"});
+    const lineRows=preparedNew.map((line,index)=>{
+      const delta=Number(deltas.get(line.variant_id)||0),state=storeAndStock.get(line.variant_id);
+      const stockBefore=Number(state?.stockBefore??line.stock_before??0);
+      return{
+        purchase_id:purchaseId,line_number:index+1,variant_id:line.variant_id,item_id:line.item_id,product_name:line.product_name,sku:line.sku,
+        pack_size:line.pack_size,presentation_quantity:line.presentation_quantity,presentation_content_ml:line.presentation_content_ml,
+        purchase_unit:line.purchase_unit,purchase_total_value:line.purchase_total_value,unit_cost:line.unit_cost,line_total:line.line_total,
+        units_received:line.units_received,stock_before:line.isInsumo?null:stockBefore,stock_after:line.isInsumo?null:stockBefore+delta,
+        previous_purchase_cost:line.previous_purchase_cost
+      };
+    });
+    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(lineRows)});
+    const purchaseDate=typeof payload?.purchase_date==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)?payload.purchase_date:purchase.purchase_date;
+    const notesRaw=typeof payload?.notes==="string"?payload.notes.trim():"";
+    await patchPurchase(purchaseId,{purchase_date:purchaseDate,status:"completed",line_count:preparedNew.length,total_units:totalUnits,total_value:totalValue,notes:notesRaw?notesRaw.slice(0,1000):null,updated_at:new Date().toISOString(),updated_by:userId,completed_at:purchase.completed_at||new Date().toISOString(),error_message:null});
+    return{ok:true,purchase_id:purchaseId,purchase_number:purchase.purchase_number,purchase_date:purchaseDate,line_count:preparedNew.length,total_units:totalUnits,total_value:totalValue,updated_at:new Date().toISOString()};
+  }catch(error){throw error;}
+}
 
-  const oldLines = await getPurchaseLinesForAdmin(purchaseId);
-  if (!oldLines.length) throw new Error("La compra no tiene líneas para revertir.");
-
-  const normalizedEmpty: any[] = [];
-  const { deltas, storeAndStock } = await preparePurchaseLinesForDelta(token, normalizedEmpty, oldLines);
-  const inventoryChanges = await applyPurchaseInventoryDelta(token, deltas, storeAndStock);
-
-  await patchPurchase(purchaseId, {
-    status: "cancelled",
-    deleted_at: new Date().toISOString(),
-    deleted_by: userId,
-    updated_at: new Date().toISOString(),
-    updated_by: userId,
-    error_message: null,
-  });
-
-  return { ok: true, purchase_id: purchaseId, purchase_number: purchase.purchase_number, status: "cancelled", inventory_adjusted: inventoryChanges.size, deleted_at: new Date().toISOString() };
+async function deletePurchase(token:string,userId:string,payload:any){
+  const purchaseId=requiredString(payload?.purchase_id,"purchase_id");
+  const purchase=await getPurchaseForAdmin(purchaseId);
+  if(purchase.status!=="completed")throw new Error("La compra ya no está activa.");
+  const oldLines=await getPurchaseLinesForAdmin(purchaseId);
+  if(!oldLines.length)throw new Error("La compra no tiene líneas para revertir.");
+  const {deltas,storeAndStock}=await preparePurchaseLinesForDelta(token,[],oldLines);
+  const inventoryChanges=await applyPurchaseInventoryDelta(token,deltas,storeAndStock);
+  try{
+    await restoreRemovedInsumoCosts(token,purchaseId,oldLines,new Set<string>());
+    await patchPurchase(purchaseId,{status:"cancelled",deleted_at:new Date().toISOString(),deleted_by:userId,updated_at:new Date().toISOString(),updated_by:userId,error_message:null});
+    return{ok:true,purchase_id:purchaseId,purchase_number:purchase.purchase_number,status:"cancelled",inventory_adjusted:inventoryChanges.size,deleted_at:new Date().toISOString()};
+  }catch(error){throw error;}
 }
 
 
