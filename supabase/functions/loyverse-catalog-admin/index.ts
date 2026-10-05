@@ -261,6 +261,212 @@ async function mirrorEditedInventory(levels: any[]) {
   await upsert("/rest/v1/loyverse_inventory_levels?on_conflict=variant_id,store_id", rows);
 }
 
+async function createCatalogItem(token: string, payload: any) {
+  const itemName = requiredString(payload?.item_name, "nombre", 64);
+  const categoryId = requiredString(payload?.category_id, "categoría", 64);
+  const productType = String(payload?.product_type || "regular").trim().toLowerCase();
+  if (!["regular", "composite", "insumo"].includes(productType)) {
+    throw new Error("Tipo de producto no válido.");
+  }
+
+  const storeBody = await loyverseGet(token, "/stores?limit=250");
+  const stores = (Array.isArray(storeBody?.stores) ? storeBody.stores : [])
+    .filter((store: any) => store?.id && !store?.deleted_at);
+  if (stores.length !== 1) {
+    throw new Error(
+      stores.length === 0
+        ? "No se encontró una tienda activa en Loyverse."
+        : "AvoHouse espera una sola tienda activa en Loyverse para crear productos.",
+    );
+  }
+  const storeId = String(stores[0].id);
+
+  const isComposite = productType === "composite";
+  const isInsumo = productType === "insumo";
+  const trackStock = productType === "regular" ? Boolean(payload?.track_stock) : false;
+  const availableForSale = isInsumo ? false : payload?.available_for_sale !== false;
+
+  let unitCost: number | null = null;
+  let packSize: number | null = null;
+  let presentationCost: number | null = null;
+
+  if (!isComposite) {
+    const purchaseCost = finiteNumber(payload?.purchase_cost, "costo de compra");
+    if (purchaseCost < 0 || purchaseCost > 1000000000) {
+      throw new Error("El costo de compra debe ser un número válido no negativo.");
+    }
+
+    if (isInsumo) {
+      packSize = 1;
+      presentationCost = purchaseCost;
+      unitCost = purchaseCost;
+    } else {
+      const pack = finiteNumber(payload?.pack_size, "unidades por presentación");
+      if (!Number.isInteger(pack) || pack <= 0 || pack > 100000) {
+        throw new Error("Las unidades por presentación deben ser un entero mayor que 0.");
+      }
+      packSize = pack;
+      presentationCost = purchaseCost;
+      unitCost = purchaseCost / pack;
+    }
+  }
+
+  let price = 0;
+  if (!isInsumo) {
+    price = finiteNumber(payload?.price, "precio");
+    if (price < 0 || price > 1000000000) {
+      throw new Error("El precio debe ser un número válido no negativo.");
+    }
+  }
+
+  const lowStockRaw = payload?.low_stock;
+  const optimalStockRaw = payload?.optimal_stock;
+  let lowStock: number | null = null;
+  let optimalStock: number | null = null;
+  if (trackStock && lowStockRaw !== undefined && String(lowStockRaw).trim() !== "") {
+    lowStock = finiteNumber(lowStockRaw, "stock bajo");
+    if (lowStock < 0) throw new Error("El stock bajo no puede ser negativo.");
+  }
+  if (trackStock && optimalStockRaw !== undefined && String(optimalStockRaw).trim() !== "") {
+    optimalStock = finiteNumber(optimalStockRaw, "stock óptimo");
+    if (optimalStock < 0) throw new Error("El stock óptimo no puede ser negativo.");
+  }
+
+  let initialStock = 0;
+  if (trackStock) {
+    const stockRaw = payload?.initial_stock === undefined || String(payload.initial_stock).trim() === ""
+      ? 0
+      : finiteNumber(payload.initial_stock, "existencias iniciales");
+    if (stockRaw < 0 || stockRaw > 9999999.999) {
+      throw new Error("Las existencias iniciales deben estar entre 0 y 9.999.999,999.");
+    }
+    initialStock = stockRaw;
+  }
+
+  const normalizeComponents = (value: any) =>
+    (Array.isArray(value) ? value : [])
+      .map((component: any) => ({
+        variant_id: String(component?.variant_id || "").trim(),
+        quantity: Number(component?.quantity),
+      }))
+      .filter((component: any) => component.variant_id);
+
+  const components = normalizeComponents(payload?.components);
+  if (isComposite) {
+    if (!components.length) throw new Error("El producto compuesto debe tener al menos un componente.");
+    if (components.length > 100) throw new Error("Un producto no puede superar 100 componentes.");
+    const ids = new Set<string>();
+    for (const component of components) {
+      if (!Number.isFinite(component.quantity) || component.quantity <= 0 || component.quantity > 1000000) {
+        throw new Error("Cada componente debe tener una cantidad mayor que 0.");
+      }
+      if (ids.has(component.variant_id)) {
+        throw new Error("No se puede repetir un mismo componente.");
+      }
+      ids.add(component.variant_id);
+      await loyverseGet(token, "/variants/" + encodeURIComponent(component.variant_id));
+    }
+  }
+
+  const variantPayload: Record<string, unknown> = {
+    cost: isComposite ? 0 : unitCost,
+    purchase_cost: isComposite ? 0 : unitCost,
+    default_pricing_type: "FIXED",
+    default_price: price,
+    stores: [{
+      store_id: storeId,
+      pricing_type: "FIXED",
+      price,
+      available_for_sale: availableForSale,
+      low_stock: trackStock ? lowStock : null,
+      optimal_stock: trackStock ? optimalStock : null,
+    }],
+  };
+
+  const itemPayload: Record<string, unknown> = {
+    item_name: itemName,
+    category_id: categoryId,
+    track_stock: trackStock,
+    sold_by_weight: false,
+    is_composite: isComposite,
+    use_production: false,
+  };
+  if (isComposite) itemPayload.components = components;
+
+  const created = await loyversePost(token, "/items", {
+    ...itemPayload,
+    variants: [variantPayload],
+  });
+
+  const itemId = String(created?.id || "").trim();
+  if (!itemId) throw new Error("Loyverse creó el artículo pero no devolvió su identificador.");
+
+  let liveItem = created;
+  let variant = Array.isArray(created?.variants) ? created.variants[0] : null;
+  if (!variant?.variant_id) {
+    liveItem = await loyverseGet(token, "/items/" + encodeURIComponent(itemId));
+    variant = Array.isArray(liveItem?.variants) ? liveItem.variants[0] : null;
+  }
+  const variantId = String(variant?.variant_id || "").trim();
+  if (!variantId) {
+    throw new Error("Loyverse creó el artículo pero no devolvió una variante utilizable.");
+  }
+
+  let inventoryLevels: any[] = [];
+  if (trackStock) {
+    const inventoryResponse = await loyversePost(token, "/inventory", {
+      inventory_levels: [{
+        variant_id: variantId,
+        store_id: storeId,
+        stock_after: initialStock,
+      }],
+    });
+    inventoryLevels = Array.isArray(inventoryResponse?.inventory_levels)
+      ? inventoryResponse.inventory_levels
+      : [];
+    if (!inventoryLevels.length) {
+      inventoryLevels = [{
+        variant_id: variantId,
+        store_id: storeId,
+        in_stock: initialStock,
+      }];
+    }
+  }
+
+  await mirrorEditedItem(liveItem);
+  await mirrorEditedVariant(variant);
+
+  if (!isComposite && packSize !== null && presentationCost !== null) {
+    await supabaseRequest(
+      "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(variantId),
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          purchase_pack_size: packSize,
+          purchase_presentation_cost: presentationCost,
+        }),
+      },
+    );
+  }
+
+  if (inventoryLevels.length) await mirrorEditedInventory(inventoryLevels);
+
+  return {
+    ok: true,
+    item_id: itemId,
+    variant_id: variantId,
+    item_name: String(liveItem?.item_name || itemName),
+    product_type: productType,
+    unit_cost: unitCost,
+    purchase_pack_size: packSize,
+    purchase_presentation_cost: presentationCost,
+    initial_stock: trackStock ? initialStock : null,
+    available_for_sale: availableForSale,
+    created_at: liveItem?.created_at ?? null,
+  };
+}
+
 async function updateCatalogItem(token: string, payload: any) {
   const itemId = requiredString(payload?.item_id, "item_id");
   const variantId = requiredString(payload?.variant_id, "variant_id");
@@ -1425,6 +1631,10 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const action = String(body?.action || "sync").trim().toLowerCase();
     const token = await getLoyverseToken();
+
+    if (action === "create_item") {
+      return json(await createCatalogItem(token, body));
+    }
 
     if (action === "get_edit") {
       const itemId = requiredString(body?.item_id, "item_id");
