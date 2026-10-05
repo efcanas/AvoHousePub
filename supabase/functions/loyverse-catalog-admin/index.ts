@@ -183,6 +183,7 @@ async function getLiveEditData(token: string, itemId: string, variantId: string)
     purchase_settings: {
       pack_size: purchase?.purchase_pack_size ?? null,
       presentation_cost: purchase?.purchase_presentation_cost ?? null,
+      content_ml: purchase?.purchase_presentation_content_ml ?? null,
     },
   };
 }
@@ -410,6 +411,9 @@ async function updateCatalogItem(token: string, payload: any) {
   const catBody=await loyverseGet(token,"/categories?limit=250");
   const nextCategory=(Array.isArray(catBody?.categories)?catBody.categories:[]).find((c:any)=>String(c?.id||"")===nextCategoryId);
   const isInsumosCategory=String(nextCategory?.name||"").trim().toLowerCase()==="insumos";
+  const currentTrackStock=Boolean(currentItem?.track_stock);
+  const requestedTrackStock=itemChanges?.track_stock===undefined?currentTrackStock:Boolean(itemChanges.track_stock);
+  const nextTrackStock=Boolean(currentItem?.is_composite)||isInsumosCategory?false:requestedTrackStock;
 
   let nextComponents=Array.isArray(currentItem?.components)?currentItem.components:[];
   if(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined){
@@ -425,9 +429,9 @@ async function updateCatalogItem(token: string, payload: any) {
     nextComponents=incoming;
   }
 
-  if(itemName!==String(currentItem?.item_name??"").trim()||String(categoryId??"")!==String(currentItem?.category_id??"")||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(nextComponents)!==JSON.stringify(currentItem?.components??[]))){
+  if(itemName!==String(currentItem?.item_name??"").trim()||String(categoryId??"")!==String(currentItem?.category_id??"")||nextTrackStock!==currentTrackStock||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(nextComponents)!==JSON.stringify(currentItem?.components??[]))){
     itemChanged=true;
-    const itemPayload:Record<string,unknown>={id:itemId,item_name:itemName,category_id:categoryId};
+    const itemPayload:Record<string,unknown>={id:itemId,item_name:itemName,category_id:categoryId,track_stock:nextTrackStock};
     if(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined)itemPayload.components=nextComponents;
     await loyversePost(token,"/items",itemPayload);
   }
@@ -493,14 +497,14 @@ async function updateCatalogItem(token: string, payload: any) {
   const currentContentComparable=currentPurchaseSettings?.content_ml==null?null:Number(currentPurchaseSettings.content_ml);
   purchaseSettingsChanged=nextPackSize!==currentPackComparable||nextPresentationCost!==currentPresentationComparable||nextContentMl!==currentContentComparable;
 
-  if(inventoryChanges?.stock_after!==undefined&&inventoryChanges.stock_after!==""&&Boolean(currentItem?.track_stock)&&!isInsumosCategory){
+  if(inventoryChanges?.stock_after!==undefined&&inventoryChanges.stock_after!==""&&nextTrackStock&&!isInsumosCategory){
     const stockAfter=finiteNumber(inventoryChanges.stock_after,"existencias");if(stockAfter<0)throw new Error("Las existencias no pueden ser negativas desde esta pantalla.");
     const currentLevel=(Array.isArray(live.inventory_levels)?live.inventory_levels:[]).find((level:any)=>String(level?.store_id||"")===storeId),currentStock=currentLevel?Number(currentLevel.in_stock??0):0;
     if(stockAfter!==currentStock){inventoryChanged=true;await loyversePost(token,"/inventory",{inventory_levels:[{variant_id:variantId,store_id:storeId,stock_after:stockAfter}]});}
   }
 
   const verified=await getLiveEditData(token,itemId,variantId),verifiedStore=findStoreOverride(verified.variant,storeId),verifiedLevel=(Array.isArray(verified.inventory_levels)?verified.inventory_levels:[]).find((level:any)=>String(level?.store_id||"")===storeId);
-  if(itemChanged&&(String(verified.item?.item_name??"").trim()!==itemName||String(verified.item?.category_id??"")!==String(categoryId??"")||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(verified.item?.components??[])!==JSON.stringify(nextComponents))))throw new Error("La verificación posterior a la actualización del artículo o composición no coincidió con lo solicitado.");
+  if(itemChanged&&(String(verified.item?.item_name??"").trim()!==itemName||String(verified.item?.category_id??"")!==String(categoryId??"")||Boolean(verified.item?.track_stock)!==nextTrackStock||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(verified.item?.components??[])!==JSON.stringify(nextComponents))))throw new Error("La verificación posterior a la actualización del artículo o composición no coincidió con lo solicitado.");
 
   if(variantChanged){
     const expectedSku=nextVariant?.sku,expectedBarcode=nextVariant?.barcode;
