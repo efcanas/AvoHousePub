@@ -615,10 +615,6 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
               <label class="field-label" for="editLowStock">Stock bajo</label>
               <input id="editLowStock" type="number" step="0.001" min="0">
             </div>
-            <div class="inventory-field">
-              <label class="field-label" for="editOptimalStock">Stock óptimo</label>
-              <input id="editOptimalStock" type="number" step="0.001" min="0">
-            </div>
           </div>
         </div>
         <div id="inventoryEditNoEdit" class="inventory-no-edit hidden" style="margin-top:10px"></div>
@@ -1195,7 +1191,6 @@ async function openInventoryEditor(variantId,itemId){
 
     $('inventoryEditInventorySection').classList.toggle('hidden',!Boolean(item.track_stock));
     $('editLowStock').value=override.low_stock??'';
-    $('editOptimalStock').value=override.optimal_stock??'';
     $('editAvailable').checked=override.available_for_sale!==false;
     updateInventoryEditCategoryUI();
     const level=(Array.isArray(data.inventory_levels)?data.inventory_levels:[]).find(l=>String(l.store_id)===String(override.store_id));
@@ -1314,7 +1309,7 @@ async function saveInventoryEditor(){
       variant_id:inventoryEditState.variantId,
       item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null,track_stock:!composite&&!isInsumos&&$('editTrackStock').dataset.active==='1'},
       variant:{default_price:$('editDefaultPrice').value},
-      store:{available_for_sale:isInsumos?false:$('editAvailable').checked,low_stock:$('editLowStock').value,optimal_stock:$('editOptimalStock').value},
+      store:{available_for_sale:isInsumos?false:$('editAvailable').checked,low_stock:$('editLowStock').value},
       inventory:composite?{}:{stock_after:stockValue},
       purchase:composite?{}:{pack_size:isInsumos?'1':packRaw,presentation_cost:presentationRaw,presentation_content_ml:isInsumos?Number(contentRaw):null}
     };
