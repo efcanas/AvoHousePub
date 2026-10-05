@@ -793,10 +793,16 @@ function updateInventoryCreateStockVisibility(){
   const tracked=$('inventoryCreateTrackStock').checked;
   $('inventoryCreateStockFields').classList.toggle('hidden',!tracked);
 }
-function inventoryCreateIsInsumosCategory(){
+function inventoryCreateCategoryName(){
   const select=$('createItemCategory');
   const option=select?.selectedOptions?.[0];
-  return String(option?.textContent||'').trim().toLowerCase()==='insumos';
+  return String(option?.textContent||'').trim().toLowerCase();
+}
+function inventoryCreateIsInsumosCategory(){
+  return inventoryCreateCategoryName()==='insumos';
+}
+function inventoryCreateIsMezcladitasCategory(){
+  return inventoryCreateCategoryName()==='mezcladitas';
 }
 function updateInventoryCreateCategoryRules(){
   const insumos=inventoryCreateIsInsumosCategory();
@@ -822,9 +828,12 @@ function updateInventoryCreateCategoryRules(){
   updateInventoryCreateUnitCost();
 }
 function updateInventoryCreateType(){
+  const mezcladitas=inventoryCreateIsMezcladitasCategory();
+  const insumos=inventoryCreateIsInsumosCategory();
+  if(mezcladitas)$('inventoryCreateType').value='composite';
+  $('inventoryCreateType').disabled=mezcladitas;
   const type=$('inventoryCreateType').value;
   const composite=type==='composite';
-  const insumos=inventoryCreateIsInsumosCategory();
   $('inventoryCreateSubtitle').textContent=composite
     ? 'Crea un producto compuesto con receta directamente en Loyverse.'
     : insumos
