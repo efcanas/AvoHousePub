@@ -136,7 +136,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 .inventory-component-results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:12;display:none;max-height:260px;overflow:auto;padding:5px;border:1px solid #3b404a;border-radius:11px;background:#111318;box-shadow:0 16px 35px rgba(0,0,0,.45)}
 .inventory-component-results.show{display:block}
 .inventory-component-result{display:block;width:100%;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:#f5f5f5;text-align:left;font:inherit;font-size:13px;cursor:pointer}
-.inventory-component-result:hover,.inventory-component-result:focus{background:rgba(184,255,57,.10);color:#b8ff39;outline:none}
+.inventory-component-result:hover,.inventory-component-result:focus,.inventory-component-result.active{background:rgba(184,255,57,.10);color:#b8ff39;outline:none}
 .inventory-component-result-empty{padding:9px 10px;color:#8f96a3;font-size:12px;line-height:1.35}
 .inventory-component-cost{height:46px;min-height:46px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;margin-top:5px;padding:10px 7px;border:1px solid #2c3038;border-radius:10px;background:#101217;color:#b8ff39;font-size:13px;font-weight:800;white-space:nowrap}
 .inventory-component-remove{width:46px;height:46px;margin-top:5px;padding:0;border:1px solid rgba(255,93,93,.25);border-radius:10px;background:rgba(255,93,93,.05);color:#ffb7b7;cursor:pointer}
@@ -569,24 +569,49 @@ function hideInventoryComponentResults(row){
   const results=row?.querySelector('[data-edit-component-results]');
   if(results)results.classList.remove('show');
 }
-function renderInventoryComponentResults(row){
+function renderInventoryComponentResults(row,activeIndex=0){
   const input=row.querySelector('[data-edit-component-search]');
   const results=row.querySelector('[data-edit-component-results]');
-  if(!input||!results)return;
+  if(!input||!results)return[];
   const query=input.value.trim();
   if(query.length<2){
     results.classList.remove('show');
     results.innerHTML='';
-    return;
+    row.dataset.componentActive='-1';
+    return[];
   }
   const found=inventoryComponentSearchResults(query,inventoryEditState?.variantId,12);
   if(!found.length){
     results.innerHTML='<div class="inventory-component-result-empty">No hay componentes que coincidan.</div>';
     results.classList.add('show');
-    return;
+    row.dataset.componentActive='-1';
+    return[];
   }
-  results.innerHTML=found.map(r=>'<button type="button" class="inventory-component-result" data-edit-component-result="'+String(r.variantId).replace(/"/g,'&quot;')+'">'+String(inventoryComponentLabel(r)).replace(/[&<>]/g,'')+'</button>').join('');
+  const index=Math.max(0,Math.min(Number.isInteger(activeIndex)?activeIndex:0,found.length-1));
+  row.dataset.componentActive=String(index);
+  results.innerHTML=found.map((r,i)=>'<button type="button" class="inventory-component-result'+(i===index?' active':'')+'" data-edit-component-result="'+String(r.variantId).replace(/"/g,'&quot;')+'">'+String(inventoryComponentLabel(r)).replace(/[&<>]/g,'')+'</button>').join('');
   results.classList.add('show');
+  return found;
+}
+function moveInventoryComponentActive(row,delta){
+  const input=row.querySelector('[data-edit-component-search]');
+  if(!input||input.value.trim().length<2)return;
+  const found=inventoryComponentSearchResults(input.value,inventoryEditState?.variantId,12);
+  if(!found.length)return;
+  const current=Number(row.dataset.componentActive);
+  const next=(Number.isInteger(current)?current:0)+delta;
+  const index=Math.max(0,Math.min(next,found.length-1));
+  renderInventoryComponentResults(row,index);
+}
+function chooseActiveInventoryComponent(row){
+  const input=row.querySelector('[data-edit-component-search]');
+  if(!input||input.value.trim().length<2)return false;
+  const found=inventoryComponentSearchResults(input.value,inventoryEditState?.variantId,12);
+  if(!found.length)return false;
+  const current=Number(row.dataset.componentActive);
+  const index=Number.isInteger(current)&&current>=0&&current<found.length?current:0;
+  selectInventoryComponent(row,found[index].variantId);
+  return true;
 }
 function selectInventoryComponent(row,variantId){
   const product=inventoryRows.find(r=>String(r.variantId)===String(variantId));
@@ -839,9 +864,29 @@ try{
     if(!row)return;
     if(event.target.matches('[data-edit-component-search]')){
       row.querySelector('[data-edit-component]').value='';
-      renderInventoryComponentResults(row);
+      row.dataset.componentActive='0';
+      renderInventoryComponentResults(row,0);
     }else if(event.target.matches('[data-edit-component-quantity]')){
       updateInventoryEditComponents();
+    }
+  });
+  $('editComponentsList').addEventListener('keydown',event=>{
+    const row=event.target.closest('.inventory-component-row');
+    if(!row||!event.target.matches('[data-edit-component-search]'))return;
+    if(event.key==='ArrowDown'){
+      event.preventDefault();
+      moveInventoryComponentActive(row,1);
+    }else if(event.key==='ArrowUp'){
+      event.preventDefault();
+      moveInventoryComponentActive(row,-1);
+    }else if(event.key==='Enter'){
+      const query=event.target.value.trim();
+      if(query.length>=2){
+        event.preventDefault();
+        chooseActiveInventoryComponent(row);
+      }
+    }else if(event.key==='Escape'){
+      hideInventoryComponentResults(row);
     }
   });
   $('editComponentsList').addEventListener('change',event=>{
@@ -849,11 +894,23 @@ try{
   });
   $('editComponentsList').addEventListener('focusin',event=>{
     const row=event.target.closest('.inventory-component-row');
-    if(row&&event.target.matches('[data-edit-component-search]')&&event.target.value.trim().length>=2)renderInventoryComponentResults(row);
+    if(row&&event.target.matches('[data-edit-component-search]')&&event.target.value.trim().length>=2)renderInventoryComponentResults(row,Number(row.dataset.componentActive)||0);
+  });
+  $('editComponentsList').addEventListener('pointerdown',event=>{
+    const result=event.target.closest('[data-edit-component-result]');
+    if(!result)return;
+    const row=result.closest('.inventory-component-row');
+    if(row){
+      event.preventDefault();
+      selectInventoryComponent(row,result.dataset.editComponentResult);
+    }
   });
   $('editComponentsList').addEventListener('focusout',event=>{
     const row=event.target.closest('.inventory-component-row');
-    if(row&&event.target.matches('[data-edit-component-search]'))setTimeout(()=>hideInventoryComponentResults(row),120);
+    if(!row||!event.target.matches('[data-edit-component-search]'))return;
+    const next=event.relatedTarget;
+    if(next&&row.contains(next))return;
+    setTimeout(()=>hideInventoryComponentResults(row),160);
   });
   $('editComponentsList').addEventListener('click',event=>{
     const remove=event.target.closest('[data-edit-component-remove]');
