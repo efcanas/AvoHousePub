@@ -455,6 +455,8 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
             <label id="createPresentationCostLabel" class="field-label" for="createPresentationCost">Costo de compra</label>
             <input id="createPresentationCost" type="number" step="1" min="0" inputmode="numeric">
           </div>
+        </div>
+        <div class="inventory-form-grid">
           <div class="inventory-field">
             <label class="field-label" for="createUnitCost">Costo unitario</label>
             <input id="createUnitCost" type="text" readonly aria-readonly="true">
@@ -811,7 +813,8 @@ function updateInventoryCreateUnitCost(){
   if(type==='composite')return updateInventoryCreateComponents();
   const pack=type==='insumo'?1:Number($('createPurchasePackSize').value||0);
   const presentation=Number($('createPresentationCost').value||0);
-  const valid=Number.isFinite(pack)&&pack>0&&Number.isFinite(presentation)&&presentation>=0;
+  const presentationRaw=$('createPresentationCost').value.trim();
+  const valid= presentationRaw!==''&&Number.isFinite(pack)&&pack>0&&Number.isFinite(presentation)&&presentation>=0;
   const unit=valid?presentation/pack:0;
   $('createUnitCost').value=valid?formatMoney(unit):'—';
   return unit;
