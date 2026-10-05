@@ -1287,7 +1287,11 @@ async function saveInventoryEditor(){
     if(!Number.isInteger(pack)||pack<=0){$('inventoryEditNotice').textContent='Las unidades por presentación deben ser un entero mayor que 0.';$('inventoryEditNotice').className='notice show error';return}
     if(!Number.isFinite(presentation)||presentation<0){$('inventoryEditNotice').textContent='El costo de compra no puede ser negativo.';$('inventoryEditNotice').className='notice show error';return}
   }
-  if(!confirm('Vas a modificar este artículo directamente en Loyverse. ¿Deseas continuar?'))return;
+  const disablingTrackStock=!composite&&!isInsumos&&Boolean(inventoryEditState.data.item?.track_stock)&&!$('editTrackStock').checked;
+  const confirmMessage=disablingTrackStock
+    ? 'Vas a desactivar el control de inventario de este artículo. Loyverse pondrá sus existencias en 0. ¿Deseas continuar?'
+    : 'Vas a modificar este artículo directamente en Loyverse. ¿Deseas continuar?';
+  if(!confirm(confirmMessage))return;
   const btn=$('inventoryEditSave');btn.disabled=true;$('inventoryEditCancel').disabled=true;
   $('inventoryEditNotice').className='notice show';$('inventoryEditNotice').textContent='Guardando cambios en Loyverse…';
   try{
