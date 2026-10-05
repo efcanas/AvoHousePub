@@ -474,14 +474,17 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
               <label class="field-label" for="editOptimalStock">Stock óptimo</label>
               <input id="editOptimalStock" type="number" step="0.001" min="0">
             </div>
-            <div class="inventory-field">
-              <span class="field-label">Venta</span>
-              <label class="inventory-check"><input id="editAvailable" type="checkbox"> Disponible para la venta</label>
-            </div>
+          </div>
+        </div>
+        <div class="inventory-section-title">Venta</div>
+        <div class="inventory-form-grid">
+          <div class="inventory-field">
+            <span class="field-label">Disponibilidad</span>
+            <label class="inventory-check"><input id="editAvailable" type="checkbox"> Disponible para la venta</label>
           </div>
         </div>
 
-        <div class="inventory-warning">Los cambios realizados desde esta pantalla se reflejan directamente en Loyverse.</div><div id="inventoryEditNoEdit" class="inventory-no-edit hidden" style="margin-top:10px"></div>
+        <div id="inventoryEditNoEdit" class="inventory-no-edit hidden" style="margin-top:10px"></div>
         <div class="inventory-modal-actions">
           <button id="inventoryEditCancel" class="ghost" type="button">CANCELAR</button>
           <button id="inventoryEditSave" class="primary" type="button">GUARDAR EN LOYVERSE</button>
