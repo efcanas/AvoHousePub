@@ -127,6 +127,16 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 .inventory-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:18px}
 .inventory-modal-actions button{margin:0}
 .inventory-no-edit{color:#9ca3af;font-size:12px;line-height:1.5}
+.inventory-components{display:flex;flex-direction:column;gap:8px}
+.inventory-component-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 125px 36px;gap:8px;align-items:end;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
+.inventory-component-row select,.inventory-component-row input{margin:0}
+.inventory-component-cost{min-height:42px;display:flex;align-items:center;justify-content:center;padding:9px 7px;border:1px solid #2c3038;border-radius:10px;background:#101217;color:#b8ff39;font-size:13px;font-weight:800;white-space:nowrap}
+.inventory-component-remove{padding:9px;border:1px solid rgba(255,93,93,.25);border-radius:10px;background:rgba(255,93,93,.05);color:#ffb7b7;cursor:pointer}
+.inventory-components-total{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;color:#9ca3af;font-size:12px}
+.inventory-components-total strong{color:#b8ff39;font-size:14px}
+.inventory-component-helper{margin:-2px 0 7px;color:#8f96a3;font-size:12px;line-height:1.45}
+@media(max-width:620px){.inventory-component-row{grid-template-columns:1fr 1fr}.inventory-component-row select{grid-column:1/-1}.inventory-component-remove{justify-self:start}}
+
 @media(max-width:820px){.inventory-form-grid{grid-template-columns:1fr}.inventory-form-full{grid-column:auto}.inventory-row{grid-template-columns:1fr auto auto}}
 
 
@@ -420,7 +430,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
         </div>
 
         <div class="inventory-section-title">Costos y precio de venta</div>
-        <div class="inventory-form-grid">
+        <div id="editPurchaseSettingsFields" class="inventory-form-grid">
           <div class="inventory-field">
             <label class="field-label" for="editPurchasePackSize">Unidades por presentación</label>
             <input id="editPurchasePackSize" type="number" step="1" min="1" inputmode="numeric">
@@ -429,6 +439,8 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
             <label class="field-label" for="editPresentationCost">Costo de compra</label>
             <input id="editPresentationCost" type="number" step="1" min="0" inputmode="numeric">
           </div>
+        </div>
+        <div class="inventory-form-grid">
           <div class="inventory-field">
             <label class="field-label" for="editUnitCost">Costo unitario</label>
             <input id="editUnitCost" type="text" readonly aria-readonly="true">
@@ -439,32 +451,37 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
           </div>
         </div>
 
-        <div class="inventory-section-title">Tienda e inventario</div>
-        <div class="inventory-form-grid">
-          <div class="inventory-field">
-            <label class="field-label" for="editStore">Tienda</label>
-            <select id="editStore"></select>
-          </div>
-          <div class="inventory-field">
-            <label class="field-label" for="editStock">Existencias</label>
-            <input id="editStock" type="number" step="0.001">
-          </div>
-          <div class="inventory-field">
-            <label class="field-label" for="editLowStock">Stock bajo</label>
-            <input id="editLowStock" type="number" step="0.001" min="0">
-          </div>
-          <div class="inventory-field">
-            <label class="field-label" for="editOptimalStock">Stock óptimo</label>
-            <input id="editOptimalStock" type="number" step="0.001" min="0">
-          </div>
-          <div class="inventory-field">
-            <span class="field-label">Venta</span>
-            <label class="inventory-check"><input id="editAvailable" type="checkbox"> Disponible para la venta</label>
+        <div id="editComponentsSection" class="hidden">
+          <div class="inventory-section-title">Composición</div>
+          <div class="inventory-component-helper">Edita los componentes y la cantidad que utiliza una unidad del producto. El costo unitario se recalcula automáticamente.</div>
+          <div id="editComponentsList" class="inventory-components"></div>
+          <button id="editComponentsAdd" class="ghost purchase-add-line" type="button">+ AGREGAR COMPONENTE</button>
+          <div class="inventory-components-total"><span>Costo de la composición</span><strong id="editComponentsTotal">$0</strong></div>
+        </div>
+
+        <div id="inventoryEditInventorySection">
+          <div class="inventory-section-title">Inventario</div>
+          <div class="inventory-form-grid">
+            <div class="inventory-field">
+              <label class="field-label" for="editStock">Existencias</label>
+              <input id="editStock" type="number" step="0.001">
+            </div>
+            <div class="inventory-field">
+              <label class="field-label" for="editLowStock">Stock bajo</label>
+              <input id="editLowStock" type="number" step="0.001" min="0">
+            </div>
+            <div class="inventory-field">
+              <label class="field-label" for="editOptimalStock">Stock óptimo</label>
+              <input id="editOptimalStock" type="number" step="0.001" min="0">
+            </div>
+            <div class="inventory-field">
+              <span class="field-label">Venta</span>
+              <label class="inventory-check"><input id="editAvailable" type="checkbox"> Disponible para la venta</label>
+            </div>
           </div>
         </div>
 
-        <div class="inventory-warning">Los cambios de existencias usan el nivel final indicado y se escriben en Loyverse. Los cambios de artículo, variante y tienda también se reflejan directamente allí.</div>
-        <div id="inventoryEditNoEdit" class="inventory-no-edit hidden" style="margin-top:10px"></div>
+        <div class="inventory-warning">Los cambios realizados desde esta pantalla se reflejan directamente en Loyverse.</div><div id="inventoryEditNoEdit" class="inventory-no-edit hidden" style="margin-top:10px"></div>
         <div class="inventory-modal-actions">
           <button id="inventoryEditCancel" class="ghost" type="button">CANCELAR</button>
           <button id="inventoryEditSave" class="primary" type="button">GUARDAR EN LOYVERSE</button>
@@ -495,7 +512,7 @@ function inventoryStoreState(variant){const stores=Array.isArray(variant?.stores
 function inventoryStockInfo(variant,map){const stores=Array.isArray(variant?.stores)?variant.stores:[];for(const store of stores){const key=String(variant.variant_id)+'|'+String(store?.store_id||'');if(map.has(key))return Number(map.get(key))}return null}
 function inventoryMarginLabel(row){const cost=Number(row.cost),price=Number(row.price);if(!Number.isFinite(cost)||!Number.isFinite(price)||price<=0)return{label:'—',cls:'na'};const margin=((price-cost)/price)*100;let cls='r1';if(margin>=55)cls='r6';else if(margin>=45)cls='r5';else if(margin>=35)cls='r4';else if(margin>=30)cls='r3';else if(margin>=25)cls='r2';return{label:margin.toLocaleString('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1})+'%',cls}}function inventoryStockLabel(row){if(!row.trackStock)return{label:'Sin controlar',cls:'na'};if(row.stock===null)return{label:'Sin dato',cls:'na'};if(row.stock<0)return{label:row.stock.toLocaleString('es-CO'),cls:'negative'};if(row.stock===0)return{label:'0',cls:'zero'};if(row.lowStock!==null&&Number.isFinite(row.lowStock)&&row.stock<=row.lowStock)return{label:row.stock.toLocaleString('es-CO'),cls:'low'};return{label:row.stock.toLocaleString('es-CO'),cls:'ok'}}
 function populateInventoryCategories(){$('inventoryCategory').innerHTML='<option value="">Todas las categorías</option>'+inventoryCategories.map(c=>'<option value="'+String(c.id).replace(/"/g,'&quot;')+'">'+String(c.name||'').replace(/[&<>]/g,'')+'</option>').join('')}
-function renderInventory(){const list=$('inventoryList'),term=$('inventorySearch').value.trim().toLowerCase(),category=$('inventoryCategory').value,availability=$('inventoryAvailability').value;let rows=inventoryRows.filter(row=>{if(category&&row.categoryId!==category)return false;if(term&&!([row.name,row.sku,row.barcode,row.categoryName,row.option1,row.option2,row.option3].filter(Boolean).join(' ').toLowerCase().includes(term)))return false;if(availability==='available'&&!row.available)return false;if(availability==='unavailable'&&row.available)return false;if(availability==='tracked'&&!row.trackStock)return false;if(availability==='low'&&!(row.trackStock&&row.stock!==null&&row.stock>0&&row.lowStock!==null&&row.stock<=row.lowStock))return false;if(availability==='zero'&&!(row.trackStock&&row.stock!==null&&row.stock===0))return false;return true});rows.sort((a,b)=>{const nameCompare=a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true});if(nameCompare!==0)return nameCompare;const optionA=[a.option1,a.option2,a.option3].filter(Boolean).join(' · ');const optionB=[b.option1,b.option2,b.option3].filter(Boolean).join(' · ');return optionA.localeCompare(optionB,'es',{sensitivity:'base',numeric:true})});$('inventorySummary').textContent='Mostrando '+rows.length.toLocaleString('es-CO')+' de '+inventoryRows.length.toLocaleString('es-CO')+' variantes activas.';if(!rows.length){list.innerHTML='<div class="empty">No hay productos que coincidan con los filtros.</div>';return}list.innerHTML=rows.map(row=>{const stock=inventoryStockLabel(row),margin=inventoryMarginLabel(row),option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · '),meta=[row.categoryName||'Sin categoría',option].filter(Boolean).join(' · '),safeName=String(row.name||'').replace(/[&<>]/g,'').replace(/"/g,'&quot;'),safeMeta=String(meta).replace(/[&<>]/g,''),available=row.available?'A la venta':'No disponible',excludedPresentation=['99Michelada','ALa Mera Mera','BSoda Amarilla','BSoda Azul','BSoda Roja'].includes(row.name),isBeverage=(row.categoryName==='Bebidas'||row.categoryName==='Cervezas')&&!excludedPresentation,packValue=row.packSize??'',displayPrice=row.available?formatMoney(row.price):'$',displayMargin=row.available?margin.label:'%',displayMarginClass=row.available?margin.cls:'na';return'<div class="inventory-row"><div class="inventory-main"><div class="inventory-name" title="'+safeName+'">'+safeName+'</div><div class="inventory-meta">'+safeMeta+'</div></div><div class="inventory-value">'+displayPrice+'</div><div class="inventory-value inventory-margin '+displayMarginClass+'" title="Margen de ganancia sobre el precio de venta">'+displayMargin+'</div><div class="inventory-presentation">'+(isBeverage?'<span class="presentation-label">Presentación</span><input type="number" min="1" step="1" value="'+String(packValue).replace(/"/g,'&quot;')+'" placeholder="—" data-pack-variant="'+row.variantId+'" aria-label="Unidades por presentación para '+safeName+'">':'—')+'</div><div class="inventory-value inventory-stock '+stock.cls+'">'+stock.label+'</div><div class="inventory-badge '+(row.available?'available':'unavailable')+'">'+available+'</div><div class="inventory-actions"><button class="ghost inventory-edit" type="button" data-edit-variant="'+row.variantId+'" data-edit-item="'+row.itemId+'" data-edit-store="'+String(row.storeId||'')+'">EDITAR</button></div></div>'}).join('')}
+function renderInventory(){const list=$('inventoryList'),term=$('inventorySearch').value.trim().toLowerCase(),category=$('inventoryCategory').value,availability=$('inventoryAvailability').value;let rows=inventoryRows.filter(row=>{if(category&&row.categoryId!==category)return false;if(term&&!([row.name,row.sku,row.barcode,row.categoryName,row.option1,row.option2,row.option3].filter(Boolean).join(' ').toLowerCase().includes(term)))return false;if(availability==='available'&&!row.available)return false;if(availability==='unavailable'&&row.available)return false;if(availability==='tracked'&&!row.trackStock)return false;if(availability==='low'&&!(row.trackStock&&row.stock!==null&&row.stock>0&&row.lowStock!==null&&row.stock<=row.lowStock))return false;if(availability==='zero'&&!(row.trackStock&&row.stock!==null&&row.stock===0))return false;return true});rows.sort((a,b)=>{const nameCompare=a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true});if(nameCompare!==0)return nameCompare;const optionA=[a.option1,a.option2,a.option3].filter(Boolean).join(' · ');const optionB=[b.option1,b.option2,b.option3].filter(Boolean).join(' · ');return optionA.localeCompare(optionB,'es',{sensitivity:'base',numeric:true})});$('inventorySummary').textContent='Mostrando '+rows.length.toLocaleString('es-CO')+' de '+inventoryRows.length.toLocaleString('es-CO')+' variantes activas.';if(!rows.length){list.innerHTML='<div class="empty">No hay productos que coincidan con los filtros.</div>';return}list.innerHTML=rows.map(row=>{const stock=inventoryStockLabel(row),margin=inventoryMarginLabel(row),option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · '),meta=[row.categoryName||'Sin categoría',option].filter(Boolean).join(' · '),safeName=String(row.name||'').replace(/[&<>]/g,'').replace(/"/g,'&quot;'),safeMeta=String(meta).replace(/[&<>]/g,''),available=row.available?'A la venta':'No disponible',excludedPresentation=['99Michelada','ALa Mera Mera','BSoda Amarilla','BSoda Azul','BSoda Roja'].includes(row.name),isBeverage=(row.categoryName==='Bebidas'||row.categoryName==='Cervezas')&&!excludedPresentation,packValue=row.packSize??'',displayPrice=row.available?formatMoney(row.price):'$',displayMargin=row.available?margin.label:'%',displayMarginClass=row.available?margin.cls:'na';return'<div class="inventory-row"><div class="inventory-main"><div class="inventory-name" title="'+safeName+'">'+safeName+'</div><div class="inventory-meta">'+safeMeta+'</div></div><div class="inventory-value">'+displayPrice+'</div><div class="inventory-value inventory-margin '+displayMarginClass+'" title="Margen de ganancia sobre el precio de venta">'+displayMargin+'</div><div class="inventory-presentation">'+(isBeverage?'<span class="presentation-label">Presentación</span><input type="number" min="1" step="1" value="'+String(packValue).replace(/"/g,'&quot;')+'" placeholder="—" data-pack-variant="'+row.variantId+'" aria-label="Unidades por presentación para '+safeName+'">':'—')+'</div><div class="inventory-value inventory-stock '+stock.cls+'">'+stock.label+'</div><div class="inventory-badge '+(row.available?'available':'unavailable')+'">'+available+'</div><div class="inventory-actions"><button class="ghost inventory-edit" type="button" data-edit-variant="'+row.variantId+'" data-edit-item="'+row.itemId+'">EDITAR</button></div></div>'}).join('')}
 function formatPurchaseDate(value){if(!value)return'—';const d=new Date(value+'T00:00:00');return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d)}
 let purchaseHistoryAll={purchases:[],lines:[]},purchaseHistoryRecentLimit=10,purchaseHistoryMode='recent',purchaseHistorySelected=null;
 function formatPurchaseDateTime(value){if(!value)return'—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'}).format(d)}
@@ -517,14 +534,82 @@ async function saveEditedPurchase(){const errorEl=$('purchaseDetailError'),lines
 async function deleteSelectedPurchase(){if(!purchaseHistorySelected)return;const p=purchaseHistorySelected;const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));const units=lines.reduce((s,l)=>s+Number(l.units_received||0),0);if(!confirm('Se eliminará la compra registrada de AvoHouse y se revertirán '+units.toLocaleString('es-CO')+' unidades del inventario de Loyverse. ¿Deseas continuar?'))return;try{const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'delete_purchase',purchase_id:p.id}});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo eliminar la compra.');$('purchaseDetailBackdrop').classList.add('hidden');purchaseHistorySelected=null;await Promise.all([loadInventory(),loadPurchaseHistory()]);showNotice('Compra eliminada y existencias revertidas correctamente.',false)}catch(e){showNotice(e?.message||'No se pudo eliminar la compra.',true)}}
 
 async function loadInventory(){ $('inventoryStatus').textContent='Cargando…';$('inventoryList').innerHTML='<div class="empty">Cargando inventario…</div>';const [{data:categories,error:categoryError},{data:items,error:itemError},{data:variants,error:variantError},{data:levels,error:inventoryError},{data:syncState,error:syncError}]=await Promise.all([db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),db.from('loyverse_items').select('id,item_name,category_id,track_stock,is_composite,components').is('deleted_at',null),db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,cost,default_price,purchase_pack_size,stores,option1_value,option2_value,option3_value').is('deleted_at',null),db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle()]);if(categoryError||itemError||variantError||inventoryError||syncError){const first=[categoryError,itemError,variantError,inventoryError,syncError].find(Boolean);$('inventoryStatus').textContent='Error';showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);return}inventoryCategories=categories||[];populateInventoryCategories();const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name])),itemMap=new Map((items||[]).map(i=>[String(i.id),i])),inventoryByVariant=new Map((levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)]));const variantMap=new Map((variants||[]).map(v=>[String(v.variant_id),v]));const unitCostMemo=new Map();const unitCostVisiting=new Set();function inventoryCalculatedCost(variantId){const key=String(variantId||'');if(unitCostMemo.has(key))return unitCostMemo.get(key);if(unitCostVisiting.has(key))return null;const v=variantMap.get(key);if(!v)return null;const item=itemMap.get(String(v.item_id))||{};if(!Boolean(item.is_composite)){const n=Number(v.cost);const value=Number.isFinite(n)&&n>=0?n:null;unitCostMemo.set(key,value);return value}unitCostVisiting.add(key);let total=0,valid=true;const components=Array.isArray(item.components)?item.components:[];if(!components.length)valid=false;for(const component of components){const qty=Number(component?.quantity);const componentCost=inventoryCalculatedCost(component?.variant_id);if(!Number.isFinite(qty)||qty<0||componentCost===null||!Number.isFinite(componentCost)){valid=false;break}total+=qty*componentCost}unitCostVisiting.delete(key);const value=valid&&Number.isFinite(total)?total:null;unitCostMemo.set(key,value);return value}inventoryRows=(variants||[]).map(v=>{const item=itemMap.get(String(v.item_id))||{},store=inventoryStoreState(v);return{storeId:String(store?.store_id||''),variantId:String(v.variant_id),itemId:String(v.item_id),name:String(item.item_name||'Sin nombre'),categoryId:String(item.category_id||''),categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',trackStock:Boolean(item.track_stock),stock:inventoryStockInfo(v,inventoryByVariant),cost:inventoryCalculatedCost(v.variant_id),lowStock:store?.low_stock===null||store?.low_stock===undefined?null:Number(store.low_stock),available:store?.available_for_sale!==false,price:store?.price??v.default_price,packSize:v.purchase_pack_size===null||v.purchase_pack_size===undefined?null:Number(v.purchase_pack_size),sku:String(v.sku||''),barcode:String(v.barcode||''),option1:String(v.option1_value||''),option2:String(v.option2_value||''),option3:String(v.option3_value||'')}});$('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');$('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');$('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');$('inventoryStatLevels').textContent=(levels||[]).length.toLocaleString('es-CO');$('inventoryStatus').textContent=syncState?.last_success_at?'Actualizado '+formatDate(syncState.last_success_at):'Loyverse';renderInventory()}
-async function openInventoryEditor(variantId,itemId,storeId){
+function inventoryComponentLabel(row){
+  const option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · ');
+  return [row.name,option].filter(Boolean).join(' · ');
+}
+function inventoryComponentOptionsHtml(selectedId,currentVariantId){
+  const current=String(currentVariantId||'');
+  return '<option value="">Selecciona un componente</option>'+
+    inventoryRows
+      .filter(r=>String(r.variantId)!==current)
+      .sort((a,b)=>inventoryComponentLabel(a).localeCompare(inventoryComponentLabel(b),'es',{sensitivity:'base',numeric:true}))
+      .map(r=>'<option value="'+String(r.variantId).replace(/"/g,'&quot;')+'" '+(String(r.variantId)===String(selectedId)?'selected':'')+'>'+String(inventoryComponentLabel(r)).replace(/[&<>]/g,'')+'</option>')
+      .join('');
+}
+function inventoryComponentCost(variantId){
+  const row=inventoryRows.find(r=>String(r.variantId)===String(variantId));
+  const n=Number(row?.cost);
+  return Number.isFinite(n)&&n>=0?n:null;
+}
+function updateInventoryEditComponents(){
+  if(!inventoryEditState?.isComposite)return 0;
+  let total=0;
+  document.querySelectorAll('#editComponentsList .inventory-component-row').forEach(row=>{
+    const variantId=row.querySelector('[data-edit-component]')?.value||'';
+    const quantity=Number(row.querySelector('[data-edit-component-quantity]')?.value||0);
+    const cost=inventoryComponentCost(variantId);
+    const lineCost=variantId&&Number.isFinite(quantity)&&quantity>0&&cost!==null?quantity*cost:0;
+    total+=lineCost;
+    row.querySelector('[data-edit-component-cost]').textContent=lineCost>0?formatMoney(lineCost):'—';
+  });
+  $('editComponentsTotal').textContent=formatMoney(total);
+  $('editUnitCost').value=total>0?formatMoney(total):'—';
+  return total;
+}
+function addInventoryEditComponent(component={}){
+  const row=document.createElement('div');
+  row.className='inventory-component-row';
+  const qty=Number(component.quantity);
+  row.innerHTML='<div class="inventory-field"><label class="field-label">Componente</label><select data-edit-component>'+inventoryComponentOptionsHtml(component.variantId,inventoryEditState.variantId)+'</select></div>'+
+    '<div class="inventory-field"><label class="field-label">Cantidad</label><input data-edit-component-quantity type="number" min="0.001" step="0.001" value="'+(Number.isFinite(qty)&&qty>0?String(component.quantity):'1')+'"></div>'+
+    '<div class="inventory-field"><span class="field-label">Costo</span><div class="inventory-component-cost" data-edit-component-cost>—</div></div>'+
+    '<button class="inventory-component-remove" data-edit-component-remove type="button" aria-label="Eliminar componente">×</button>';
+  $('editComponentsList').appendChild(row);
+  updateInventoryEditComponents();
+  return row;
+}
+function renderInventoryEditComponents(){
+  $('editComponentsList').innerHTML='';
+  const components=Array.isArray(inventoryEditState?.data?.item?.components)?inventoryEditState.data.item.components:[];
+  for(const component of components)addInventoryEditComponent({variantId:String(component?.variant_id||''),quantity:Number(component?.quantity)});
+  if(!components.length)addInventoryEditComponent({quantity:1});
+  updateInventoryEditComponents();
+}
+function readInventoryEditComponents(){
+  const rows=[...document.querySelectorAll('#editComponentsList .inventory-component-row')];
+  const components=[];
+  const ids=new Set();
+  for(const row of rows){
+    const variantId=String(row.querySelector('[data-edit-component]')?.value||'').trim();
+    const quantity=Number(row.querySelector('[data-edit-component-quantity]')?.value||0);
+    if(!variantId||!Number.isFinite(quantity)||quantity<=0)throw new Error('Todos los componentes deben tener producto y una cantidad mayor que 0.');
+    if(variantId===String(inventoryEditState.variantId))throw new Error('Un producto compuesto no puede incluirse a sí mismo.');
+    if(ids.has(variantId))throw new Error('No repitas un mismo componente. Combina su cantidad en una sola línea.');
+    ids.add(variantId);
+    components.push({variant_id:variantId,quantity});
+  }
+  if(!components.length)throw new Error('El producto compuesto debe tener al menos un componente.');
+  return components;
+}
+async function openInventoryEditor(variantId,itemId){
   const backdrop=$('inventoryEditBackdrop');
   backdrop.classList.remove('hidden');
   $('inventoryEditNotice').className='notice';
   $('inventoryEditNotice').textContent='Cargando información actual desde Loyverse…';
   $('inventoryEditSave').disabled=true;
   $('inventoryEditCancel').disabled=false;
-  inventoryEditState={variantId,itemId,storeId};
+  inventoryEditState={variantId,itemId};
   try{
     const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_edit',item_id:itemId,variant_id:variantId}});
     if(error)throw error;
@@ -532,8 +617,7 @@ async function openInventoryEditor(variantId,itemId,storeId){
     inventoryEditState.data=data;
     const item=data.item||{},variant=data.variant||{},purchase=data.purchase_settings||{};
     const listRow=inventoryRows.find(r=>String(r.variantId)===String(variantId));
-    const listCost=Number(listRow?.cost);
-    const liveCost=Number(variant.cost);
+    const listCost=Number(listRow?.cost),liveCost=Number(variant.cost);
     inventoryEditState.isComposite=Boolean(item.is_composite);
     inventoryEditState.baseUnitCost=Number.isFinite(listCost)&&listCost>=0?listCost:(Number.isFinite(liveCost)&&liveCost>=0?liveCost:NaN);
     $('inventoryEditTitle').textContent='Editar · '+(item.item_name||'Artículo');
@@ -542,32 +626,28 @@ async function openInventoryEditor(variantId,itemId,storeId){
     $('editTrackStock').textContent=item.track_stock?'ACTIVO':'DESACTIVADO';
     $('editTrackStock').style.color=item.track_stock?'#b8ff39':'#ffb7b7';
 
-    const packField=$('editPurchasePackSize'),presentationField=$('editPresentationCost');
-    if(inventoryEditState.isComposite){
-      packField.value='';
-      presentationField.value='';
-      packField.placeholder='No aplica';
-      presentationField.placeholder='No aplica';
-      packField.disabled=true;
-      presentationField.disabled=true;
-    }else{
-      packField.disabled=false;
-      presentationField.disabled=false;
-      packField.placeholder='';
-      presentationField.placeholder='';
-      packField.value=purchase.pack_size??'';
-      presentationField.value=purchase.presentation_cost??'';
-    }
+    $('editPurchaseSettingsFields').classList.toggle('hidden',inventoryEditState.isComposite);
+    $('editPurchasePackSize').disabled=inventoryEditState.isComposite;
+    $('editPresentationCost').disabled=inventoryEditState.isComposite;
+    $('editPurchasePackSize').value=inventoryEditState.isComposite?'':(purchase.pack_size??'');
+    $('editPresentationCost').value=inventoryEditState.isComposite?'':(purchase.presentation_cost??'');
 
-    $('editDefaultPrice').value=(Array.isArray(variant.stores)?variant.stores.find(s=>String(s?.store_id||'')===String(storeId))?.price:undefined)??variant.default_price??'';
+    $('editComponentsSection').classList.toggle('hidden',!inventoryEditState.isComposite);
+    if(inventoryEditState.isComposite)renderInventoryEditComponents();
+
+    $('editDefaultPrice').value=(Array.isArray(variant.stores)?variant.stores.find(s=>s?.price!==undefined)?.price:undefined)??variant.default_price??'';
     $('editItemCategory').innerHTML='<option value="">Sin categoría</option>'+inventoryCategories.map(cat=>'<option value="'+String(cat.id).replace(/"/g,'&quot;')+'">'+String(cat.name||'').replace(/[&<>]/g,'')+'</option>').join('');
     $('editItemCategory').value=item.category_id||'';
-    const stores=Array.isArray(data.stores)?data.stores:[],overrides=Array.isArray(variant.stores)?variant.stores:[];
-    $('editStore').innerHTML='';
-    stores.filter(s=>overrides.some(o=>String(o.store_id)===String(s.id))).forEach(s=>{const opt=document.createElement('option');opt.value=s.id;opt.textContent=s.name||s.id;$('editStore').appendChild(opt)});
-    if(!$('editStore').options.length)throw new Error('Loyverse no devolvió una tienda asociada a esta variante.');
-    $('editStore').value=storeId&&[...$('editStore').options].some(o=>o.value===storeId)?storeId:$('editStore').options[0].value;
-    populateInventoryEditStore();
+
+    $('inventoryEditInventorySection').classList.toggle('hidden',!Boolean(item.track_stock));
+    const override=Array.isArray(variant.stores)?variant.stores.find(s=>s?.store_id):null;
+    if(!override)throw new Error('Loyverse no devolvió una tienda asociada a esta variante.');
+    $('editLowStock').value=override.low_stock??'';
+    $('editOptimalStock').value=override.optimal_stock??'';
+    $('editAvailable').checked=override.available_for_sale!==false;
+    const level=(Array.isArray(data.inventory_levels)?data.inventory_levels:[]).find(l=>String(l.store_id)===String(override.store_id));
+    $('editStock').value=level?.in_stock??0;
+
     updateInventoryEditUnitCost();
     $('inventoryEditSave').disabled=false;
     updateInventoryEditPermissionHint();
@@ -577,10 +657,77 @@ async function openInventoryEditor(variantId,itemId,storeId){
     $('inventoryEditSave').disabled=true;
   }
 }
-function populateInventoryEditStore(){if(!inventoryEditState?.data)return;const variant=inventoryEditState.data.variant||{},storeId=$('editStore').value;const override=(Array.isArray(variant.stores)?variant.stores:[]).find(s=>String(s.store_id)===String(storeId));const level=(Array.isArray(inventoryEditState.data.inventory_levels)?inventoryEditState.data.inventory_levels:[]).find(l=>String(l.store_id)===String(storeId));if(!override) return;$('editLowStock').value=override.low_stock??'';$('editOptimalStock').value=override.optimal_stock??'';$('editAvailable').checked=override.available_for_sale!==false;$('editStock').value=level?.in_stock??0;inventoryEditState.storeId=storeId}
-function updateInventoryEditPermissionHint(){$('inventoryEditNoEdit').classList.add('hidden');$('inventoryEditNoEdit').textContent=''}function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
-function updateInventoryEditUnitCost(){const packRaw=$('editPurchasePackSize').value.trim(),presentationRaw=$('editPresentationCost').value.trim(),pack=Number(packRaw),presentation=Number(presentationRaw),base=Number(inventoryEditState?.baseUnitCost);const unit=packRaw!==''&&presentationRaw!==''&&Number.isFinite(pack)&&pack>0&&Number.isFinite(presentation)&&presentation>=0?presentation/pack:(Number.isFinite(base)?base:0);$('editUnitCost').value=unit>=0&&Number.isFinite(unit)?formatMoney(unit):'—';return unit}async function saveInventoryEditor(){if(!inventoryEditState?.data)return;const storeId=$('editStore').value;const stockValue=$('editStock').value.trim();if(stockValue===''){showNotice('Indica las existencias antes de guardar.',true);return}const packRaw=$('editPurchasePackSize').value.trim(),presentationRaw=$('editPresentationCost').value.trim();if((packRaw!==''||presentationRaw!=='')&&(packRaw===''||presentationRaw==='')){$('inventoryEditNotice').textContent='Para calcular el costo unitario debes indicar las unidades por presentación y el costo de compra.';$('inventoryEditNotice').className='notice show error';return}if(packRaw!==''||presentationRaw!==''){const pack=Number(packRaw),presentation=Number(presentationRaw);if(!Number.isInteger(pack)||pack<=0){$('inventoryEditNotice').textContent='Las unidades por presentación deben ser un entero mayor que 0.';$('inventoryEditNotice').className='notice show error';return}if(!Number.isFinite(presentation)||presentation<0){$('inventoryEditNotice').textContent='El costo de compra no puede ser negativo.';$('inventoryEditNotice').className='notice show error';return}}if(!confirm('Vas a modificar este artículo directamente en Loyverse. ¿Deseas continuar?'))return;const btn=$('inventoryEditSave');btn.disabled=true;$('inventoryEditCancel').disabled=true;$('inventoryEditNotice').className='notice show';$('inventoryEditNotice').textContent='Guardando cambios en Loyverse…';try{const body={action:'update_item',item_id:inventoryEditState.itemId,variant_id:inventoryEditState.variantId,store_id:storeId,item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null},variant:{default_price:$('editDefaultPrice').value},store:{available_for_sale:$('editAvailable').checked,low_stock:$('editLowStock').value,optimal_stock:$('editOptimalStock').value},inventory:{stock_after:stockValue},purchase:inventoryEditState.isComposite?{}:{pack_size:packRaw,presentation_cost:presentationRaw}};const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudieron guardar los cambios.');closeInventoryEditor();await loadInventory();showNotice('Cambios guardados en Loyverse y reflejados en el inventario de AvoHouse.',false)}catch(error){$('inventoryEditNotice').textContent=error?.message||'No se pudieron guardar los cambios.';$('inventoryEditNotice').className='notice show error'}finally{btn.disabled=false;$('inventoryEditCancel').disabled=false}}
-
+function updateInventoryEditPermissionHint(){$('inventoryEditNoEdit').classList.add('hidden');$('inventoryEditNoEdit').textContent=''}
+function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
+function updateInventoryEditUnitCost(){
+  if(inventoryEditState?.isComposite)return updateInventoryEditComponents();
+  const packRaw=$('editPurchasePackSize').value.trim(),presentationRaw=$('editPresentationCost').value.trim(),pack=Number(packRaw),presentation=Number(presentationRaw),base=Number(inventoryEditState?.baseUnitCost);
+  const unit=packRaw!==''&&presentationRaw!==''&&Number.isFinite(pack)&&pack>0&&Number.isFinite(presentation)&&presentation>=0?presentation/pack:(Number.isFinite(base)?base:0);
+  $('editUnitCost').value=unit>=0&&Number.isFinite(unit)?formatMoney(unit):'—';
+  return unit;
+}
+async function saveInventoryEditor(){
+  if(!inventoryEditState?.data)return;
+  const composite=Boolean(inventoryEditState.isComposite);
+  const stockValue=$('editStock').value.trim();
+  let components=null;
+  try{if(composite)components=readInventoryEditComponents()}catch(error){
+    $('inventoryEditNotice').textContent=error?.message||'Revisa la composición.';
+    $('inventoryEditNotice').className='notice show error';
+    return;
+  }
+  const packRaw=$('editPurchasePackSize').value.trim(),presentationRaw=$('editPresentationCost').value.trim();
+  if(!composite&&Boolean(inventoryEditState.data.item?.track_stock)&&stockValue===''){
+    $('inventoryEditNotice').textContent='Indica las existencias antes de guardar.';
+    $('inventoryEditNotice').className='notice show error';
+    return;
+  }
+  if(!composite&&((packRaw!==''||presentationRaw!=='')&&(packRaw===''||presentationRaw===''))){
+    $('inventoryEditNotice').textContent='Para calcular el costo unitario debes indicar las unidades por presentación y el costo de compra.';
+    $('inventoryEditNotice').className='notice show error';
+    return;
+  }
+  if(!composite&&(packRaw!==''||presentationRaw!=='')){
+    const pack=Number(packRaw),presentation=Number(presentationRaw);
+    if(!Number.isInteger(pack)||pack<=0){
+      $('inventoryEditNotice').textContent='Las unidades por presentación deben ser un entero mayor que 0.';
+      $('inventoryEditNotice').className='notice show error';return;
+    }
+    if(!Number.isFinite(presentation)||presentation<0){
+      $('inventoryEditNotice').textContent='El costo de compra no puede ser negativo.';
+      $('inventoryEditNotice').className='notice show error';return;
+    }
+  }
+  if(!confirm('Vas a modificar este artículo directamente en Loyverse. ¿Deseas continuar?'))return;
+  const btn=$('inventoryEditSave');
+  btn.disabled=true;$('inventoryEditCancel').disabled=true;
+  $('inventoryEditNotice').className='notice show';
+  $('inventoryEditNotice').textContent='Guardando cambios en Loyverse…';
+  try{
+    const body={
+      action:'update_item',
+      item_id:inventoryEditState.itemId,
+      variant_id:inventoryEditState.variantId,
+      item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null},
+      variant:{default_price:$('editDefaultPrice').value},
+      store:{available_for_sale:$('editAvailable').checked,low_stock:$('editLowStock').value,optimal_stock:$('editOptimalStock').value},
+      inventory:composite?{}:{stock_after:stockValue},
+      purchase:composite?{}:{pack_size:packRaw,presentation_cost:presentationRaw}
+    };
+    if(composite)body.item.components=components;
+    const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});
+    if(error)throw error;
+    if(!data?.ok)throw new Error(data?.error||'No se pudieron guardar los cambios.');
+    closeInventoryEditor();
+    await loadInventory();
+    showNotice('Cambios guardados en Loyverse y reflejados en el inventario de AvoHouse.',false);
+  }catch(error){
+    $('inventoryEditNotice').textContent=error?.message||'No se pudieron guardar los cambios.';
+    $('inventoryEditNotice').className='notice show error';
+  }finally{
+    btn.disabled=false;$('inventoryEditCancel').disabled=false;
+  }
+}
 function insumoProducts(){return inventoryRows.filter(r=>r.categoryName==='Insumos'&&!r.trackStock).sort((a,b)=>{const c=a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true});if(c!==0)return c;return [a.option1,a.option2,a.option3].filter(Boolean).join(' · ').localeCompare([b.option1,b.option2,b.option3].filter(Boolean).join(' · '),'es',{sensitivity:'base',numeric:true})})}
 function insumoProductLabel(row){const option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · ');return [row.name,option].filter(Boolean).join(' · ')}
 function insumoOptionsHtml(selectedId=''){return '<option value="">Selecciona un insumo</option>'+insumoProducts().map(r=>'<option value="'+r.variantId+'" '+(r.variantId===selectedId?'selected':'')+'>'+String(insumoProductLabel(r)).replace(/[&<>]/g,'')+'</option>').join('')}
@@ -627,9 +774,12 @@ try{
   $('purchaseBackdrop').addEventListener('click',event=>{if(event.target.id==='purchaseBackdrop')closePurchaseModal()});
   $('inventoryList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-variant]');if(!button)return;openInventoryEditor(button.dataset.editVariant,button.dataset.editItem,button.dataset.editStore)});
   $('inventoryList').addEventListener('change',event=>{const input=event.target.closest('[data-pack-variant]');if(input)savePurchasePackSize(input)});
-  $('editStore').addEventListener('change',populateInventoryEditStore);
   $('editPurchasePackSize').addEventListener('input',updateInventoryEditUnitCost);
   $('editPresentationCost').addEventListener('input',updateInventoryEditUnitCost);
+  $('editComponentsAdd').addEventListener('click',()=>addInventoryEditComponent({quantity:1}));
+  $('editComponentsList').addEventListener('input',event=>{if(event.target.matches('[data-edit-component-quantity]'))updateInventoryEditComponents()});
+  $('editComponentsList').addEventListener('change',event=>{if(event.target.matches('[data-edit-component]'))updateInventoryEditComponents()});
+  $('editComponentsList').addEventListener('click',event=>{const remove=event.target.closest('[data-edit-component-remove]');if(remove){remove.closest('.inventory-component-row')?.remove();if(!$('editComponentsList').children.length)addInventoryEditComponent({quantity:1});updateInventoryEditComponents()}});
   $('inventoryEditCancel').addEventListener('click',closeInventoryEditor);
   $('inventoryEditSave').addEventListener('click',saveInventoryEditor);
   $('inventoryEditBackdrop').addEventListener('click',event=>{if(event.target.id==='inventoryEditBackdrop')closeInventoryEditor()});
