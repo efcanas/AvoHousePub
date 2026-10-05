@@ -676,7 +676,7 @@ async function getPurchaseForAdmin(purchaseId: string) {
 
 async function getPurchaseLinesForAdmin(purchaseId: string) {
   const rows = await supabaseRequest(
-    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,line_number,variant_id,item_id,product_name,sku,pack_size,presentation_quantity,purchase_unit,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,previous_purchase_cost&purchase_id=eq." + encodeURIComponent(purchaseId) + "&order=line_number",
+    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,line_number,variant_id,item_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_unit,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,previous_purchase_cost&purchase_id=eq." + encodeURIComponent(purchaseId) + "&order=line_number",
     { method: "GET" },
   );
   return Array.isArray(rows) ? rows : [];
