@@ -394,293 +394,134 @@ async function createCatalogItem(token: string, payload: any) {
 }
 
 async function updateCatalogItem(token: string, payload: any) {
-  const itemId = requiredString(payload?.item_id, "item_id");
-  const variantId = requiredString(payload?.variant_id, "variant_id");
+  const itemId=requiredString(payload?.item_id,"item_id"),variantId=requiredString(payload?.variant_id,"variant_id");
+  const live=await getLiveEditData(token,itemId,variantId),currentItem=live.item,currentVariant=live.variant;
+  if(String(currentItem?.id||"")!==itemId)throw new Error("El artículo solicitado no coincide con el artículo de Loyverse.");
+  if(String(currentVariant?.variant_id||"")!==variantId)throw new Error("La variante solicitada no coincide con la variante de Loyverse.");
+  if(String(currentVariant?.item_id||"")!==itemId)throw new Error("La variante no pertenece al artículo seleccionado.");
+  const storeOverrides=Array.isArray(currentVariant?.stores)?currentVariant.stores.filter((s:any)=>s?.store_id):[],storeOverride=storeOverrides[0]??null,storeId=String(storeOverride?.store_id||"");
+  if(!storeOverride||!storeId)throw new Error("Loyverse no devolvió una tienda asociada a esta variante.");
 
-  const live = await getLiveEditData(token, itemId, variantId);
-  const currentItem = live.item;
-  const currentVariant = live.variant;
+  const itemChanges=payload?.item??{},variantChanges=payload?.variant??{},storeChanges=payload?.store??{},inventoryChanges=payload?.inventory??{},purchaseChanges=payload?.purchase??{};
+  let itemChanged=false,variantChanged=false,inventoryChanged=false,purchaseSettingsChanged=false;
+  const itemName=requiredString(itemChanges?.item_name??currentItem?.item_name,"nombre",64);
+  const categoryId=itemChanges?.category_id?String(itemChanges.category_id).trim():null;
+  const nextCategoryId=categoryId||String(currentItem?.category_id||"");
+  const catBody=await loyverseGet(token,"/categories?limit=250");
+  const nextCategory=(Array.isArray(catBody?.categories)?catBody.categories:[]).find((c:any)=>String(c?.id||"")===nextCategoryId);
+  const isInsumosCategory=String(nextCategory?.name||"").trim().toLowerCase()==="insumos";
 
-  if (String(currentItem?.id || "") !== itemId) throw new Error("El artículo solicitado no coincide con el artículo de Loyverse.");
-  if (String(currentVariant?.variant_id || "") !== variantId) throw new Error("La variante solicitada no coincide con la variante de Loyverse.");
-  if (String(currentVariant?.item_id || "") !== itemId) throw new Error("La variante no pertenece al artículo seleccionado.");
-
-  // AvoHouse trabaja actualmente con una sola tienda. El backend la resuelve directamente.
-  const storeOverrides = Array.isArray(currentVariant?.stores)
-    ? currentVariant.stores.filter((s: any) => s?.store_id)
-    : [];
-  const storeOverride = storeOverrides[0] ?? null;
-  const storeId = String(storeOverride?.store_id || "");
-  if (!storeOverride || !storeId) throw new Error("Loyverse no devolvió una tienda asociada a esta variante.");
-
-  const itemChanges = payload?.item ?? {};
-  const variantChanges = payload?.variant ?? {};
-  const storeChanges = payload?.store ?? {};
-  const inventoryChanges = payload?.inventory ?? {};
-  const purchaseChanges = payload?.purchase ?? {};
-
-  let itemChanged = false, variantChanged = false, inventoryChanged = false, purchaseSettingsChanged = false;
-
-  const itemName = requiredString(itemChanges?.item_name ?? currentItem?.item_name, "nombre", 64);
-  const categoryId = itemChanges?.category_id ? String(itemChanges.category_id).trim() : null;
-
-  const normalizeComponents = (value: any) =>
-    (Array.isArray(value) ? value : [])
-      .map((component: any) => ({
-        variant_id: String(component?.variant_id || "").trim(),
-        quantity: Number(component?.quantity),
-      }))
-      .filter((component: any) => component.variant_id);
-
-  let nextComponents = normalizeComponents(currentItem?.components);
-  if (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined) {
-    const incomingComponents = normalizeComponents(itemChanges.components);
-    if (!incomingComponents.length) throw new Error("El producto compuesto debe tener al menos un componente.");
-    const ids = new Set<string>();
-    for (const component of incomingComponents) {
-      if (!Number.isFinite(component.quantity) || component.quantity <= 0 || component.quantity > 1000000) {
-        throw new Error("Cada componente debe tener una cantidad mayor que 0.");
-      }
-      if (component.variant_id === variantId) {
-        throw new Error("Un producto compuesto no puede incluirse a sí mismo.");
-      }
-      if (ids.has(component.variant_id)) {
-        throw new Error("No se puede repetir un mismo componente.");
-      }
+  let nextComponents=Array.isArray(currentItem?.components)?currentItem.components:[];
+  if(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined){
+    const incoming=(Array.isArray(itemChanges.components)?itemChanges.components:[]).map((component:any)=>({variant_id:String(component?.variant_id||"").trim(),quantity:Number(component?.quantity)})).filter((component:any)=>component.variant_id);
+    if(!incoming.length)throw new Error("El producto compuesto debe tener al menos un componente.");
+    const ids=new Set<string>();
+    for(const component of incoming){
+      if(!Number.isFinite(component.quantity)||component.quantity<=0||component.quantity>1000000)throw new Error("Cada componente debe tener una cantidad mayor que 0.");
+      if(component.variant_id===variantId)throw new Error("Un producto compuesto no puede incluirse a sí mismo.");
+      if(ids.has(component.variant_id))throw new Error("No se puede repetir un mismo componente.");
       ids.add(component.variant_id);
     }
-    nextComponents = incomingComponents;
+    nextComponents=incoming;
   }
 
-  if (itemName !== String(currentItem?.item_name ?? "").trim() ||
-      String(categoryId ?? "") !== String(currentItem?.category_id ?? "") ||
-      (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined &&
-       JSON.stringify(nextComponents) !== JSON.stringify(normalizeComponents(currentItem?.components)))) {
-    itemChanged = true;
-    const itemPayload: Record<string, unknown> = {
-      id: itemId,
-      item_name: itemName,
-      category_id: categoryId,
-    };
-    if (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined) {
-      itemPayload.components = nextComponents;
-    }
-    await loyversePost(token, "/items", itemPayload);
+  if(itemName!==String(currentItem?.item_name??"").trim()||String(categoryId??"")!==String(currentItem?.category_id??"")||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(nextComponents)!==JSON.stringify(currentItem?.components??[]))){
+    itemChanged=true;
+    const itemPayload:Record<string,unknown>={id:itemId,item_name:itemName,category_id:categoryId};
+    if(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined)itemPayload.components=nextComponents;
+    await loyversePost(token,"/items",itemPayload);
   }
 
-  const nextVariant: any = { ...currentVariant, variant_id: variantId, item_id: itemId };
-  const currentPurchaseSettings = live.purchase_settings ?? {};
-  const hasPackInput = purchaseChanges?.pack_size !== undefined;
-  const hasPresentationCostInput = purchaseChanges?.presentation_cost !== undefined;
-  let nextPackSize = currentPurchaseSettings?.pack_size === null || currentPurchaseSettings?.pack_size === undefined
-    ? null : Number(currentPurchaseSettings.pack_size);
-  let nextPresentationCost = currentPurchaseSettings?.presentation_cost === null || currentPurchaseSettings?.presentation_cost === undefined
-    ? null : Number(currentPurchaseSettings.presentation_cost);
+  const nextVariant:any={...currentVariant,variant_id:variantId,item_id:itemId};
+  const currentPurchaseSettings=live.purchase_settings??{};
+  const hasPackInput=purchaseChanges?.pack_size!==undefined;
+  const hasPresentationCostInput=purchaseChanges?.presentation_cost!==undefined;
+  const hasContentInput=purchaseChanges?.presentation_content_ml!==undefined;
+  let nextPackSize=currentPurchaseSettings?.pack_size==null?null:Number(currentPurchaseSettings.pack_size);
+  let nextPresentationCost=currentPurchaseSettings?.presentation_cost==null?null:Number(currentPurchaseSettings.presentation_cost);
+  let nextContentMl=currentPurchaseSettings?.content_ml==null?null:Number(currentPurchaseSettings.content_ml);
 
-  if (hasPackInput || hasPresentationCostInput) {
-    const packRaw = String(purchaseChanges?.pack_size ?? "").trim();
-    const presentationRaw = String(purchaseChanges?.presentation_cost ?? "").trim();
-    if ((packRaw !== "" || presentationRaw !== "") && (packRaw === "" || presentationRaw === "")) {
-      throw new Error("Para calcular el costo unitario debes indicar las unidades por presentación y el costo de compra.");
-    }
-    if (packRaw === "" && presentationRaw === "") {
-      nextPackSize = null;
-      nextPresentationCost = null;
-    } else {
-      const pack = Number(packRaw);
-      const presentationCost = Number(presentationRaw);
-      if (!Number.isInteger(pack) || pack <= 0 || pack > 100000) {
-        throw new Error("Las unidades por presentación deben ser un entero mayor que 0.");
-      }
-      if (!Number.isFinite(presentationCost) || presentationCost < 0 || presentationCost > 1000000000) {
-        throw new Error("El costo de compra debe ser un número válido no negativo.");
-      }
-      nextPackSize = pack;
-      nextPresentationCost = presentationCost;
-      const unitCost = presentationCost / pack;
-      nextVariant.cost = unitCost;
-      nextVariant.purchase_cost = unitCost;
+  if(!isInsumosCategory&&hasContentInput)nextContentMl=null;
+  if(isInsumosCategory){
+    if(!hasPresentationCostInput && (nextPresentationCost===null||!Number.isFinite(nextPresentationCost))) throw new Error("El producto de la categoría Insumos requiere un costo de compra por presentación.");
+    if(!hasContentInput && (nextContentMl===null||!Number.isFinite(nextContentMl)||nextContentMl<=0)) throw new Error("El producto de la categoría Insumos requiere el contenido de la presentación en ml.");
+    const contentRaw=hasContentInput?String(purchaseChanges?.presentation_content_ml??"").trim():String(nextContentMl??"").trim();
+    const presentationRaw=hasPresentationCostInput?String(purchaseChanges?.presentation_cost??"").trim():String(nextPresentationCost??"").trim();
+    const content=Number(contentRaw),presentation=Number(presentationRaw);
+    if(contentRaw===""||!Number.isFinite(content)||content<=0||content>1000000000)throw new Error("El contenido de la presentación debe ser mayor que 0 ml.");
+    if(presentationRaw===""||!Number.isFinite(presentation)||presentation<0||presentation>1000000000)throw new Error("El costo de compra debe ser un número válido no negativo.");
+    nextPackSize=1;nextContentMl=content;nextPresentationCost=presentation;
+    const costPerMl=presentation/content;
+    nextVariant.cost=costPerMl;nextVariant.purchase_cost=costPerMl;
+    storeChanges.available_for_sale=false;
+  }else if(hasPackInput||hasPresentationCostInput){
+    const packRaw=String(purchaseChanges?.pack_size??"").trim(),presentationRaw=String(purchaseChanges?.presentation_cost??"").trim();
+    if((packRaw!==""||presentationRaw!=="")&&(packRaw===""||presentationRaw===""))throw new Error("Para calcular el costo unitario debes indicar las unidades por presentación y el costo de compra.");
+    if(packRaw===""&&presentationRaw===""){nextPackSize=null;nextPresentationCost=null;}
+    else{
+      const pack=Number(packRaw),presentationCost=Number(presentationRaw);
+      if(!Number.isInteger(pack)||pack<=0||pack>100000)throw new Error("Las unidades por presentación deben ser un entero mayor que 0.");
+      if(!Number.isFinite(presentationCost)||presentationCost<0||presentationCost>1000000000)throw new Error("El costo de compra debe ser un número válido no negativo.");
+      nextPackSize=pack;nextPresentationCost=presentationCost;nextVariant.cost=presentationCost/pack;nextVariant.purchase_cost=presentationCost/pack;
     }
   }
 
-  if (variantChanges?.sku !== undefined) {
-    const sku = String(variantChanges.sku).trim();
-    if (!sku && String(currentVariant?.sku ?? "").trim()) throw new Error("El SKU no puede quedar vacío al editar una variante existente.");
-    if (sku.length > 40) throw new Error("El SKU no puede superar 40 caracteres.");
-    nextVariant.sku = sku || currentVariant?.sku || undefined;
-  }
-  if (variantChanges?.barcode !== undefined) {
-    const barcode = String(variantChanges.barcode).trim();
-    if (barcode.length > 128) throw new Error("El código de barras no puede superar 128 caracteres.");
-    nextVariant.barcode = barcode || currentVariant?.barcode || undefined;
-  }
-  for (const field of ["cost", "purchase_cost", "default_price"]) {
-    if (variantChanges?.[field] !== undefined && variantChanges[field] !== "") {
-      const n = finiteNumber(variantChanges[field], field);
-      if (n < 0) throw new Error(`El campo ${field} no puede ser negativo.`);
-      nextVariant[field] = n;
-    }
-  }
-  if (variantChanges?.default_pricing_type !== undefined) {
-    const pricingType = String(variantChanges.default_pricing_type);
-    if (!["FIXED", "VARIABLE"].includes(pricingType)) throw new Error("Tipo de precio no válido.");
-    nextVariant.default_pricing_type = pricingType;
+  if(variantChanges?.sku!==undefined){const sku=String(variantChanges.sku).trim();if(!sku&&String(currentVariant?.sku??"").trim())throw new Error("El SKU no puede quedar vacío al editar una variante existente.");if(sku.length>40)throw new Error("El SKU no puede superar 40 caracteres.");nextVariant.sku=sku||currentVariant?.sku||undefined;}
+  if(variantChanges?.barcode!==undefined){const barcode=String(variantChanges.barcode).trim();if(barcode.length>128)throw new Error("El código de barras no puede superar 128 caracteres.");nextVariant.barcode=barcode||currentVariant?.barcode||undefined;}
+  for(const field of ["cost","purchase_cost","default_price"]){if(variantChanges?.[field]!==undefined&&variantChanges[field]!==""){const n=finiteNumber(variantChanges[field],field);if(n<0)throw new Error(`El campo ${field} no puede ser negativo.`);nextVariant[field]=n;}}
+  if(variantChanges?.default_pricing_type!==undefined){const pricingType=String(variantChanges.default_pricing_type);if(!["FIXED","VARIABLE"].includes(pricingType))throw new Error("Tipo de precio no válido.");nextVariant.default_pricing_type=pricingType;}
+
+  const nextStore:any={...storeOverride,store_id:storeId};
+  if(storeChanges?.price!==undefined&&storeChanges.price!==""){const price=finiteNumber(storeChanges.price,"precio");if(price<0)throw new Error("El precio no puede ser negativo.");nextStore.price=price;}
+  if(storeChanges?.available_for_sale!==undefined)nextStore.available_for_sale=Boolean(storeChanges.available_for_sale);
+  if(storeChanges?.low_stock!==undefined&&storeChanges.low_stock!==""){const low=finiteNumber(storeChanges.low_stock,"stock bajo");if(low<0)throw new Error("El stock bajo no puede ser negativo.");nextStore.low_stock=low;}
+  if(storeChanges?.optimal_stock!==undefined&&storeChanges.optimal_stock!==""){const optimal=finiteNumber(storeChanges.optimal_stock,"stock óptimo");if(optimal<0)throw new Error("El stock óptimo no puede ser negativo.");nextStore.optimal_stock=optimal;}
+  if(variantChanges?.default_price!==undefined&&variantChanges.default_price!=="")nextStore.price=Number(nextVariant.default_price);
+  if(isInsumosCategory)nextStore.available_for_sale=false;
+
+  nextVariant.stores=(Array.isArray(currentVariant?.stores)?currentVariant.stores:[]).map((store:any)=>String(store?.store_id||"")===storeId?nextStore:store);
+
+  const changedVariantFields=String(nextVariant?.sku??"")!==String(currentVariant?.sku??"")||String(nextVariant?.barcode??"")!==String(currentVariant?.barcode??"")||Number(nextVariant?.cost??0)!==Number(currentVariant?.cost??0)||Number(nextVariant?.purchase_cost??0)!==Number(currentVariant?.purchase_cost??0)||String(nextVariant?.default_pricing_type??"")!==String(currentVariant?.default_pricing_type??"")||Number(nextVariant?.default_price??0)!==Number(currentVariant?.default_price??0)||JSON.stringify(nextVariant.stores)!==JSON.stringify(currentVariant.stores);
+
+  if(changedVariantFields){variantChanged=true;const variantPayload:Record<string,unknown>={variant_id:variantId,item_id:itemId,reference_variant_id:currentVariant?.reference_variant_id??null,option1_value:currentVariant?.option1_value??null,option2_value:currentVariant?.option2_value??null,option3_value:currentVariant?.option3_value??null,sku:nextVariant?.sku??undefined,barcode:nextVariant?.barcode??undefined,cost:nextVariant?.cost??0,purchase_cost:nextVariant?.purchase_cost??0,default_pricing_type:nextVariant?.default_pricing_type??"VARIABLE",default_price:nextVariant?.default_price??null,stores:nextVariant.stores};
+    if(variantPayload.sku===undefined)delete variantPayload.sku;if(variantPayload.barcode===undefined)delete variantPayload.barcode;
+    await loyversePost(token,"/variants",variantPayload);
   }
 
-  const nextStore: any = { ...storeOverride, store_id: storeId };
-  if (storeChanges?.price !== undefined && storeChanges.price !== "") {
-    const price = finiteNumber(storeChanges.price, "precio");
-    if (price < 0) throw new Error("El precio no puede ser negativo.");
-    nextStore.price = price;
-  }
-  if (storeChanges?.available_for_sale !== undefined) nextStore.available_for_sale = Boolean(storeChanges.available_for_sale);
-  if (storeChanges?.low_stock !== undefined && storeChanges.low_stock !== "") {
-    const lowStock = finiteNumber(storeChanges.low_stock, "stock bajo");
-    if (lowStock < 0) throw new Error("El stock bajo no puede ser negativo.");
-    nextStore.low_stock = lowStock;
-  }
-  if (storeChanges?.optimal_stock !== undefined && storeChanges.optimal_stock !== "") {
-    const optimalStock = finiteNumber(storeChanges.optimal_stock, "stock óptimo");
-    if (optimalStock < 0) throw new Error("El stock óptimo no puede ser negativo.");
-    nextStore.optimal_stock = optimalStock;
+  const currentPackComparable=currentPurchaseSettings?.pack_size==null?null:Number(currentPurchaseSettings.pack_size);
+  const currentPresentationComparable=currentPurchaseSettings?.presentation_cost==null?null:Number(currentPurchaseSettings.presentation_cost);
+  const currentContentComparable=currentPurchaseSettings?.content_ml==null?null:Number(currentPurchaseSettings.content_ml);
+  purchaseSettingsChanged=nextPackSize!==currentPackComparable||nextPresentationCost!==currentPresentationComparable||nextContentMl!==currentContentComparable;
+
+  if(inventoryChanges?.stock_after!==undefined&&inventoryChanges.stock_after!==""&&Boolean(currentItem?.track_stock)&&!isInsumosCategory){
+    const stockAfter=finiteNumber(inventoryChanges.stock_after,"existencias");if(stockAfter<0)throw new Error("Las existencias no pueden ser negativas desde esta pantalla.");
+    const currentLevel=(Array.isArray(live.inventory_levels)?live.inventory_levels:[]).find((level:any)=>String(level?.store_id||"")===storeId),currentStock=currentLevel?Number(currentLevel.in_stock??0):0;
+    if(stockAfter!==currentStock){inventoryChanged=true;await loyversePost(token,"/inventory",{inventory_levels:[{variant_id:variantId,store_id:storeId,stock_after:stockAfter}]});}
   }
 
-  // AHP maneja un único precio porque existe una sola tienda.
-  if (variantChanges?.default_price !== undefined && variantChanges.default_price !== "") {
-    nextStore.price = Number(nextVariant.default_price);
+  const verified=await getLiveEditData(token,itemId,variantId),verifiedStore=findStoreOverride(verified.variant,storeId),verifiedLevel=(Array.isArray(verified.inventory_levels)?verified.inventory_levels:[]).find((level:any)=>String(level?.store_id||"")===storeId);
+  if(itemChanged&&(String(verified.item?.item_name??"").trim()!==itemName||String(verified.item?.category_id??"")!==String(categoryId??"")||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(verified.item?.components??[])!==JSON.stringify(nextComponents))))throw new Error("La verificación posterior a la actualización del artículo o composición no coincidió con lo solicitado.");
+
+  if(variantChanged){
+    const expectedSku=nextVariant?.sku,expectedBarcode=nextVariant?.barcode;
+    if((expectedSku!==undefined&&String(verified.variant?.sku??"")!==String(expectedSku))||(expectedBarcode!==undefined&&String(verified.variant?.barcode??"")!==String(expectedBarcode))||Number(verified.variant?.cost??0)!==Number(nextVariant?.cost??0)||Number(verified.variant?.purchase_cost??0)!==Number(nextVariant?.purchase_cost??0)||Number(verified.variant?.default_price??0)!==Number(nextVariant?.default_price??0)||String(verified.variant?.default_pricing_type??"")!==String(nextVariant?.default_pricing_type??""))throw new Error("La verificación posterior a la actualización de la variante no coincidió con lo solicitado.");
+    const verifiedStoreAgain=findStoreOverride(verified.variant,storeId);
+    for(const key of ["price","available_for_sale","low_stock","optimal_stock"])if(nextStore?.[key]!==undefined&&JSON.stringify(verifiedStoreAgain?.[key])!==JSON.stringify(nextStore?.[key]))throw new Error("La verificación posterior de la configuración de tienda no coincidió con lo solicitado.");
   }
+  if(inventoryChanged){const verifiedStock=Number(verifiedLevel?.in_stock),expectedStock=Number(inventoryChanges.stock_after);if(!Number.isFinite(verifiedStock)||verifiedStock!==expectedStock)throw new Error("La verificación posterior al cambio de existencias no coincidió con lo solicitado.");}
 
-  nextVariant.stores = (Array.isArray(currentVariant?.stores) ? currentVariant.stores : [])
-    .map((store: any) => String(store?.store_id || "") === storeId ? nextStore : store);
-
-  const changedVariantFields =
-    String(nextVariant?.sku ?? "") !== String(currentVariant?.sku ?? "") ||
-    String(nextVariant?.barcode ?? "") !== String(currentVariant?.barcode ?? "") ||
-    Number(nextVariant?.cost ?? 0) !== Number(currentVariant?.cost ?? 0) ||
-    Number(nextVariant?.purchase_cost ?? 0) !== Number(currentVariant?.purchase_cost ?? 0) ||
-    String(nextVariant?.default_pricing_type ?? "") !== String(currentVariant?.default_pricing_type ?? "") ||
-    Number(nextVariant?.default_price ?? 0) !== Number(currentVariant?.default_price ?? 0) ||
-    JSON.stringify(nextVariant.stores) !== JSON.stringify(currentVariant.stores);
-
-  if (changedVariantFields) {
-    variantChanged = true;
-    const variantPayload: Record<string, unknown> = {
-      variant_id: variantId,
-      item_id: itemId,
-      reference_variant_id: currentVariant?.reference_variant_id ?? null,
-      option1_value: currentVariant?.option1_value ?? null,
-      option2_value: currentVariant?.option2_value ?? null,
-      option3_value: currentVariant?.option3_value ?? null,
-      sku: nextVariant?.sku ?? undefined,
-      barcode: nextVariant?.barcode ?? undefined,
-      cost: nextVariant?.cost ?? 0,
-      purchase_cost: nextVariant?.purchase_cost ?? 0,
-      default_pricing_type: nextVariant?.default_pricing_type ?? "VARIABLE",
-      default_price: nextVariant?.default_price ?? null,
-      stores: nextVariant.stores,
-    };
-    if (variantPayload.sku === undefined) delete variantPayload.sku;
-    if (variantPayload.barcode === undefined) delete variantPayload.barcode;
-    await loyversePost(token, "/variants", variantPayload);
+  if(purchaseSettingsChanged){
+    const saved=await supabaseRequest("/rest/v1/loyverse_item_variants?variant_id=eq."+encodeURIComponent(variantId),{
+      method:"PATCH",headers:{Prefer:"return=representation"},
+      body:JSON.stringify({purchase_pack_size:nextPackSize,purchase_presentation_cost:nextPresentationCost,purchase_presentation_content_ml:nextContentMl,synced_at:new Date().toISOString()})
+    });
+    const savedRow=Array.isArray(saved)?saved[0]:null;
+    const savedPack=savedRow?.purchase_pack_size==null?null:Number(savedRow.purchase_pack_size),savedPresentation=savedRow?.purchase_presentation_cost==null?null:Number(savedRow.purchase_presentation_cost),savedContent=savedRow?.purchase_presentation_content_ml==null?null:Number(savedRow.purchase_presentation_content_ml);
+    if(savedPack!==nextPackSize||savedPresentation!==nextPresentationCost||savedContent!==nextContentMl)throw new Error("La verificación posterior de la presentación, contenido y costo de compra no coincidió con lo solicitado.");
   }
-
-  const currentPackComparable = currentPurchaseSettings?.pack_size === null || currentPurchaseSettings?.pack_size === undefined ? null : Number(currentPurchaseSettings.pack_size);
-  const currentPresentationComparable = currentPurchaseSettings?.presentation_cost === null || currentPurchaseSettings?.presentation_cost === undefined ? null : Number(currentPurchaseSettings.presentation_cost);
-  purchaseSettingsChanged =
-    nextPackSize !== currentPackComparable ||
-    nextPresentationCost !== currentPresentationComparable;
-
-  if (inventoryChanges?.stock_after !== undefined && inventoryChanges.stock_after !== "" && Boolean(currentItem?.track_stock)) {
-    const stockAfter = finiteNumber(inventoryChanges.stock_after, "existencias");
-    if (stockAfter < 0) throw new Error("Las existencias no pueden ser negativas desde esta pantalla.");
-    const currentLevel = (Array.isArray(live.inventory_levels) ? live.inventory_levels : [])
-      .find((level: any) => String(level?.store_id || "") === storeId);
-    const currentStock = currentLevel ? Number(currentLevel.in_stock ?? 0) : 0;
-    if (stockAfter !== currentStock) {
-      inventoryChanged = true;
-      await loyversePost(token, "/inventory", {
-        inventory_levels: [{ variant_id: variantId, store_id: storeId, stock_after: stockAfter }],
-      });
-    }
-  }
-
-  const verified = await getLiveEditData(token, itemId, variantId);
-  const verifiedStore = findStoreOverride(verified.variant, storeId);
-  const verifiedLevel = (Array.isArray(verified.inventory_levels) ? verified.inventory_levels : [])
-    .find((level: any) => String(level?.store_id || "") === storeId);
-
-  if (itemChanged &&
-      (String(verified.item?.item_name ?? "").trim() !== itemName ||
-       String(verified.item?.category_id ?? "") !== String(categoryId ?? "") ||
-       (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined &&
-        JSON.stringify(normalizeComponents(verified.item?.components)) !== JSON.stringify(nextComponents)))) {
-    throw new Error("La verificación posterior a la actualización del artículo o composición no coincidió con lo solicitado.");
-  }
-
-  if (variantChanged) {
-    const expectedSku = nextVariant?.sku;
-    const expectedBarcode = nextVariant?.barcode;
-    if ((expectedSku !== undefined && String(verified.variant?.sku ?? "") !== String(expectedSku)) ||
-        (expectedBarcode !== undefined && String(verified.variant?.barcode ?? "") !== String(expectedBarcode)) ||
-        Number(verified.variant?.cost ?? 0) !== Number(nextVariant?.cost ?? 0) ||
-        Number(verified.variant?.purchase_cost ?? 0) !== Number(nextVariant?.purchase_cost ?? 0) ||
-        Number(verified.variant?.default_price ?? 0) !== Number(nextVariant?.default_price ?? 0) ||
-        String(verified.variant?.default_pricing_type ?? "") !== String(nextVariant?.default_pricing_type ?? "") ) {
-      throw new Error("La verificación posterior a la actualización de la variante no coincidió con lo solicitado.");
-    }
-    const verifiedStoreAgain = findStoreOverride(verified.variant, storeId);
-    for (const key of ["price","available_for_sale","low_stock","optimal_stock"]) {
-      if (nextStore?.[key] !== undefined && JSON.stringify(verifiedStoreAgain?.[key]) !== JSON.stringify(nextStore?.[key])) {
-        throw new Error("La verificación posterior de la configuración de tienda no coincidió con lo solicitado.");
-      }
-    }
-  }
-
-  if (inventoryChanged) {
-    const verifiedStock = Number(verifiedLevel?.in_stock);
-    const expectedStock = Number(inventoryChanges.stock_after);
-    if (!Number.isFinite(verifiedStock) || verifiedStock !== expectedStock) {
-      throw new Error("La verificación posterior al cambio de existencias no coincidió con lo solicitado.");
-    }
-  }
-
-  if (purchaseSettingsChanged) {
-    const saved = await supabaseRequest(
-      "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(variantId),
-      {
-        method: "PATCH",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify({
-          purchase_pack_size: nextPackSize,
-          purchase_presentation_cost: nextPresentationCost,
-          synced_at: new Date().toISOString(),
-        }),
-      },
-    );
-    const savedRow = Array.isArray(saved) ? saved[0] : null;
-    const savedPack = savedRow?.purchase_pack_size === null || savedRow?.purchase_pack_size === undefined ? null : Number(savedRow.purchase_pack_size);
-    const savedPresentation = savedRow?.purchase_presentation_cost === null || savedRow?.purchase_presentation_cost === undefined ? null : Number(savedRow.purchase_presentation_cost);
-    if (savedPack !== nextPackSize || savedPresentation !== nextPresentationCost) {
-      throw new Error("La verificación posterior de la presentación y el costo de compra no coincidió con lo solicitado.");
-    }
-  }
-
-  await mirrorEditedItem(verified.item);
-  await mirrorEditedVariant(verified.variant);
-  await mirrorEditedInventory(verified.inventory_levels);
-
-  return {
-    ok: true,
-    item: verified.item,
-    variant: verified.variant,
-    inventory_levels: verified.inventory_levels,
-    stores: verified.stores,
-    store_id: storeId,
-    changed: { item: itemChanged, variant: variantChanged, inventory: inventoryChanged, purchase_settings: purchaseSettingsChanged },
-    edited_at: new Date().toISOString(),
-  };
+  await mirrorEditedItem(verified.item);await mirrorEditedVariant(verified.variant);await mirrorEditedInventory(verified.inventory_levels);
+  return{ok:true,item:verified.item,variant:verified.variant,inventory_levels:verified.inventory_levels,stores:verified.stores,store_id:storeId,changed:{item:itemChanged,variant:variantChanged,inventory:inventoryChanged,purchase_settings:purchaseSettingsChanged},edited_at:new Date().toISOString()};
 }
-
 
 async function setPurchasePackSize(payload: any) {
   const variantId = requiredString(payload?.variant_id, "variant_id");
