@@ -169,7 +169,7 @@ async function getLiveEditData(token: string, itemId: string, variantId: string)
     loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(variantId) + "&limit=250"),
     loyverseGet(token, "/stores?limit=250"),
     supabaseRequest(
-      "/rest/v1/loyverse_item_variants?select=variant_id,purchase_pack_size,purchase_presentation_cost&variant_id=eq." +
+      "/rest/v1/loyverse_item_variants?select=variant_id,purchase_pack_size,purchase_presentation_cost,purchase_presentation_content_ml&variant_id=eq." +
         encodeURIComponent(variantId) + "&limit=1",
       { method: "GET" },
     ),
@@ -265,30 +265,18 @@ async function createCatalogItem(token: string, payload: any) {
   const itemName = requiredString(payload?.item_name, "nombre", 64);
   const categoryId = requiredString(payload?.category_id, "categoría", 64);
   const productType = String(payload?.product_type || "regular").trim().toLowerCase();
-  if (!["regular", "composite"].includes(productType)) {
-    throw new Error("Tipo de producto no válido.");
-  }
+  if (!["regular", "composite"].includes(productType)) throw new Error("Tipo de producto no válido.");
 
   const [storeBody, categoryBody] = await Promise.all([
     loyverseGet(token, "/stores?limit=250"),
     loyverseGet(token, "/categories?limit=250"),
   ]);
-  const stores = (Array.isArray(storeBody?.stores) ? storeBody.stores : [])
-    .filter((store: any) => store?.id && !store?.deleted_at);
-  if (stores.length !== 1) {
-    throw new Error(
-      stores.length === 0
-        ? "No se encontró una tienda activa en Loyverse."
-        : "AvoHouse espera una sola tienda activa en Loyverse para crear productos.",
-    );
-  }
+  const stores = (Array.isArray(storeBody?.stores) ? storeBody.stores : []).filter((store: any) => store?.id && !store?.deleted_at);
+  if (stores.length !== 1) throw new Error(stores.length === 0 ? "No se encontró una tienda activa en Loyverse." : "AvoHouse espera una sola tienda activa en Loyverse para crear productos.");
   const storeId = String(stores[0].id);
-
-  const category = (Array.isArray(categoryBody?.categories) ? categoryBody.categories : [])
-    .find((entry: any) => String(entry?.id || "") === categoryId);
+  const category = (Array.isArray(categoryBody?.categories) ? categoryBody.categories : []).find((entry: any) => String(entry?.id || "") === categoryId);
   if (!category) throw new Error("La categoría seleccionada no existe en Loyverse.");
   const isInsumosCategory = String(category?.name || "").trim().toLowerCase() === "insumos";
-
   const isComposite = productType === "composite";
   const trackStock = isComposite || isInsumosCategory ? false : Boolean(payload?.track_stock);
   const availableForSale = isInsumosCategory ? false : payload?.available_for_sale !== false;
@@ -296,22 +284,21 @@ async function createCatalogItem(token: string, payload: any) {
   let unitCost: number | null = null;
   let packSize: number | null = null;
   let presentationCost: number | null = null;
+  let presentationContentMl: number | null = null;
 
   if (!isComposite) {
     const purchaseCost = finiteNumber(payload?.purchase_cost, "costo de compra");
-    if (purchaseCost < 0 || purchaseCost > 1000000000) {
-      throw new Error("El costo de compra debe ser un número válido no negativo.");
-    }
-
+    if (purchaseCost < 0 || purchaseCost > 1000000000) throw new Error("El costo de compra debe ser un número válido no negativo.");
     if (isInsumosCategory) {
+      const contentMl = finiteNumber(payload?.purchase_content_ml, "contenido de la presentación");
+      if (contentMl <= 0 || contentMl > 1000000000) throw new Error("El contenido de la presentación debe ser mayor que 0 ml.");
       packSize = 1;
       presentationCost = purchaseCost;
-      unitCost = purchaseCost;
+      presentationContentMl = contentMl;
+      unitCost = purchaseCost / contentMl;
     } else {
       const pack = finiteNumber(payload?.pack_size, "unidades por presentación");
-      if (!Number.isInteger(pack) || pack <= 0 || pack > 100000) {
-        throw new Error("Las unidades por presentación deben ser un entero mayor que 0.");
-      }
+      if (!Number.isInteger(pack) || pack <= 0 || pack > 100000) throw new Error("Las unidades por presentación deben ser un entero mayor que 0.");
       packSize = pack;
       presentationCost = purchaseCost;
       unitCost = purchaseCost / pack;
@@ -321,15 +308,11 @@ async function createCatalogItem(token: string, payload: any) {
   let price = 0;
   if (!isInsumosCategory) {
     price = finiteNumber(payload?.price, "precio");
-    if (price < 0 || price > 1000000000) {
-      throw new Error("El precio debe ser un número válido no negativo.");
-    }
+    if (price < 0 || price > 1000000000) throw new Error("El precio debe ser un número válido no negativo.");
   }
 
-  const lowStockRaw = payload?.low_stock;
-  const optimalStockRaw = payload?.optimal_stock;
-  let lowStock: number | null = null;
-  let optimalStock: number | null = null;
+  const lowStockRaw = payload?.low_stock, optimalStockRaw = payload?.optimal_stock;
+  let lowStock: number | null = null, optimalStock: number | null = null;
   if (trackStock && lowStockRaw !== undefined && String(lowStockRaw).trim() !== "") {
     lowStock = finiteNumber(lowStockRaw, "stock bajo");
     if (lowStock < 0) throw new Error("El stock bajo no puede ser negativo.");
@@ -341,35 +324,22 @@ async function createCatalogItem(token: string, payload: any) {
 
   let initialStock = 0;
   if (trackStock) {
-    const stockRaw = payload?.initial_stock === undefined || String(payload.initial_stock).trim() === ""
-      ? 0
-      : finiteNumber(payload.initial_stock, "existencias iniciales");
-    if (stockRaw < 0 || stockRaw > 9999999.999) {
-      throw new Error("Las existencias iniciales deben estar entre 0 y 9.999.999,999.");
-    }
+    const stockRaw = payload?.initial_stock === undefined || String(payload.initial_stock).trim() === "" ? 0 : finiteNumber(payload.initial_stock, "existencias iniciales");
+    if (stockRaw < 0 || stockRaw > 9999999.999) throw new Error("Las existencias iniciales deben estar entre 0 y 9.999.999,999.");
     initialStock = stockRaw;
   }
 
-  const normalizeComponents = (value: any) =>
-    (Array.isArray(value) ? value : [])
-      .map((component: any) => ({
-        variant_id: String(component?.variant_id || "").trim(),
-        quantity: Number(component?.quantity),
-      }))
-      .filter((component: any) => component.variant_id);
-
+  const normalizeComponents = (value: any) => (Array.isArray(value) ? value : [])
+    .map((component: any) => ({variant_id:String(component?.variant_id||"").trim(),quantity:Number(component?.quantity)}))
+    .filter((component: any) => component.variant_id);
   const components = normalizeComponents(payload?.components);
   if (isComposite) {
     if (!components.length) throw new Error("El producto compuesto debe tener al menos un componente.");
     if (components.length > 100) throw new Error("Un producto no puede superar 100 componentes.");
     const ids = new Set<string>();
     for (const component of components) {
-      if (!Number.isFinite(component.quantity) || component.quantity <= 0 || component.quantity > 1000000) {
-        throw new Error("Cada componente debe tener una cantidad mayor que 0.");
-      }
-      if (ids.has(component.variant_id)) {
-        throw new Error("No se puede repetir un mismo componente.");
-      }
+      if (!Number.isFinite(component.quantity) || component.quantity <= 0 || component.quantity > 1000000) throw new Error("Cada componente debe tener una cantidad mayor que 0.");
+      if (ids.has(component.variant_id)) throw new Error("No se puede repetir un mismo componente.");
       ids.add(component.variant_id);
       await loyverseGet(token, "/variants/" + encodeURIComponent(component.variant_id));
     }
@@ -381,33 +351,21 @@ async function createCatalogItem(token: string, payload: any) {
     default_pricing_type: "FIXED",
     default_price: price,
     stores: [{
-      store_id: storeId,
-      pricing_type: "FIXED",
-      price,
+      store_id: storeId, pricing_type: "FIXED", price,
       available_for_sale: availableForSale,
       low_stock: trackStock ? lowStock : null,
       optimal_stock: trackStock ? optimalStock : null,
     }],
   };
-
   const itemPayload: Record<string, unknown> = {
-    item_name: itemName,
-    category_id: categoryId,
-    track_stock: trackStock,
-    sold_by_weight: false,
-    is_composite: isComposite,
-    use_production: false,
+    item_name: itemName, category_id: categoryId, track_stock: trackStock,
+    sold_by_weight: false, is_composite: isComposite, use_production: false,
   };
   if (isComposite) itemPayload.components = components;
 
-  const created = await loyversePost(token, "/items", {
-    ...itemPayload,
-    variants: [variantPayload],
-  });
-
+  const created = await loyversePost(token, "/items", {...itemPayload, variants:[variantPayload]});
   const itemId = String(created?.id || "").trim();
   if (!itemId) throw new Error("Loyverse creó el artículo pero no devolvió su identificador.");
-
   let liveItem = created;
   let variant = Array.isArray(created?.variants) ? created.variants[0] : null;
   if (!variant?.variant_id) {
@@ -415,63 +373,24 @@ async function createCatalogItem(token: string, payload: any) {
     variant = Array.isArray(liveItem?.variants) ? liveItem.variants[0] : null;
   }
   const variantId = String(variant?.variant_id || "").trim();
-  if (!variantId) {
-    throw new Error("Loyverse creó el artículo pero no devolvió una variante utilizable.");
-  }
+  if (!variantId) throw new Error("Loyverse creó el artículo pero no devolvió una variante utilizable.");
 
-  let inventoryLevels: any[] = [];
+  let inventoryLevels:any[] = [];
   if (trackStock) {
-    const inventoryResponse = await loyversePost(token, "/inventory", {
-      inventory_levels: [{
-        variant_id: variantId,
-        store_id: storeId,
-        stock_after: initialStock,
-      }],
-    });
-    inventoryLevels = Array.isArray(inventoryResponse?.inventory_levels)
-      ? inventoryResponse.inventory_levels
-      : [];
-    if (!inventoryLevels.length) {
-      inventoryLevels = [{
-        variant_id: variantId,
-        store_id: storeId,
-        in_stock: initialStock,
-      }];
-    }
+    const inventoryResponse = await loyversePost(token, "/inventory", {inventory_levels:[{variant_id:variantId,store_id:storeId,stock_after:initialStock}]});
+    inventoryLevels = Array.isArray(inventoryResponse?.inventory_levels) ? inventoryResponse.inventory_levels : [];
+    if (!inventoryLevels.length) inventoryLevels=[{variant_id:variantId,store_id:storeId,in_stock:initialStock}];
   }
-
   await mirrorEditedItem(liveItem);
   await mirrorEditedVariant(variant);
-
   if (!isComposite && packSize !== null && presentationCost !== null) {
-    await supabaseRequest(
-      "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(variantId),
-      {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({
-          purchase_pack_size: packSize,
-          purchase_presentation_cost: presentationCost,
-        }),
-      },
-    );
+    await supabaseRequest("/rest/v1/loyverse_item_variants?variant_id=eq."+encodeURIComponent(variantId),{
+      method:"PATCH",headers:{Prefer:"return=minimal"},
+      body:JSON.stringify({purchase_pack_size:packSize,purchase_presentation_cost:presentationCost,purchase_presentation_content_ml:presentationContentMl}),
+    });
   }
-
   if (inventoryLevels.length) await mirrorEditedInventory(inventoryLevels);
-
-  return {
-    ok: true,
-    item_id: itemId,
-    variant_id: variantId,
-    item_name: String(liveItem?.item_name || itemName),
-    product_type: productType,
-    unit_cost: unitCost,
-    purchase_pack_size: packSize,
-    purchase_presentation_cost: presentationCost,
-    initial_stock: trackStock ? initialStock : null,
-    available_for_sale: availableForSale,
-    created_at: liveItem?.created_at ?? null,
-  };
+  return {ok:true,item_id:itemId,variant_id:variantId,item_name:String(liveItem?.item_name||itemName),product_type:productType,unit_cost:unitCost,purchase_pack_size:packSize,purchase_presentation_cost:presentationCost,purchase_presentation_content_ml:presentationContentMl,initial_stock:trackStock?initialStock:null,available_for_sale:availableForSale,created_at:liveItem?.created_at??null};
 }
 
 async function updateCatalogItem(token: string, payload: any) {
@@ -1129,7 +1048,7 @@ async function deletePurchase(token: string, userId: string, payload: any) {
 
 async function getInsumoProduct(token: string, variantId: string) {
   const rows = await supabaseRequest(
-    "/rest/v1/loyverse_item_variants?select=variant_id,item_id,sku,purchase_cost,stores,option1_value,option2_value,option3_value&variant_id=eq." + encodeURIComponent(variantId) + "&limit=1",
+    "/rest/v1/loyverse_item_variants?select=variant_id,item_id,sku,purchase_cost,purchase_presentation_content_ml,stores,option1_value,option2_value,option3_value&variant_id=eq." + encodeURIComponent(variantId) + "&limit=1",
     { method: "GET" },
   );
   if (!Array.isArray(rows) || !rows[0]) throw new Error("El insumo seleccionado ya no está disponible.");
@@ -1171,215 +1090,82 @@ async function registerInsumoPurchase(token: string, userId: string, payload: an
   const rawLines = Array.isArray(payload?.lines) ? payload.lines : [];
   if (!rawLines.length) throw new Error("La compra de insumos debe tener al menos un producto.");
   if (rawLines.length > 50) throw new Error("La compra no puede superar 50 productos.");
-
-  const purchaseDate = typeof payload?.purchase_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)
-    ? payload.purchase_date
-    : new Date().toISOString().slice(0, 10);
+  const purchaseDate = typeof payload?.purchase_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date) ? payload.purchase_date : new Date().toISOString().slice(0,10);
   const notesRaw = typeof payload?.notes === "string" ? payload.notes.trim() : "";
-  const notes = notesRaw ? notesRaw.slice(0, 1000) : null;
-
-  const normalized = rawLines.map((line: any, index: number) => {
-    const variantId = requiredString(line?.variant_id, "producto");
-    const quantity = Number(line?.quantity);
-    const purchaseTotalValue = Number(line?.purchase_total_value);
-    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100000) {
-      throw new Error("La cantidad de la línea " + (index + 1) + " debe ser un entero mayor que 0.");
-    }
-    if (!Number.isFinite(purchaseTotalValue) || purchaseTotalValue <= 0 || purchaseTotalValue > 1000000000) {
-      throw new Error("El Valor total de la línea " + (index + 1) + " debe ser mayor que 0.");
-    }
-    return { variant_id: variantId, quantity, purchase_total_value: purchaseTotalValue };
+  const notes = notesRaw ? notesRaw.slice(0,1000) : null;
+  const normalized = rawLines.map((line:any,index:number)=>{
+    const variantId=requiredString(line?.variant_id,"producto");
+    const quantity=Number(line?.quantity), purchaseTotalValue=Number(line?.purchase_total_value), presentationContentMl=Number(line?.presentation_content_ml);
+    if(!Number.isInteger(quantity)||quantity<=0||quantity>100000) throw new Error("La cantidad de la línea "+(index+1)+" debe ser un entero mayor que 0.");
+    if(!Number.isFinite(purchaseTotalValue)||purchaseTotalValue<=0||purchaseTotalValue>1000000000) throw new Error("El Valor total de la línea "+(index+1)+" debe ser mayor que 0.");
+    if(!Number.isFinite(presentationContentMl)||presentationContentMl<=0) throw new Error("El contenido de la presentación de la línea "+(index+1)+" debe ser mayor que 0 ml.");
+    return {variant_id:variantId,quantity,purchase_total_value:purchaseTotalValue,presentation_content_ml:presentationContentMl};
   });
-
-  const seen = new Set<string>();
-  for (const line of normalized) {
-    if (seen.has(line.variant_id)) throw new Error("No repitas un mismo insumo dentro de la compra.");
-    seen.add(line.variant_id);
+  const seen=new Set<string>(); for(const line of normalized){if(seen.has(line.variant_id))throw new Error("No repitas un mismo insumo dentro de la compra.");seen.add(line.variant_id);}
+  const prepared:any[]=[];
+  for(const line of normalized){
+    const info=await getInsumoProduct(token,line.variant_id);
+    const configuredContent=Number(info.variant?.purchase_presentation_content_ml);
+    if(!Number.isFinite(configuredContent)||configuredContent<=0) throw new Error("El insumo "+String(info.item.item_name||"seleccionado")+" no tiene configurado el contenido de su presentación.");
+    if(Math.abs(configuredContent-line.presentation_content_ml)>0.000001) throw new Error("El contenido de la presentación no coincide con el configurado para "+String(info.item.item_name||"el insumo")+".");
+    const live=await loyverseGet(token,"/variants/"+encodeURIComponent(line.variant_id));
+    const currentCost=Number(live?.purchase_cost??0);
+    const presentationCost=line.purchase_total_value/line.quantity;
+    const costPerMl=presentationCost/configuredContent;
+    await setInsumoPurchaseCost(token,line.variant_id,costPerMl);
+    prepared.push({variant_id:line.variant_id,item_id:String(info.variant.item_id),product_name:String(info.item.item_name||"Sin nombre"),sku:info.variant.sku??null,pack_size:1,presentation_quantity:line.quantity,presentation_content_ml:configuredContent,purchase_unit:"PRESENTACIÓN",purchase_total_value:line.purchase_total_value,unit_cost:costPerMl,line_total:line.purchase_total_value,units_received:line.quantity,stock_before:null,stock_after:null,previous_purchase_cost:currentCost,purchase_cost_after:costPerMl});
   }
-
-  const prepared: any[] = [];
-  for (const line of normalized) {
-    const info = await getInsumoProduct(token, line.variant_id);
-    const live = await loyverseGet(token, "/variants/" + encodeURIComponent(line.variant_id));
-    const currentCost = Number(live?.purchase_cost ?? 0);
-    const unitCost = line.purchase_total_value / line.quantity;
-    await setInsumoPurchaseCost(token, line.variant_id, unitCost);
-    prepared.push({
-      variant_id: line.variant_id,
-      item_id: String(info.variant.item_id),
-      product_name: String(info.item.item_name || "Sin nombre"),
-      sku: info.variant.sku ?? null,
-      pack_size: 1,
-      presentation_quantity: line.quantity,
-      purchase_unit: "BOTELLA",
-      purchase_total_value: line.purchase_total_value,
-      unit_cost: unitCost,
-      line_total: line.purchase_total_value,
-      units_received: line.quantity,
-      stock_before: null,
-      stock_after: null,
-      previous_purchase_cost: currentCost,
-      purchase_cost_after: unitCost,
-    });
-  }
-
-  const totalUnits = prepared.reduce((sum, line) => sum + Number(line.units_received), 0);
-  const totalValue = prepared.reduce((sum, line) => sum + Number(line.line_total), 0);
-  const purchase = await createPurchaseRecord(userId, purchaseDate, notes, prepared, totalUnits, totalValue, "insumo");
-
-  try {
-    const lineRows = prepared.map((line, index) => ({
-      purchase_id: purchase.id,
-      line_number: index + 1,
-      variant_id: line.variant_id,
-      item_id: line.item_id,
-      product_name: line.product_name,
-      sku: line.sku,
-      pack_size: line.pack_size,
-      presentation_quantity: line.presentation_quantity,
-      purchase_unit: line.purchase_unit,
-      purchase_total_value: line.purchase_total_value,
-      unit_cost: line.unit_cost,
-      line_total: line.line_total,
-      units_received: line.units_received,
-      previous_purchase_cost: line.previous_purchase_cost,
-      stock_before: null,
-      stock_after: null,
-    }));
-    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines", {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(lineRows),
-    });
-
-    await patchPurchase(purchase.id, {
-      status: "completed",
-      completed_at: new Date().toISOString(),
-      error_message: null,
-    });
-
-    return {
-      ok: true,
-      purchase_id: purchase.id,
-      purchase_number: purchase.purchase_number,
-      purchase_date: purchaseDate,
-      purchase_type: "insumo",
-      line_count: prepared.length,
-      total_units: totalUnits,
-      total_value: totalValue,
-      lines: prepared.map((line) => ({
-        product_name: line.product_name,
-        presentation_quantity: line.presentation_quantity,
-        purchase_unit: line.purchase_unit,
-        purchase_total_value: line.purchase_total_value,
-        unit_cost: line.unit_cost,
-      })),
-      completed_at: new Date().toISOString(),
-    };
-  } catch (error) {
-    try {
-      await patchPurchase(purchase.id, { status: "failed", error_message: cleanError(error) });
-    } catch {}
-    throw error;
-  }
+  const totalUnits=prepared.reduce((sum,line)=>sum+Number(line.units_received),0);
+  const totalValue=prepared.reduce((sum,line)=>sum+Number(line.line_total),0);
+  const purchase=await createPurchaseRecord(userId,purchaseDate,notes,prepared,totalUnits,totalValue,"insumo");
+  try{
+    const lineRows=prepared.map((line,index)=>({purchase_id:purchase.id,line_number:index+1,variant_id:line.variant_id,item_id:line.item_id,product_name:line.product_name,sku:line.sku,pack_size:line.pack_size,presentation_quantity:line.presentation_quantity,presentation_content_ml:line.presentation_content_ml,purchase_unit:line.purchase_unit,purchase_total_value:line.purchase_total_value,unit_cost:line.unit_cost,line_total:line.line_total,units_received:line.units_received,previous_purchase_cost:line.previous_purchase_cost,stock_before:null,stock_after:null}));
+    await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(lineRows)});
+    await patchPurchase(purchase.id,{status:"completed",completed_at:new Date().toISOString(),error_message:null});
+    return {ok:true,purchase_id:purchase.id,purchase_number:purchase.purchase_number,purchase_date:purchaseDate,purchase_type:"insumo",line_count:prepared.length,total_units:totalUnits,total_value:totalValue,lines:prepared.map(line=>({product_name:line.product_name,presentation_quantity:line.presentation_quantity,presentation_content_ml:line.presentation_content_ml,purchase_total_value:line.purchase_total_value,unit_cost:line.unit_cost})),completed_at:new Date().toISOString()};
+  }catch(error){try{await patchPurchase(purchase.id,{status:"failed",error_message:cleanError(error)});}catch{}throw error;}
 }
 
 
 async function updateInsumoPurchase(token: string, userId: string, payload: any, purchase: any, oldLines: any[]) {
-  const rawLines = Array.isArray(payload?.lines) ? payload.lines : [];
-  if (!rawLines.length) throw new Error("La compra de insumos debe tener al menos un producto.");
-  if (rawLines.length > 50) throw new Error("La compra no puede superar 50 productos.");
-  const seen = new Set<string>();
-  const normalized = rawLines.map((line: any, index: number) => {
-    const variantId = requiredString(line?.variant_id, "producto");
-    const quantity = Number(line?.quantity);
-    const purchaseTotalValue = Number(line?.purchase_total_value);
-    if (seen.has(variantId)) throw new Error("No repitas un mismo insumo dentro de la compra.");
-    seen.add(variantId);
-    if (!Number.isInteger(quantity) || quantity <= 0) throw new Error("La cantidad de la línea " + (index + 1) + " debe ser un entero mayor que 0.");
-    if (!Number.isFinite(purchaseTotalValue) || purchaseTotalValue <= 0) throw new Error("El Valor total de la línea " + (index + 1) + " debe ser mayor que 0.");
-    return { variant_id: variantId, quantity, purchase_total_value: purchaseTotalValue };
+  const rawLines=Array.isArray(payload?.lines)?payload.lines:[];
+  if(!rawLines.length) throw new Error("La compra de insumos debe tener al menos un producto.");
+  if(rawLines.length>50) throw new Error("La compra no puede superar 50 productos.");
+  const normalized=rawLines.map((line:any,index:number)=>{
+    const variantId=requiredString(line?.variant_id,"producto"),quantity=Number(line?.quantity),purchaseTotalValue=Number(line?.purchase_total_value),presentationContentMl=Number(line?.presentation_content_ml);
+    if(!Number.isInteger(quantity)||quantity<=0)throw new Error("La cantidad de la línea "+(index+1)+" debe ser un entero mayor que 0.");
+    if(!Number.isFinite(purchaseTotalValue)||purchaseTotalValue<=0)throw new Error("El Valor total de la línea "+(index+1)+" debe ser mayor que 0.");
+    if(!Number.isFinite(presentationContentMl)||presentationContentMl<=0)throw new Error("El contenido de la presentación de la línea "+(index+1)+" debe ser mayor que 0 ml.");
+    return{variant_id:variantId,quantity,purchase_total_value:purchaseTotalValue,presentation_content_ml:presentationContentMl};
   });
-
-  const oldByVariant = new Map(oldLines.map((l: any) => [String(l.variant_id), l]));
-  const newPrepared: any[] = [];
-  for (const line of normalized) {
-    const info = await getInsumoProduct(token, line.variant_id);
-    const old = oldByVariant.get(line.variant_id);
-    const currentLive = await loyverseGet(token, "/variants/" + encodeURIComponent(line.variant_id));
-    const previousCost = Number(currentLive?.purchase_cost ?? 0);
-    const unitCost = line.purchase_total_value / line.quantity;
-    await setInsumoPurchaseCost(token, line.variant_id, unitCost);
-    newPrepared.push({
-      variant_id: line.variant_id,
-      item_id: String(info.variant.item_id),
-      product_name: String(info.item.item_name || "Sin nombre"),
-      sku: info.variant.sku ?? null,
-      pack_size: 1,
-      presentation_quantity: line.quantity,
-      purchase_unit: "BOTELLA",
-      purchase_total_value: line.purchase_total_value,
-      unit_cost: unitCost,
-      line_total: line.purchase_total_value,
-      units_received: line.quantity,
-      stock_before: null,
-      stock_after: null,
-      previous_purchase_cost: previousCost,
-      was_existing_line: Boolean(old),
-    });
+  const oldByVariant=new Map(oldLines.map((l:any)=>[String(l.variant_id),l]));
+  const seen=new Set<string>(),newPrepared:any[]=[];
+  for(const line of normalized){
+    if(seen.has(line.variant_id))throw new Error("No repitas un mismo insumo dentro de la compra.");seen.add(line.variant_id);
+    const info=await getInsumoProduct(token,line.variant_id);
+    const configuredContent=Number(info.variant?.purchase_presentation_content_ml);
+    if(!Number.isFinite(configuredContent)||configuredContent<=0)throw new Error("El insumo "+String(info.item.item_name||"seleccionado")+" no tiene configurado el contenido de su presentación.");
+    if(Math.abs(configuredContent-line.presentation_content_ml)>0.000001)throw new Error("El contenido de la presentación no coincide con el configurado para "+String(info.item.item_name||"el insumo")+".");
+    const currentLive=await loyverseGet(token,"/variants/"+encodeURIComponent(line.variant_id));
+    const previousCost=Number(currentLive?.purchase_cost??0);
+    const presentationCost=line.purchase_total_value/line.quantity;
+    const costPerMl=presentationCost/configuredContent;
+    await setInsumoPurchaseCost(token,line.variant_id,costPerMl);
+    newPrepared.push({variant_id:line.variant_id,item_id:String(info.variant.item_id),product_name:String(info.item.item_name||"Sin nombre"),sku:info.variant.sku??null,pack_size:1,presentation_quantity:line.quantity,presentation_content_ml:configuredContent,purchase_unit:"PRESENTACIÓN",purchase_total_value:line.purchase_total_value,unit_cost:costPerMl,line_total:line.purchase_total_value,units_received:line.quantity,stock_before:null,stock_after:null,previous_purchase_cost:previousCost,was_existing_line:Boolean(oldByVariant.get(line.variant_id))});
   }
-
-  // Restore the purchase's previous purchase cost for old-only lines that disappear.
-  for (const old of oldLines) {
-    const oldVariantId = String(old.variant_id);
-    if (normalized.some((l: any) => l.variant_id === oldVariantId)) continue;
-    const live = await loyverseGet(token, "/variants/" + encodeURIComponent(oldVariantId));
-    const oldCost = Number(old.unit_cost);
-    if (Number.isFinite(oldCost) && oldCost > 0) await setInsumoPurchaseCost(token, oldVariantId, oldCost);
+  for(const old of oldLines){
+    const oldVariantId=String(old.variant_id); if(normalized.some((l:any)=>l.variant_id===oldVariantId))continue;
+    const prior=await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,purchase_id&variant_id=eq."+encodeURIComponent(oldVariantId)+"&purchase_id=neq."+encodeURIComponent(purchase.id)+"&order=purchase_id.desc&limit=1",{method:"GET"});
+    if(Array.isArray(prior)&&prior[0]&&Number(prior[0].unit_cost)>0)await setInsumoPurchaseCost(token,oldVariantId,Number(prior[0].unit_cost));
   }
-
-  const totalUnits = newPrepared.reduce((s, l) => s + Number(l.units_received), 0);
-  const totalValue = newPrepared.reduce((s, l) => s + Number(l.line_total), 0);
-
-  await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq." + encodeURIComponent(purchase.id), {
-    method: "DELETE",
-  });
-  const lineRows = newPrepared.map((line, index) => ({
-    purchase_id: purchase.id,
-    line_number: index + 1,
-    variant_id: line.variant_id,
-    item_id: line.item_id,
-    product_name: line.product_name,
-    sku: line.sku,
-    pack_size: line.pack_size,
-    presentation_quantity: line.presentation_quantity,
-    purchase_unit: line.purchase_unit,
-    purchase_total_value: line.purchase_total_value,
-    unit_cost: line.unit_cost,
-    line_total: line.line_total,
-    units_received: line.units_received,
-    stock_before: null,
-    stock_after: null,
-  }));
-  await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines", {
-    method: "POST",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify(lineRows),
-  });
-  const purchaseDate = typeof payload?.purchase_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date) ? payload.purchase_date : purchase.purchase_date;
-  const notesRaw = typeof payload?.notes === "string" ? payload.notes.trim() : "";
-  await patchPurchase(purchase.id, {
-    purchase_date: purchaseDate,
-    status: "completed",
-    line_count: newPrepared.length,
-    total_units: totalUnits,
-    total_value: totalValue,
-    notes: notesRaw ? notesRaw.slice(0, 1000) : null,
-    updated_at: new Date().toISOString(),
-    updated_by: userId,
-    error_message: null,
-  });
-  return { ok: true, purchase_id: purchase.id, purchase_number: purchase.purchase_number, purchase_type: "insumo", purchase_date: purchaseDate, line_count: newPrepared.length, total_units: totalUnits, total_value: totalValue, updated_at: new Date().toISOString() };
+  const totalUnits=newPrepared.reduce((s,l)=>s+Number(l.units_received),0),totalValue=newPrepared.reduce((s,l)=>s+Number(l.line_total),0);
+  await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq."+encodeURIComponent(purchase.id),{method:"DELETE"});
+  const lineRows=newPrepared.map((line,index)=>({purchase_id:purchase.id,line_number:index+1,variant_id:line.variant_id,item_id:line.item_id,product_name:line.product_name,sku:line.sku,pack_size:line.pack_size,presentation_quantity:line.presentation_quantity,presentation_content_ml:line.presentation_content_ml,purchase_unit:line.purchase_unit,purchase_total_value:line.purchase_total_value,unit_cost:line.unit_cost,line_total:line.line_total,units_received:line.units_received,stock_before:null,stock_after:null}));
+  await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(lineRows)});
+  const purchaseDate=typeof payload?.purchase_date==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)?payload.purchase_date:purchase.purchase_date;
+  const notesRaw=typeof payload?.notes==="string"?payload.notes.trim():"";
+  await patchPurchase(purchase.id,{purchase_date:purchaseDate,status:"completed",line_count:newPrepared.length,total_units:totalUnits,total_value:totalValue,notes:notesRaw?notesRaw.slice(0,1000):null,updated_at:new Date().toISOString(),updated_by:userId,error_message:null});
+  return{ok:true,purchase_id:purchase.id,purchase_number:purchase.purchase_number,purchase_type:"insumo",purchase_date:purchaseDate,line_count:newPrepared.length,total_units:totalUnits,total_value:totalValue,updated_at:new Date().toISOString()};
 }
 
 async function deleteInsumoPurchase(token: string, userId: string, purchase: any, oldLines: any[]) {
