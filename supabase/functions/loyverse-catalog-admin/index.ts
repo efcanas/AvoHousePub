@@ -689,12 +689,16 @@ async function normalizePurchaseLines(rawLines: any[]) {
   const normalized = rawLines.map((line: any, index: number) => {
     const variantId = requiredString(line?.variant_id, "producto");
     const quantity = Number(line?.quantity);
-    const packSize = Number(line?.pack_size);
+    const packRaw = line?.pack_size;
+    const packSize = packRaw === null || packRaw === undefined || packRaw === "" ? null : Number(packRaw);
+    const contentRaw = line?.presentation_content_ml;
+    const presentationContentMl = contentRaw === null || contentRaw === undefined || contentRaw === "" ? null : Number(contentRaw);
     const purchaseTotalValue = Number(line?.purchase_total_value);
     if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100000) throw new Error("La cantidad de la línea " + (index + 1) + " debe ser un entero mayor que 0.");
-    if (!Number.isInteger(packSize) || packSize <= 0 || packSize > 100000) throw new Error("La Presentación de la línea " + (index + 1) + " debe ser un entero mayor que 0.");
+    if (packSize !== null && (!Number.isInteger(packSize) || packSize <= 0 || packSize > 100000)) throw new Error("La Presentación de la línea " + (index + 1) + " debe ser un entero mayor que 0.");
+    if (presentationContentMl !== null && (!Number.isFinite(presentationContentMl) || presentationContentMl <= 0 || presentationContentMl > 100000000)) throw new Error("El contenido de la presentación de la línea " + (index + 1) + " debe ser mayor que 0 ml.");
     if (!Number.isFinite(purchaseTotalValue) || purchaseTotalValue <= 0 || purchaseTotalValue > 1000000000) throw new Error("El Valor total de la línea " + (index + 1) + " debe ser mayor que 0.");
-    return { variant_id: variantId, quantity, pack_size: packSize, purchase_total_value: purchaseTotalValue };
+    return { variant_id: variantId, quantity, pack_size: packSize, presentation_content_ml: presentationContentMl, purchase_total_value: purchaseTotalValue };
   });
 
   const seen = new Set<string>();
@@ -712,7 +716,7 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
   ])];
 
   const catalogVariants = await supabaseRequest(
-    "/rest/v1/loyverse_item_variants?select=variant_id,item_id,sku&variant_id=in.(" + encodeURIComponent(variantIds.join(",")) + ")",
+    "/rest/v1/loyverse_item_variants?select=variant_id,item_id,sku,purchase_cost,purchase_presentation_content_ml&variant_id=in.(" + encodeURIComponent(variantIds.join(",")) + ")",
     { method: "GET" },
   );
   if (!Array.isArray(catalogVariants) || catalogVariants.length !== variantIds.length) {
@@ -727,30 +731,76 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
   );
   const itemMap = new Map((Array.isArray(catalogItems) ? catalogItems : []).map((i: any) => [String(i.id), i]));
 
+  const categories = await supabaseRequest(
+    "/rest/v1/loyverse_categories?select=id,name&id=in.(" + encodeURIComponent([...new Set([...itemMap.values()].map((i: any) => String(i.category_id || "")).filter(Boolean))].join(",")) + ")",
+    { method: "GET" },
+  );
+  const categoryMap = new Map((Array.isArray(categories) ? categories : []).map((c: any) => [String(c.id), String(c.name || "")]));
+
   const deltas = new Map<string, number>();
   for (const old of oldLines) {
     const id = String(old.variant_id);
+    const isOldInsumo = Number(old?.presentation_content_ml) > 0 || String(old?.purchase_unit || "").toUpperCase() === "PRESENTACIÓN";
+    if (isOldInsumo) continue;
     const units = Number(old.units_received || 0);
     if (!Number.isFinite(units) || units < 0) throw new Error("La compra existente contiene una cantidad de inventario inválida.");
     deltas.set(id, (deltas.get(id) || 0) - units);
   }
-  for (const line of normalized) {
-    const id = String(line.variant_id);
-    const units = line.quantity * line.pack_size;
-    deltas.set(id, (deltas.get(id) || 0) + units);
-  }
 
   const preparedNew: any[] = [];
   const storeAndStock = new Map<string, any>();
+  const insumoUpdates = new Map<string, any>();
 
-  for (const variantId of variantIds) {
-    const v = variantMap.get(variantId);
+  for (const line of normalized) {
+    const v = variantMap.get(String(line.variant_id));
     const item = v ? itemMap.get(String(v.item_id)) : null;
-    if (!item?.track_stock) throw new Error(String(item?.item_name || "El producto") + " no tiene seguimiento de inventario activo en Loyverse.");
+    const categoryName = String(categoryMap.get(String(item?.category_id || "")) || "").trim().toLowerCase();
+    const isInsumo = categoryName === "insumos";
+
+    if (isInsumo) {
+      const configuredContent = Number(v?.purchase_presentation_content_ml);
+      if (!Number.isFinite(configuredContent) || configuredContent <= 0) {
+        throw new Error(String(item?.item_name || "El insumo") + " no tiene configurado el contenido de la presentación.");
+      }
+      if (line.presentation_content_ml !== null && Math.abs(Number(line.presentation_content_ml) - configuredContent) > 0.000001) {
+        throw new Error("El contenido de la presentación no coincide con el configurado para " + String(item?.item_name || "el insumo") + ".");
+      }
+      const content = configuredContent;
+      const unitsReceived = line.quantity;
+      const unitCost = line.purchase_total_value / (line.quantity * content);
+      const currentCost = Number(v?.purchase_cost ?? 0);
+      if (!Number.isFinite(unitCost) || unitCost <= 0) throw new Error("No se pudo calcular el costo por ml de " + String(item?.item_name || "el insumo") + ".");
+      if (!Number.isFinite(currentCost) || currentCost < 0) throw new Error("El costo actual de " + String(item?.item_name || "el insumo") + " no es válido.");
+      preparedNew.push({
+        variant_id: String(line.variant_id),
+        item_id: String(v.item_id),
+        product_name: String(item?.item_name || "Sin nombre"),
+        sku: v?.sku ?? null,
+        pack_size: 1,
+        presentation_quantity: line.quantity,
+        presentation_content_ml: content,
+        purchase_unit: "PRESENTACIÓN",
+        purchase_total_value: line.purchase_total_value,
+        unit_cost: unitCost,
+        line_total: line.purchase_total_value,
+        units_received: unitsReceived,
+        stock_before: null,
+        stock_after: null,
+        previous_purchase_cost: currentCost,
+        isInsumo: true,
+      });
+      insumoUpdates.set(String(line.variant_id), { purchaseCost: unitCost });
+      continue;
+    }
+
+    if (!item?.track_stock) {
+      throw new Error(String(item?.item_name || "Este producto") + " no tiene seguimiento de inventario activo en Loyverse.");
+    }
+    if (line.pack_size === null) throw new Error("La Presentación de " + String(item?.item_name || "este producto") + " debe ser un entero mayor que 0.");
 
     const [liveVariant, inventoryBody] = await Promise.all([
-      loyverseGet(token, "/variants/" + encodeURIComponent(variantId)),
-      loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(variantId) + "&limit=250"),
+      loyverseGet(token, "/variants/" + encodeURIComponent(line.variant_id)),
+      loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(line.variant_id) + "&limit=250"),
     ]);
     const stores = Array.isArray(liveVariant?.stores) ? liveVariant.stores : [];
     const store = stores[0] || null;
@@ -759,15 +809,11 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
     const levels = Array.isArray(inventoryBody?.inventory_levels) ? inventoryBody.inventory_levels : [];
     const level = levels.find((x: any) => String(x?.store_id || "") === storeId) || levels[0] || null;
     const stockBefore = level ? Number(level.in_stock ?? 0) : 0;
-    if (!Number.isFinite(stockBefore)) throw new Error("No se pudo determinar el stock actual de " + String(item?.item_name || "el producto") + ".");
-    storeAndStock.set(variantId, { storeId, stockBefore, item });
-  }
-
-  for (const line of normalized) {
-    const v = variantMap.get(String(line.variant_id));
-    const item = v ? itemMap.get(String(v.item_id)) : null;
+    if (!Number.isFinite(stockBefore)) throw new Error("No se pudo determinar el stock actual de " + String(item?.item_name || "este producto") + ".");
     const unitsReceived = line.quantity * line.pack_size;
     const unitCost = line.purchase_total_value / unitsReceived;
+    const stockAfter = stockBefore + unitsReceived;
+    deltas.set(String(line.variant_id), (deltas.get(String(line.variant_id)) || 0) + unitsReceived);
     preparedNew.push({
       variant_id: String(line.variant_id),
       item_id: String(v.item_id),
@@ -775,14 +821,21 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
       sku: v?.sku ?? null,
       pack_size: line.pack_size,
       presentation_quantity: line.quantity,
+      presentation_content_ml: null,
+      purchase_unit: "UNIDAD",
       purchase_total_value: line.purchase_total_value,
       unit_cost: unitCost,
       line_total: line.purchase_total_value,
       units_received: unitsReceived,
+      stock_before: stockBefore,
+      stock_after: stockAfter,
+      previous_purchase_cost: null,
+      isInsumo: false,
     });
+    storeAndStock.set(String(line.variant_id), { storeId, stockBefore, item });
   }
 
-  return { deltas, preparedNew, storeAndStock };
+  return { deltas, preparedNew, storeAndStock, insumoUpdates };
 }
 
 async function applyPurchaseInventoryDelta(token: string, deltas: Map<string, number>, storeAndStock: Map<string, any>) {
