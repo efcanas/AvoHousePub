@@ -278,6 +278,10 @@ async function createCatalogItem(token: string, payload: any) {
   const category = (Array.isArray(categoryBody?.categories) ? categoryBody.categories : []).find((entry: any) => String(entry?.id || "") === categoryId);
   if (!category) throw new Error("La categoría seleccionada no existe en Loyverse.");
   const isInsumosCategory = String(category?.name || "").trim().toLowerCase() === "insumos";
+  const isMezcladitasCategory = String(category?.name || "").trim().toLowerCase() === "mezcladitas";
+  if (isMezcladitasCategory && productType !== "composite") {
+    throw new Error("Los productos de la categoría Mezcladitas deben ser de tipo Producto compuesto.");
+  }
   const isComposite = productType === "composite";
   const trackStock = isComposite || isInsumosCategory ? false : Boolean(payload?.track_stock);
   const availableForSale = isInsumosCategory ? false : payload?.available_for_sale !== false;
