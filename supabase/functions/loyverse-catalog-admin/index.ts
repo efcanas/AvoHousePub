@@ -264,7 +264,6 @@ async function mirrorEditedInventory(levels: any[]) {
 async function updateCatalogItem(token: string, payload: any) {
   const itemId = requiredString(payload?.item_id, "item_id");
   const variantId = requiredString(payload?.variant_id, "variant_id");
-  const storeId = requiredString(payload?.store_id, "store_id");
 
   const live = await getLiveEditData(token, itemId, variantId);
   const currentItem = live.item;
@@ -274,8 +273,13 @@ async function updateCatalogItem(token: string, payload: any) {
   if (String(currentVariant?.variant_id || "") !== variantId) throw new Error("La variante solicitada no coincide con la variante de Loyverse.");
   if (String(currentVariant?.item_id || "") !== itemId) throw new Error("La variante no pertenece al artículo seleccionado.");
 
-  const storeOverride = findStoreOverride(currentVariant, storeId);
-  if (!storeOverride) throw new Error("La tienda seleccionada no existe para esta variante.");
+  // AvoHouse trabaja actualmente con una sola tienda. El backend la resuelve directamente.
+  const storeOverrides = Array.isArray(currentVariant?.stores)
+    ? currentVariant.stores.filter((s: any) => s?.store_id)
+    : [];
+  const storeOverride = storeOverrides[0] ?? null;
+  const storeId = String(storeOverride?.store_id || "");
+  if (!storeOverride || !storeId) throw new Error("Loyverse no devolvió una tienda asociada a esta variante.");
 
   const itemChanges = payload?.item ?? {};
   const variantChanges = payload?.variant ?? {};
@@ -287,10 +291,49 @@ async function updateCatalogItem(token: string, payload: any) {
 
   const itemName = requiredString(itemChanges?.item_name ?? currentItem?.item_name, "nombre", 64);
   const categoryId = itemChanges?.category_id ? String(itemChanges.category_id).trim() : null;
+
+  const normalizeComponents = (value: any) =>
+    (Array.isArray(value) ? value : [])
+      .map((component: any) => ({
+        variant_id: String(component?.variant_id || "").trim(),
+        quantity: Number(component?.quantity),
+      }))
+      .filter((component: any) => component.variant_id);
+
+  let nextComponents = normalizeComponents(currentItem?.components);
+  if (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined) {
+    const incomingComponents = normalizeComponents(itemChanges.components);
+    if (!incomingComponents.length) throw new Error("El producto compuesto debe tener al menos un componente.");
+    const ids = new Set<string>();
+    for (const component of incomingComponents) {
+      if (!Number.isFinite(component.quantity) || component.quantity <= 0 || component.quantity > 1000000) {
+        throw new Error("Cada componente debe tener una cantidad mayor que 0.");
+      }
+      if (component.variant_id === variantId) {
+        throw new Error("Un producto compuesto no puede incluirse a sí mismo.");
+      }
+      if (ids.has(component.variant_id)) {
+        throw new Error("No se puede repetir un mismo componente.");
+      }
+      ids.add(component.variant_id);
+    }
+    nextComponents = incomingComponents;
+  }
+
   if (itemName !== String(currentItem?.item_name ?? "").trim() ||
-      String(categoryId ?? "") !== String(currentItem?.category_id ?? "")) {
+      String(categoryId ?? "") !== String(currentItem?.category_id ?? "") ||
+      (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined &&
+       JSON.stringify(nextComponents) !== JSON.stringify(normalizeComponents(currentItem?.components)))) {
     itemChanged = true;
-    await loyversePost(token, "/items", { id: itemId, item_name: itemName, category_id: categoryId });
+    const itemPayload: Record<string, unknown> = {
+      id: itemId,
+      item_name: itemName,
+      category_id: categoryId,
+    };
+    if (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined) {
+      itemPayload.components = nextComponents;
+    }
+    await loyversePost(token, "/items", itemPayload);
   }
 
   const nextVariant: any = { ...currentVariant, variant_id: variantId, item_id: itemId };
@@ -371,13 +414,12 @@ async function updateCatalogItem(token: string, payload: any) {
   }
 
   // AHP maneja un único precio porque existe una sola tienda.
-  // Cuando se edita el precio base, el precio de la tienda debe quedar idéntico.
   if (variantChanges?.default_price !== undefined && variantChanges.default_price !== "") {
     nextStore.price = Number(nextVariant.default_price);
   }
 
   nextVariant.stores = (Array.isArray(currentVariant?.stores) ? currentVariant.stores : [])
-    .map((s: any) => String(s?.store_id || "") === storeId ? nextStore : s);
+    .map((store: any) => String(store?.store_id || "") === storeId ? nextStore : store);
 
   const changedVariantFields =
     String(nextVariant?.sku ?? "") !== String(currentVariant?.sku ?? "") ||
@@ -416,7 +458,7 @@ async function updateCatalogItem(token: string, payload: any) {
     nextPackSize !== currentPackComparable ||
     nextPresentationCost !== currentPresentationComparable;
 
-  if (inventoryChanges?.stock_after !== undefined && inventoryChanges.stock_after !== "") {
+  if (inventoryChanges?.stock_after !== undefined && inventoryChanges.stock_after !== "" && Boolean(currentItem?.track_stock)) {
     const stockAfter = finiteNumber(inventoryChanges.stock_after, "existencias");
     if (stockAfter < 0) throw new Error("Las existencias no pueden ser negativas desde esta pantalla.");
     const currentLevel = (Array.isArray(live.inventory_levels) ? live.inventory_levels : [])
@@ -437,8 +479,10 @@ async function updateCatalogItem(token: string, payload: any) {
 
   if (itemChanged &&
       (String(verified.item?.item_name ?? "").trim() !== itemName ||
-       String(verified.item?.category_id ?? "") !== String(categoryId ?? ""))) {
-    throw new Error("La verificación posterior a la actualización del artículo no coincidió con lo solicitado.");
+       String(verified.item?.category_id ?? "") !== String(categoryId ?? "") ||
+       (Boolean(currentItem?.is_composite) && itemChanges?.components !== undefined &&
+        JSON.stringify(normalizeComponents(verified.item?.components)) !== JSON.stringify(nextComponents)))) {
+    throw new Error("La verificación posterior a la actualización del artículo o composición no coincidió con lo solicitado.");
   }
 
   if (variantChanged) {
@@ -452,9 +496,9 @@ async function updateCatalogItem(token: string, payload: any) {
         String(verified.variant?.default_pricing_type ?? "") !== String(nextVariant?.default_pricing_type ?? "") ) {
       throw new Error("La verificación posterior a la actualización de la variante no coincidió con lo solicitado.");
     }
-    const verifiedStore = findStoreOverride(verified.variant, storeId);
+    const verifiedStoreAgain = findStoreOverride(verified.variant, storeId);
     for (const key of ["price","available_for_sale","low_stock","optimal_stock"]) {
-      if (nextStore?.[key] !== undefined && JSON.stringify(verifiedStore?.[key]) !== JSON.stringify(nextStore?.[key])) {
+      if (nextStore?.[key] !== undefined && JSON.stringify(verifiedStoreAgain?.[key]) !== JSON.stringify(nextStore?.[key])) {
         throw new Error("La verificación posterior de la configuración de tienda no coincidió con lo solicitado.");
       }
     }
@@ -504,7 +548,6 @@ async function updateCatalogItem(token: string, payload: any) {
     edited_at: new Date().toISOString(),
   };
 }
-
 
 
 async function setPurchasePackSize(payload: any) {
