@@ -17,9 +17,9 @@ body:before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.66);z-index
 .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
 .panel-title{margin:0;font-size:18px;color:#f5f5f5}.panel-tag{font-size:12px;color:#9ca3af}
 .controls{display:grid;grid-template-columns:180px 1fr 1fr auto auto;gap:8px;align-items:end}
-.period-mode{min-width:0}.period-option{display:none}.period-option.show{display:block}
-label{display:block;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-input,select,button{font:inherit}input,select{width:100%;padding:12px 13px;border:1px solid #2c3038;border-radius:11px;background:#101217;color:#fff}
+.period-mode,.period-option{min-width:0;display:flex;flex-direction:column;justify-content:flex-end}.period-option{display:none}.period-option.show{display:flex}
+label{display:block;height:14px;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+input,select,button{font:inherit}input,select{width:100%;height:44px;padding:0 13px;border:1px solid #2c3038;border-radius:11px;background:#101217;color:#fff}
 input:focus,select:focus{outline:none;border-color:#b8ff39}
 .period-helper{margin-top:8px;color:#8f96a3;font-size:11px}
 .controls select{height:44px}
@@ -235,7 +235,7 @@ function render(data){
   clearError();destroyCharts();
   renderPeriod('prev',data.previous_month);renderPeriod('curr',data.current_month);
   $('rangeTag').textContent=dateLabel(data.range.start)+' — '+dateLabel(data.range.end);
-  $('status').textContent='Datos actualizados desde Supabase · '+new Date().toLocaleTimeString('es-CO');
+  $('status').textContent='Datos actualizados desde el histórico propio de AvoHouse · '+new Date().toLocaleTimeString('es-CO');
 
   const monthly=data.monthly||[];
   charts.monthly=new Chart($('monthlyChart'),{type:'line',data:{labels:monthly.map(x=>dateLabel(x.month).slice(3)),datasets:[
@@ -303,7 +303,7 @@ async function init(){
   const {data:user}=await db.auth.getUser();
   const {data:admin,error:adminError}=await db.from('admin_users').select('user_id').eq('user_id',user?.user?.id).maybeSingle();
   if(adminError||!admin){window.location.href='../admin/?fromStats=1';return}
-  const {data:first}=await db.from('loyverse_receipts').select('receipt_date').order('receipt_date',{ascending:true}).limit(1).maybeSingle();
+  const {data:first}=await db.from('avohouse_sales_receipts').select('receipt_date').order('receipt_date',{ascending:true}).limit(1).maybeSingle();
   $('startDate').value=first?.receipt_date?String(first.receipt_date).slice(0,10):'';
   $('endDate').value=isoLocalDate(todayLocal());
   $('monthPicker').value=isoLocalDate(todayLocal()).slice(0,7);
