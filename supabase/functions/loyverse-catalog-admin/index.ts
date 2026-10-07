@@ -617,6 +617,97 @@ async function patchPurchase(purchaseId: string, data: Record<string, unknown>) 
   });
 }
 
+async function getCostDerivations(sourceVariantIds: string[] = []) {
+  let path = "/rest/v1/avohouse_inventory_cost_derivations?select=id,source_variant_id,target_variant_id,source_content_ml,fallback_unit_cost,active&active=eq.true";
+  if (sourceVariantIds.length) {
+    path += "&source_variant_id=in.(" + encodeURIComponent(sourceVariantIds.join(",")) + ")";
+  }
+  const rows = await supabaseRequest(path, { method: "GET" });
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function getLatestCompletedSourceUnitCost(sourceVariantId: string) {
+  const purchases = await supabaseRequest(
+    "/rest/v1/avohouse_inventory_purchases?select=id,created_at&status=eq.completed&order=created_at.desc&limit=1000",
+    { method: "GET" },
+  );
+  if (!Array.isArray(purchases) || !purchases.length) return null;
+  const purchaseOrder = new Map<string, number>();
+  purchases.forEach((p: any, index: number) => purchaseOrder.set(String(p.id), index));
+  const lines = await supabaseRequest(
+    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,created_at&variant_id=eq." + encodeURIComponent(sourceVariantId) + "&limit=1000",
+    { method: "GET" },
+  );
+  if (!Array.isArray(lines) || !lines.length) return null;
+  const candidates = lines
+    .filter((line: any) => purchaseOrder.has(String(line.purchase_id)) && Number.isFinite(Number(line.unit_cost)) && Number(line.unit_cost) > 0)
+    .sort((a: any, b: any) => {
+      const pa = purchaseOrder.get(String(a.purchase_id)) ?? 999999;
+      const pb = purchaseOrder.get(String(b.purchase_id)) ?? 999999;
+      if (pa !== pb) return pa - pb;
+      return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+    });
+  return candidates.length ? Number(candidates[0].unit_cost) : null;
+}
+
+async function setDerivedInsumoCost(token: string, targetVariantId: string, unitCost: number) {
+  if (!Number.isFinite(unitCost) || unitCost < 0) throw new Error("El costo derivado calculado no es válido.");
+  await loyversePost(token, "/variants/" + encodeURIComponent(targetVariantId), {
+    cost: unitCost,
+    purchase_cost: unitCost,
+  });
+  const verified = await loyverseGet(token, "/variants/" + encodeURIComponent(targetVariantId));
+  const verifiedCost = Number(verified?.cost);
+  const verifiedPurchaseCost = Number(verified?.purchase_cost);
+  if (!Number.isFinite(verifiedCost) || Math.abs(verifiedCost - unitCost) > 0.000001 ||
+      !Number.isFinite(verifiedPurchaseCost) || Math.abs(verifiedPurchaseCost - unitCost) > 0.000001) {
+    throw new Error("Loyverse no confirmó el costo derivado del insumo.");
+  }
+  await supabaseRequest(
+    "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(targetVariantId),
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ cost: unitCost, purchase_cost: unitCost, synced_at: new Date().toISOString() }),
+    },
+  );
+  return verifiedCost;
+}
+
+async function refreshDerivedInsumoCosts(token: string, sourceVariantIds: string[], fallbackOverrides = new Map<string, number>()) {
+  const uniqueSources = [...new Set(sourceVariantIds.map(String).filter(Boolean))];
+  if (!uniqueSources.length) return [];
+  const derivations = await getCostDerivations(uniqueSources);
+  const changed: any[] = [];
+  for (const link of derivations) {
+    const sourceId = String(link.source_variant_id);
+    const targetId = String(link.target_variant_id);
+    const latest = fallbackOverrides.has(sourceId)
+      ? Number(fallbackOverrides.get(sourceId))
+      : await getLatestCompletedSourceUnitCost(sourceId);
+    const sourceUnitCost = latest !== null && Number.isFinite(latest)
+      ? latest
+      : Number(link.fallback_unit_cost);
+    const contentMl = Number(link.source_content_ml);
+    if (!Number.isFinite(sourceUnitCost) || sourceUnitCost < 0) {
+      throw new Error("No se pudo determinar el costo de " + sourceId + " para actualizar el insumo derivado.");
+    }
+    if (!Number.isFinite(contentMl) || contentMl <= 0) {
+      throw new Error("La relación de costo derivado del insumo no tiene un contenido en ml válido.");
+    }
+    const derivedCost = sourceUnitCost / contentMl;
+    await setDerivedInsumoCost(token, targetId, derivedCost);
+    changed.push({
+      source_variant_id: sourceId,
+      target_variant_id: targetId,
+      source_unit_cost: sourceUnitCost,
+      content_ml: contentMl,
+      derived_unit_cost: derivedCost,
+    });
+  }
+  return changed;
+}
+
 async function registerPurchase(token: string, userId: string, payload: any) {
   const rawLines = Array.isArray(payload?.lines) ? payload.lines : [];
   if (!rawLines.length) throw new Error("La compra debe tener al menos un producto.");
@@ -681,6 +772,11 @@ async function registerPurchase(token: string, userId: string, payload: any) {
     for (const [variantId, update] of insumoUpdates.entries()) {
       await setInsumoPurchaseCost(token, variantId, Number(update.purchaseCost));
     }
+    const sourceOverrides = new Map<string, number>();
+    for (const line of preparedNew) {
+      if (!line.isInsumo) sourceOverrides.set(String(line.variant_id), Number(line.unit_cost));
+    }
+    const derivedUpdates = await refreshDerivedInsumoCosts(token, [...sourceOverrides.keys()], sourceOverrides);
 
     await patchPurchase(purchase.id, {
       status: "completed",
@@ -698,6 +794,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
       total_units: totalUnits,
       total_value: totalValue,
       inventory_adjusted: inventoryChanges.size,
+      derived_costs_updated: derivedUpdates.length,
       lines: preparedNew,
       completed_at: new Date().toISOString(),
     };
@@ -970,6 +1067,8 @@ async function updatePurchase(token:string,userId:string,payload:any){
     const purchaseDate=typeof payload?.purchase_date==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)?payload.purchase_date:purchase.purchase_date;
     const notesRaw=typeof payload?.notes==="string"?payload.notes.trim():"";
     await patchPurchase(purchaseId,{purchase_date:purchaseDate,status:"completed",line_count:preparedNew.length,total_units:totalUnits,total_value:totalValue,notes:notesRaw?notesRaw.slice(0,1000):null,updated_at:new Date().toISOString(),updated_by:userId,completed_at:purchase.completed_at||new Date().toISOString(),error_message:null});
+    const sourceIds=[...new Set(preparedNew.filter((line:any)=>!line.isInsumo).map((line:any)=>String(line.variant_id)))];
+    await refreshDerivedInsumoCosts(token,sourceIds);
     return{ok:true,purchase_id:purchaseId,purchase_number:purchase.purchase_number,purchase_date:purchaseDate,line_count:preparedNew.length,total_units:totalUnits,total_value:totalValue,updated_at:new Date().toISOString()};
   }catch(error){throw error;}
 }
@@ -985,7 +1084,9 @@ async function deletePurchase(token:string,userId:string,payload:any){
   try{
     await restoreRemovedInsumoCosts(token,purchaseId,oldLines,new Set<string>());
     await patchPurchase(purchaseId,{status:"cancelled",deleted_at:new Date().toISOString(),deleted_by:userId,updated_at:new Date().toISOString(),updated_by:userId,error_message:null});
-    return{ok:true,purchase_id:purchaseId,purchase_number:purchase.purchase_number,status:"cancelled",inventory_adjusted:inventoryChanges.size,deleted_at:new Date().toISOString()};
+    const sourceIds=[...new Set(oldLines.filter((line:any)=>Number(line?.presentation_content_ml||0)<=0&&String(line?.purchase_unit||"").toUpperCase()!=="PRESENTACIÓN").map((line:any)=>String(line.variant_id)))];
+    const derivedUpdates=await refreshDerivedInsumoCosts(token,sourceIds);
+    return{ok:true,purchase_id:purchaseId,purchase_number:purchase.purchase_number,status:"cancelled",inventory_adjusted:inventoryChanges.size,derived_costs_updated:derivedUpdates.length,deleted_at:new Date().toISOString()};
   }catch(error){throw error;}
 }
 
@@ -1019,15 +1120,26 @@ async function setInsumoPurchaseCost(token: string, variantId: string, purchaseC
   if (!Number.isFinite(purchaseCost) || purchaseCost < 0) throw new Error("El costo de compra no puede ser negativo.");
 
   await loyversePost(token, "/variants/" + encodeURIComponent(variantId), {
+    cost: purchaseCost,
     purchase_cost: purchaseCost,
   });
 
   const verified = await loyverseGet(token, "/variants/" + encodeURIComponent(variantId));
-  const verifiedCost = Number(verified?.purchase_cost);
-  if (!Number.isFinite(verifiedCost) || Math.abs(verifiedCost - purchaseCost) > 0.000001) {
-    throw new Error("Loyverse no confirmó el nuevo Costo de compra.");
+  const verifiedCost = Number(verified?.cost);
+  const verifiedPurchaseCost = Number(verified?.purchase_cost);
+  if (!Number.isFinite(verifiedCost) || Math.abs(verifiedCost - purchaseCost) > 0.000001 ||
+      !Number.isFinite(verifiedPurchaseCost) || Math.abs(verifiedPurchaseCost - purchaseCost) > 0.000001) {
+    throw new Error("Loyverse no confirmó el nuevo costo del insumo.");
   }
-  return { previous: current, current: verifiedCost };
+  await supabaseRequest(
+    "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(variantId),
+    {
+      method:"PATCH",
+      headers:{Prefer:"return=minimal"},
+      body:JSON.stringify({cost:purchaseCost,purchase_cost:purchaseCost,synced_at:new Date().toISOString()}),
+    },
+  );
+  return { previous: current, current: verifiedPurchaseCost };
 }
 
 async function registerInsumoPurchase(token: string, userId: string, payload: any) {
@@ -1386,6 +1498,11 @@ Deno.serve(async (req: Request) => {
 
     if (action === "set_pack_size") {
       return json(await setPurchasePackSize(body));
+    }
+
+    if (action === "get_cost_derivations") {
+      const rows = await getCostDerivations();
+      return json({ ok: true, derivations: rows });
     }
 
     if (action === "register_purchase") {
