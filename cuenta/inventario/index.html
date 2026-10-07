@@ -1174,7 +1174,10 @@ async function openInventoryEditor(variantId,itemId){
   $('inventoryEditNotice').className='notice';
   $('inventoryEditNotice').textContent='Cargando información actual desde Loyverse…';
   $('inventoryEditSave').disabled=true;
+  $('inventoryEditSave').textContent='GUARDAR EN LOYVERSE';
+  $('inventoryEditSave').dataset.completed='0';
   $('inventoryEditCancel').disabled=false;
+  $('inventoryEditCancel').textContent='CANCELAR';
   inventoryEditState={variantId,itemId};
   try{
     const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_edit',item_id:itemId,variant_id:variantId}});
@@ -1242,7 +1245,7 @@ function setInventoryEditTrackStock(active){
   el.style.color=enabled?'#b8ff39':'#ffb7b7';
   el.style.cursor='pointer';
 }
-function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
+function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop').classList.add('hidden');$('inventoryEditSave').disabled=false;$('inventoryEditSave').textContent='GUARDAR EN LOYVERSE';$('inventoryEditSave').dataset.completed='0';$('inventoryEditCancel').disabled=false;$('inventoryEditCancel').textContent='CANCELAR';$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}
 function updateInventoryEditCategoryUI(){
   if(!inventoryEditState?.data)return;
   const categoryName=String($('editItemCategory')?.selectedOptions?.[0]?.textContent||'').trim().toLowerCase();
@@ -1292,6 +1295,7 @@ function updateInventoryEditUnitCost(){
 
 async function saveInventoryEditor(){
   if(!inventoryEditState?.data)return;
+  if($('inventoryEditSave').dataset.completed==='1'){closeInventoryEditor();return;}
   const composite=Boolean(inventoryEditState.isComposite);
   const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState.variantId));
   const selectedCategoryName=String($('editItemCategory')?.selectedOptions?.[0]?.textContent||'').trim().toLowerCase();
@@ -1343,8 +1347,13 @@ async function saveInventoryEditor(){
     const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});
     if(error)throw error;
     if(!data?.ok)throw new Error(data?.error||'No se pudieron guardar los cambios.');
-    closeInventoryEditor();await loadInventory();
-    showNotice('Cambios guardados en Loyverse y reflejados en el inventario de AvoHouse.',false);
+    await loadInventory();
+    $('inventoryEditNotice').textContent='Cambios guardados correctamente en Loyverse y reflejados en el inventario de AvoHouse.';
+    $('inventoryEditNotice').className='notice show ok';
+    $('inventoryEditSave').textContent='LISTO';
+    $('inventoryEditSave').dataset.completed='1';
+    $('inventoryEditSave').disabled=false;
+    $('inventoryEditCancel').textContent='CERRAR';
   }catch(error){$('inventoryEditNotice').textContent=error?.message||'No se pudieron guardar los cambios.';$('inventoryEditNotice').className='notice show error'}
   finally{btn.disabled=false;$('inventoryEditCancel').disabled=false}
 }
