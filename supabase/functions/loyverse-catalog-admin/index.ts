@@ -435,7 +435,13 @@ async function updateCatalogItem(token: string, payload: any) {
 
   if(itemName!==String(currentItem?.item_name??"").trim()||String(categoryId??"")!==String(currentItem?.category_id??"")||nextTrackStock!==currentTrackStock||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(nextComponents)!==JSON.stringify(currentItem?.components??[]))){
     itemChanged=true;
-    const itemPayload:Record<string,unknown>={id:itemId,item_name:itemName,category_id:categoryId,track_stock:nextTrackStock};
+    const itemPayload:Record<string,unknown>={
+      id:itemId,
+      item_name:itemName,
+      category_id:categoryId,
+      track_stock:nextTrackStock,
+      is_composite:Boolean(currentItem?.is_composite),
+    };
     if(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined)itemPayload.components=nextComponents;
     await loyversePost(token,"/items",itemPayload);
   }
