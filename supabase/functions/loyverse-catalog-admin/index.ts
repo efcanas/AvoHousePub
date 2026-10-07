@@ -1404,6 +1404,6 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const message = cleanError(error);
     try { await logError(message); } catch {}
-    return json({ ok: false, error: message }, 403);
+    return json({ ok: false, error: message }, 200);
   }
 });
