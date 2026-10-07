@@ -435,14 +435,51 @@ async function updateCatalogItem(token: string, payload: any) {
 
   if(itemName!==String(currentItem?.item_name??"").trim()||String(categoryId??"")!==String(currentItem?.category_id??"")||nextTrackStock!==currentTrackStock||(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined&&JSON.stringify(nextComponents)!==JSON.stringify(currentItem?.components??[]))){
     itemChanged=true;
+
+    let liveVariants=Array.isArray(currentItem?.variants)?currentItem.variants:[];
+    if(!liveVariants.length){
+      const variantBody=await loyverseGet(token,"/variants?items_ids="+encodeURIComponent(itemId)+"&limit=250");
+      liveVariants=Array.isArray(variantBody?.variants)?variantBody.variants:[];
+    }
+    if(!liveVariants.length)throw new Error("Loyverse no devolvió la variante existente del artículo "+itemName+".");
+
     const itemPayload:Record<string,unknown>={
       id:itemId,
       item_name:itemName,
-      category_id:categoryId,
+      category_id:nextCategoryId||null,
       track_stock:nextTrackStock,
+      sold_by_weight:Boolean(currentItem?.sold_by_weight),
       is_composite:Boolean(currentItem?.is_composite),
+      use_production:Boolean(currentItem?.use_production),
+      components:Boolean(currentItem?.is_composite)?nextComponents:[],
+      primary_supplier_id:currentItem?.primary_supplier_id??null,
+      tax_ids:Array.isArray(currentItem?.tax_ids)?currentItem.tax_ids:[],
+      modifiers_ids:Array.isArray(currentItem?.modifiers_ids)?currentItem.modifiers_ids:[],
+      form:currentItem?.form??"SQUARE",
+      color:currentItem?.color??"GREY",
+      image_url:currentItem?.image_url??null,
+      option1_name:currentItem?.option1_name??null,
+      option2_name:currentItem?.option2_name??null,
+      option3_name:currentItem?.option3_name??null,
+      variants:liveVariants.map((v:any)=>({
+        variant_id:v?.variant_id,
+        item_id:v?.item_id??itemId,
+        sku:v?.sku,
+        reference_variant_id:v?.reference_variant_id??null,
+        option1_value:v?.option1_value??null,
+        option2_value:v?.option2_value??null,
+        option3_value:v?.option3_value??null,
+        barcode:v?.barcode??null,
+        cost:v?.cost??null,
+        purchase_cost:v?.purchase_cost??null,
+        default_pricing_type:v?.default_pricing_type??"VARIABLE",
+        default_price:v?.default_price??null,
+        stores:Array.isArray(v?.stores)?v.stores:[],
+      })),
     };
-    if(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined)itemPayload.components=nextComponents;
+    for(const v of itemPayload.variants as any[]){
+      for(const key of ["sku","barcode"])if(v[key]===undefined)delete v[key];
+    }
     await loyversePost(token,"/items",itemPayload);
   }
 
