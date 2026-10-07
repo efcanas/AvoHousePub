@@ -376,7 +376,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
     <div class="purchase-modal">
       <div class="purchase-modal-header">
         <h3 id="purchaseTitle" class="purchase-modal-title">Nueva compra</h3>
-        <div class="purchase-modal-subtitle">Registra una compra completa en una sola entrada. Los productos con inventario activo aumentan existencias; los insumos actualizan su costo unitario sin generar movimiento de inventario. <strong>Valor total</strong> es lo pagado por todas las presentaciones de cada producto.</div>
+        <div class="purchase-modal-subtitle">Registra una compra completa en una sola entrada. Los productos con inventario activo aumentan existencias; los insumos actualizan su costo por ml sin generar movimiento de inventario. En productos que alimentan un insumo, introduce el <strong>valor por unidad</strong>; AvoHouse calcula el total de la compra y actualiza automáticamente el costo del insumo derivado.</div>
       </div>
       <div class="purchase-modal-body">
         <div id="purchaseNotice" class="notice" style="margin-bottom:12px"></div>
@@ -604,7 +604,7 @@ const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const { createClient } = supabase;
 const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-tjarildqqxtjmafpiyuz-auth-token'}});
-let inventoryRows=[],inventoryCategories=[],inventoryEditState=null,inventoryCreateState=null;const $=id=>document.getElementById(id);
+let inventoryRows=[],inventoryCategories=[],inventoryEditState=null,inventoryCreateState=null,purchaseCostDerivations=[],purchaseCostDerivationBySource=new Map,purchaseCostDerivationByTarget=new Map;const $=id=>document.getElementById(id);
 function showNotice(message,error){const el=$('notice');el.textContent=message;el.className='notice show'+(error?' error':'')}
 function formatMoney(value){const n=Number(value);return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—'}
 function formatDate(value){if(!value)return'—';const d=new Date(value);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(d)}
@@ -663,31 +663,49 @@ function renderPurchaseDetail(p){
 function editPurchaseLineOptions(selectedId=''){const products=purchaseProducts();return '<option value="">Selecciona un producto</option>'+products.map(r=>'<option value="'+r.variantId+'" '+(r.variantId===selectedId?'selected':'')+'>'+String(purchaseProductLabel(r)).replace(/[&<>]/g,'')+'</option>').join('')}
 function addEditPurchaseLine(data={}){
   const row=document.createElement('div');row.className='purchase-edit-line';
-  const p=inventoryRows.find(r=>r.variantId===data.variantId),isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos',
-    content=Number(data.presentationContentMl??p?.presentationContentMl??0),pack=isInsumo?content:(data.pack??p?.packSize??'');
+  const p=inventoryRows.find(r=>r.variantId===data.variantId),
+    isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos',
+    derivation=purchaseCostDerivationBySource.get(String(data.variantId||''))||null,
+    isCostSource=Boolean(derivation),
+    quantity=Number(data.quantity||1),
+    content=Number(data.presentationContentMl??p?.presentationContentMl??0),
+    pack=isInsumo?content:(data.pack??p?.packSize??''),
+    totalUnits=isInsumo?quantity:(quantity>0&&Number(pack)>0?quantity*Number(pack):0),
+    enteredValue=isCostSource&&totalUnits>0&&Number(data.purchaseTotalValue)>0?Number(data.purchaseTotalValue)/totalUnits:Number(data.purchaseTotalValue||'');
   row.innerHTML='<div class="edit-wide"><span class="purchase-cell-label">Producto</span><select data-edit-product>'+editPurchaseLineOptions(data.variantId||'')+'</select></div>'+
-    '<div><span class="purchase-cell-label">Cantidad</span><input data-edit-quantity type="number" min="1" step="1" value="'+(data.quantity||1)+'"></div>'+
+    '<div><span class="purchase-cell-label">Cantidad</span><input data-edit-quantity type="number" min="1" step="1" value="'+(quantity||1)+'"></div>'+
     '<div><span class="purchase-cell-label">Presentación</span><input data-edit-pack type="number" min="1" step="0.001" value="'+(pack||'')+'"></div>'+
-    '<div><span class="purchase-cell-label">Valor total</span><input data-edit-value type="number" min="0.01" step="1" value="'+(data.purchaseTotalValue||'')+'"></div>'+
-    '<div><span class="purchase-cell-label">Valor unidad</span><div class="purchase-edit-readonly" data-edit-unit>—</div></div>'+
+    '<div><span class="purchase-cell-label">'+(isCostSource?'Valor por unidad':'Valor total')+'</span><input data-edit-value type="number" min="0.01" step="1" value="'+(enteredValue||'')+'" placeholder="'+(isCostSource?'$ / unidad':'$')+'"></div>'+
+    '<div><span class="purchase-cell-label">'+(isCostSource?'Costo por unidad':'Valor unidad')+'</span><div class="purchase-edit-readonly" data-edit-unit>—</div></div>'+
     '<button class="purchase-line-remove" data-edit-remove type="button" aria-label="Eliminar producto">×</button><input type="hidden" data-edit-variant-original value="'+(data.variantId||'')+'">';
   $('purchaseDetailBody').querySelector('.purchase-edit-lines')?.appendChild(row);updateEditPurchaseLine(row);return row;
 }
 function updateEditPurchaseLine(row){
-  const p=inventoryRows.find(r=>r.variantId===row.querySelector('[data-edit-product]')?.value),isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos',
-    q=Number(row.querySelector('[data-edit-quantity]')?.value||0),packInput=row.querySelector('[data-edit-pack]'),value=Number(row.querySelector('[data-edit-value]')?.value||0);
+  const p=inventoryRows.find(r=>r.variantId===row.querySelector('[data-edit-product]')?.value),
+    isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos',
+    derivation=purchaseCostDerivationBySource.get(String(row.querySelector('[data-edit-product]')?.value||''))||null,
+    isCostSource=Boolean(derivation),
+    q=Number(row.querySelector('[data-edit-quantity]')?.value||0),
+    packInput=row.querySelector('[data-edit-pack]'),
+    enteredValue=Number(row.querySelector('[data-edit-value]')?.value||0);
   packInput.disabled=isInsumo;
-  const presentation=Number(packInput?.value||0),displayUnits=isInsumo?(q>0&&presentation>0?q*presentation:0):(q>0&&presentation>0?q*presentation:0),unit=value>0&&displayUnits>0?value/displayUnits:0;
-  const labelPack=packInput.parentElement?.querySelector('.purchase-cell-label'),labelUnit=row.querySelector('[data-edit-unit]')?.parentElement?.querySelector('.purchase-cell-label');
-  if(isInsumo){labelPack.textContent='Presentación (ml)';labelUnit.textContent='Costo/ml';}else{labelPack.textContent='Presentación';labelUnit.textContent='Valor unidad';}
+  const presentation=Number(packInput?.value||0),
+    displayUnits=isInsumo?(q>0&&presentation>0?q*presentation:0):(q>0&&presentation>0?q*presentation:0),
+    value=isCostSource?(enteredValue>0&&displayUnits>0?enteredValue*displayUnits:0):enteredValue,
+    unit=isCostSource?(enteredValue>0?enteredValue:0):(value>0&&displayUnits>0?value/displayUnits:0);
+  const labelPack=packInput.parentElement?.querySelector('.purchase-cell-label'),
+    labelUnit=row.querySelector('[data-edit-unit]')?.parentElement?.querySelector('.purchase-cell-label'),
+    labelValue=row.querySelector('[data-edit-value]')?.parentElement?.querySelector('.purchase-cell-label');
+  if(isInsumo){labelPack.textContent='Presentación (ml)';labelValue.textContent='Valor total';labelUnit.textContent='Costo/ml';}
+  else{labelPack.textContent='Presentación';labelValue.textContent=isCostSource?'Valor por unidad':'Valor total';labelUnit.textContent=isCostSource?'Costo por unidad':'Valor unidad';}
   row.querySelector('[data-edit-unit]').textContent=unit>0?(formatMoney(unit)+(isInsumo?' / ml':'')):'—';
-  return{variantId:row.querySelector('[data-edit-product]')?.value||'',quantity:q,pack:isInsumo?1:presentation,presentationContentMl:isInsumo?presentation:null,purchaseTotalValue:value,units:isInsumo?q:displayUnits,unitCost:unit,isInsumo};
+  return{variantId:row.querySelector('[data-edit-product]')?.value||'',quantity:q,pack:isInsumo?1:presentation,presentationContentMl:isInsumo?presentation:null,purchaseTotalValue:value,units:isInsumo?q:displayUnits,unitCost:unit,isInsumo,isCostSource};
 }
 function renderPurchaseEdit(p){const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));$('purchaseDetailTitle').textContent='Modificar compra';$('purchaseDetailTotal').textContent=formatMoney(p.total_value||0);$('purchaseDetailBody').innerHTML='<div class="purchase-meta-grid"><div class="inventory-field"><label class="field-label" for="editPurchaseDate">Fecha</label><input id="editPurchaseDate" type="date" value="'+String(p.purchase_date||'')+'"></div><div class="inventory-field"><label class="field-label" for="editPurchaseNotes">Nota</label><input id="editPurchaseNotes" type="text" maxlength="1000" value="'+String(p.notes||'').replace(/"/g,'&quot;')+'"></div></div><div class="inventory-section-title">Productos</div><div id="editPurchaseLines" class="purchase-edit-lines"></div><div id="purchaseDetailError" class="purchase-detail-error hidden"></div><div class="purchase-detail-actions"><button class="ghost" data-purchase-detail-cancel type="button">CANCELAR</button><button class="primary" data-purchase-edit-save type="button">GUARDAR CAMBIOS</button></div>';for(const l of lines)addEditPurchaseLine({variantId:String(l.variant_id),quantity:Number(l.presentation_quantity),pack:Number(l.pack_size),presentationContentMl:Number(l.presentation_content_ml||0),purchaseTotalValue:Number(l.purchase_total_value)});document.querySelectorAll('#editPurchaseLines .purchase-edit-line').forEach(updateEditPurchaseLine);$('purchaseDetailBody').insertAdjacentHTML('afterbegin','<button id="editPurchaseAddLine" class="ghost purchase-add-line" type="button">+ AGREGAR PRODUCTO</button>');$('editPurchaseAddLine').addEventListener('click',()=>{addEditPurchaseLine({});document.querySelectorAll('#editPurchaseLines .purchase-edit-line').forEach(updateEditPurchaseLine)})}
 async function saveEditedPurchase(){const errorEl=$('purchaseDetailError'),lines=[...document.querySelectorAll('#editPurchaseLines .purchase-edit-line')].map(updateEditPurchaseLine).filter(l=>l.variantId);if(!lines.length){errorEl.textContent='Agrega al menos un producto.';errorEl.classList.remove('hidden');return}if(lines.some(l=>!Number.isInteger(l.quantity)||l.quantity<=0||!Number.isInteger(l.pack)||l.pack<=0||!Number.isFinite(l.purchaseTotalValue)||l.purchaseTotalValue<=0||((l.isInsumo)&&(!Number.isFinite(l.presentationContentMl)||l.presentationContentMl<=0)))){errorEl.textContent='Revisa cantidades, Presentación y Valor total.';errorEl.classList.remove('hidden');return}if(new Set(lines.map(l=>l.variantId)).size!==lines.length){errorEl.textContent='No repitas un mismo producto en la compra.';errorEl.classList.remove('hidden');return}if(!confirm('Se modificarán la compra y las existencias correspondientes en Loyverse. ¿Deseas continuar?'))return;const btn=$('purchaseDetailBody').querySelector('[data-purchase-edit-save]');btn.disabled=true;try{const body={action:'update_purchase',purchase_id:purchaseHistorySelected.id,purchase_date:$('editPurchaseDate').value,notes:$('editPurchaseNotes').value.trim(),lines:lines.map(l=>({variant_id:l.variantId,quantity:l.quantity,pack_size:l.pack,presentation_content_ml:l.presentationContentMl,purchase_total_value:l.purchaseTotalValue}))};const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo modificar la compra.');await Promise.all([loadInventory(),loadPurchaseHistory()]);purchaseHistorySelected=purchaseHistoryAll.purchases.find(p=>String(p.id)===String(data.purchase_id))||null;if(purchaseHistorySelected){renderPurchaseDetail(purchaseHistorySelected)}else{$('purchaseDetailBackdrop').classList.add('hidden')}showNotice('Compra modificada correctamente.',false)}catch(e){errorEl.textContent=e?.message||'No se pudo modificar la compra.';errorEl.classList.remove('hidden')}finally{btn.disabled=false}}
 async function deleteSelectedPurchase(){if(!purchaseHistorySelected)return;const p=purchaseHistorySelected;const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));const units=lines.reduce((s,l)=>s+Number(l.units_received||0),0);if(!confirm('Se eliminará la compra registrada de AvoHouse. Se revertirán los movimientos de inventario correspondientes y se restaurará el costo anterior de los insumos incluidos, cuando exista. ¿Deseas continuar?'))return;try{const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'delete_purchase',purchase_id:p.id}});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo eliminar la compra.');$('purchaseDetailBackdrop').classList.add('hidden');purchaseHistorySelected=null;await Promise.all([loadInventory(),loadPurchaseHistory()]);showNotice('Compra eliminada y existencias revertidas correctamente.',false)}catch(e){showNotice(e?.message||'No se pudo eliminar la compra.',true)}}
 
-async function loadInventory(){ $('inventoryStatus').textContent='Cargando…';$('inventoryList').innerHTML='<div class="empty">Cargando inventario…</div>';const [{data:categories,error:categoryError},{data:items,error:itemError},{data:variants,error:variantError},{data:levels,error:inventoryError},{data:syncState,error:syncError}]=await Promise.all([db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),db.from('loyverse_items').select('id,item_name,category_id,track_stock,is_composite,components').is('deleted_at',null),db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,cost,default_price,purchase_pack_size,purchase_presentation_content_ml,stores,option1_value,option2_value,option3_value').is('deleted_at',null),db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle()]);if(categoryError||itemError||variantError||inventoryError||syncError){const first=[categoryError,itemError,variantError,inventoryError,syncError].find(Boolean);$('inventoryStatus').textContent='Error';showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);return}inventoryCategories=categories||[];populateInventoryCategories();const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name])),itemMap=new Map((items||[]).map(i=>[String(i.id),i])),inventoryByVariant=new Map((levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)]));const variantMap=new Map((variants||[]).map(v=>[String(v.variant_id),v]));const unitCostMemo=new Map();const unitCostVisiting=new Set();function inventoryCalculatedCost(variantId){const key=String(variantId||'');if(unitCostMemo.has(key))return unitCostMemo.get(key);if(unitCostVisiting.has(key))return null;const v=variantMap.get(key);if(!v)return null;const item=itemMap.get(String(v.item_id))||{};if(!Boolean(item.is_composite)){const n=Number(v.cost);const value=Number.isFinite(n)&&n>=0?n:null;unitCostMemo.set(key,value);return value}unitCostVisiting.add(key);let total=0,valid=true;const components=Array.isArray(item.components)?item.components:[];if(!components.length)valid=false;for(const component of components){const qty=Number(component?.quantity);const componentCost=inventoryCalculatedCost(component?.variant_id);if(!Number.isFinite(qty)||qty<0||componentCost===null||!Number.isFinite(componentCost)){valid=false;break}total+=qty*componentCost}unitCostVisiting.delete(key);const value=valid&&Number.isFinite(total)?total:null;unitCostMemo.set(key,value);return value}inventoryRows=(variants||[]).map(v=>{const item=itemMap.get(String(v.item_id))||{},store=inventoryStoreState(v);return{storeId:String(store?.store_id||''),variantId:String(v.variant_id),itemId:String(v.item_id),name:String(item.item_name||'Sin nombre'),categoryId:String(item.category_id||''),categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',trackStock:Boolean(item.track_stock),isComposite:Boolean(item.is_composite),stock:inventoryStockInfo(v,inventoryByVariant),cost:inventoryCalculatedCost(v.variant_id),lowStock:store?.low_stock===null||store?.low_stock===undefined?null:Number(store.low_stock),available:store?.available_for_sale!==false,price:store?.price??v.default_price,packSize:v.purchase_pack_size===null||v.purchase_pack_size===undefined?null:Number(v.purchase_pack_size),presentationContentMl:v.purchase_presentation_content_ml===null||v.purchase_presentation_content_ml===undefined?null:Number(v.purchase_presentation_content_ml),sku:String(v.sku||''),barcode:String(v.barcode||''),option1:String(v.option1_value||''),option2:String(v.option2_value||''),option3:String(v.option3_value||'')}});$('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');$('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');$('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');$('inventoryStatLevels').textContent=(levels||[]).length.toLocaleString('es-CO');$('inventoryStatus').textContent=syncState?.last_success_at?'Actualizado '+formatDate(syncState.last_success_at):'Loyverse';renderInventory()}
+async function loadInventory(){ $('inventoryStatus').textContent='Cargando…';$('inventoryList').innerHTML='<div class="empty">Cargando inventario…</div>';const [{data:categories,error:categoryError},{data:items,error:itemError},{data:variants,error:variantError},{data:levels,error:inventoryError},{data:syncState,error:syncError},{data:derivationData,error:derivationError}]=await Promise.all([db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),db.from('loyverse_items').select('id,item_name,category_id,track_stock,is_composite,components').is('deleted_at',null),db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,cost,default_price,purchase_pack_size,purchase_presentation_content_ml,stores,option1_value,option2_value,option3_value').is('deleted_at',null),db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle(),db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_cost_derivations'}})]);if(categoryError||itemError||variantError||inventoryError||syncError){const first=[categoryError,itemError,variantError,inventoryError,syncError].find(Boolean);$('inventoryStatus').textContent='Error';showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);return}inventoryCategories=categories||[];purchaseCostDerivations=Array.isArray(derivationData?.derivations)?derivationData.derivations:[];purchaseCostDerivationBySource=new Map(purchaseCostDerivations.map(d=>[String(d.source_variant_id),d]));purchaseCostDerivationByTarget=new Map(purchaseCostDerivations.map(d=>[String(d.target_variant_id),d]));if(derivationError)console.error(derivationError);populateInventoryCategories();const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name])),itemMap=new Map((items||[]).map(i=>[String(i.id),i])),inventoryByVariant=new Map((levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)]));const variantMap=new Map((variants||[]).map(v=>[String(v.variant_id),v]));const unitCostMemo=new Map();const unitCostVisiting=new Set();function inventoryCalculatedCost(variantId){const key=String(variantId||'');if(unitCostMemo.has(key))return unitCostMemo.get(key);if(unitCostVisiting.has(key))return null;const v=variantMap.get(key);if(!v)return null;const item=itemMap.get(String(v.item_id))||{};if(!Boolean(item.is_composite)){const n=Number(v.cost);const value=Number.isFinite(n)&&n>=0?n:null;unitCostMemo.set(key,value);return value}unitCostVisiting.add(key);let total=0,valid=true;const components=Array.isArray(item.components)?item.components:[];if(!components.length)valid=false;for(const component of components){const qty=Number(component?.quantity);const componentCost=inventoryCalculatedCost(component?.variant_id);if(!Number.isFinite(qty)||qty<0||componentCost===null||!Number.isFinite(componentCost)){valid=false;break}total+=qty*componentCost}unitCostVisiting.delete(key);const value=valid&&Number.isFinite(total)?total:null;unitCostMemo.set(key,value);return value}inventoryRows=(variants||[]).map(v=>{const item=itemMap.get(String(v.item_id))||{},store=inventoryStoreState(v);return{storeId:String(store?.store_id||''),variantId:String(v.variant_id),itemId:String(v.item_id),name:String(item.item_name||'Sin nombre'),categoryId:String(item.category_id||''),categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',trackStock:Boolean(item.track_stock),isComposite:Boolean(item.is_composite),stock:inventoryStockInfo(v,inventoryByVariant),cost:inventoryCalculatedCost(v.variant_id),lowStock:store?.low_stock===null||store?.low_stock===undefined?null:Number(store.low_stock),available:store?.available_for_sale!==false,price:store?.price??v.default_price,packSize:v.purchase_pack_size===null||v.purchase_pack_size===undefined?null:Number(v.purchase_pack_size),presentationContentMl:v.purchase_presentation_content_ml===null||v.purchase_presentation_content_ml===undefined?null:Number(v.purchase_presentation_content_ml),sku:String(v.sku||''),barcode:String(v.barcode||''),option1:String(v.option1_value||''),option2:String(v.option2_value||''),option3:String(v.option3_value||'')}});$('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');$('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');$('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');$('inventoryStatLevels').textContent=(levels||[]).length.toLocaleString('es-CO');$('inventoryStatus').textContent=syncState?.last_success_at?'Actualizado '+formatDate(syncState.last_success_at):'Loyverse';renderInventory()}
 function inventoryComponentLabel(row){
   const option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · ');
   return [row.name,option].filter(Boolean).join(' · ');
@@ -1359,7 +1377,7 @@ async function saveInventoryEditor(){
 
 function purchaseProducts(){
   return inventoryRows
-    .filter(r=>(r.trackStock||String(r.categoryName||'').trim().toLowerCase()==='insumos')&&!r.isComposite)
+    .filter(r=>(r.trackStock||String(r.categoryName||'').trim().toLowerCase()==='insumos')&&!r.isComposite&&!purchaseCostDerivationByTarget.has(String(r.variantId)))
     .sort((a,b)=>{
       const c=a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true});
       if(c!==0)return c;
@@ -1392,12 +1410,15 @@ function updatePurchaseLine(row){
     previousVariant=row.dataset.purchaseVariant||'',
     product=inventoryRows.find(r=>r.variantId===variantId),
     isInsumo=String(product?.categoryName||'').trim().toLowerCase()==='insumos',
+    derivation=purchaseCostDerivationBySource.get(String(variantId))||null,
+    isCostSource=Boolean(derivation),
     quantityRaw=row.querySelector('[data-purchase-quantity]')?.value||'',
     packInput=row.querySelector('[data-purchase-pack]'),
     valueInput=row.querySelector('[data-purchase-value]'),
     labelPack=packInput.parentElement?.querySelector('.purchase-cell-label'),
     labelUnits=row.querySelector('[data-purchase-units]')?.parentElement?.querySelector('.purchase-cell-label'),
-    labelUnit=row.querySelector('[data-purchase-unit-cost]')?.parentElement?.querySelector('.purchase-cell-label');
+    labelUnit=row.querySelector('[data-purchase-unit-cost]')?.parentElement?.querySelector('.purchase-cell-label'),
+    labelValue=valueInput.parentElement?.querySelector('.purchase-cell-label');
   if(variantId!==previousVariant){row.dataset.purchaseVariant=variantId;valueInput.value='';}
   packInput.disabled=isInsumo;
   if(isInsumo){
@@ -1406,6 +1427,8 @@ function updatePurchaseLine(row){
     labelPack.textContent='Presentación (ml)';
     labelUnits.textContent='Contenido total';
     labelUnit.textContent='Costo/ml';
+    labelValue.textContent='Valor total';
+    valueInput.placeholder='$';
     row.querySelector('[data-purchase-stock]').textContent='No se controla';
   }else{
     if(variantId!==previousVariant){
@@ -1414,18 +1437,27 @@ function updatePurchaseLine(row){
     }
     labelPack.textContent='Presentación';
     labelUnits.textContent='Unidades';
-    labelUnit.textContent='Valor unidad';
+    labelUnit.textContent=isCostSource?'Costo por unidad':'Valor unidad';
+    labelValue.textContent=isCostSource?'Valor por unidad':'Valor total';
+    valueInput.placeholder=isCostSource?'$ / unidad':'$';
     row.querySelector('[data-purchase-stock]').textContent=product?'Stock '+(product.stock===null?'—':product.stock.toLocaleString('es-CO')):'—';
   }
-  const quantity=Number(quantityRaw),presentation=Number(packInput?.value||0),purchaseTotalValue=Number(valueInput?.value||0);
-  const validBase=Number.isFinite(quantity)&&quantity>0&&Number.isFinite(presentation)&&presentation>0;
-  const units=isInsumo?(validBase?quantity:0):(validBase?quantity*presentation:0);
-  const displayUnits=isInsumo?(validBase?quantity*presentation:0):units;
-  const unitCost=Number.isFinite(purchaseTotalValue)&&purchaseTotalValue>0&&displayUnits>0?purchaseTotalValue/displayUnits:0;
-  const lineTotal=Number.isFinite(purchaseTotalValue)&&purchaseTotalValue>0?purchaseTotalValue:0;
+  const quantity=Number(quantityRaw),
+    presentation=Number(packInput?.value||0),
+    enteredValue=Number(valueInput?.value||0),
+    validBase=Number.isFinite(quantity)&&quantity>0&&Number.isFinite(presentation)&&presentation>0,
+    units=isInsumo?(validBase?quantity:0):(validBase?quantity*presentation:0),
+    displayUnits=isInsumo?(validBase?quantity*presentation:0):units,
+    purchaseTotalValue=isCostSource
+      ? (Number.isFinite(enteredValue)&&enteredValue>0&&displayUnits>0?enteredValue*displayUnits:0)
+      : (Number.isFinite(enteredValue)&&enteredValue>0?enteredValue:0),
+    unitCost=isCostSource
+      ? (Number.isFinite(enteredValue)&&enteredValue>0?enteredValue:0)
+      : (Number.isFinite(purchaseTotalValue)&&purchaseTotalValue>0&&displayUnits>0?purchaseTotalValue/displayUnits:0),
+    lineTotal=purchaseTotalValue;
   row.querySelector('[data-purchase-units]').textContent=displayUnits.toLocaleString('es-CO')+(isInsumo?' ml':'');
   row.querySelector('[data-purchase-unit-cost]').textContent=unitCost>0?(formatMoney(unitCost)+(isInsumo?' / ml':'')):'—';
-  return{variantId,quantity,pack:isInsumo?1:presentation,presentationContentMl:isInsumo?presentation:null,purchaseTotalValue,product,units,lineTotal,unitCost,isInsumo,totalPresentationContentMl:isInsumo?displayUnits:0};
+  return{variantId,quantity,pack:isInsumo?1:presentation,presentationContentMl:isInsumo?presentation:null,purchaseTotalValue,product,units:displayUnits,lineTotal,unitCost,isInsumo,isCostSource};
 }
 function updatePurchaseTotal(){
   let totalUnits=0,totalValue=0,missingPack=0,missingValue=0,invalidQty=0,duplicate=false,missingContent=0;const ids=new Set;
