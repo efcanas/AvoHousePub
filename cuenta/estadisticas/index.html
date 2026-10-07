@@ -16,10 +16,16 @@ body:before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.66);z-index
 .card{background:rgba(21,23,28,.95);border:1px solid #2c3038;border-radius:18px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25);margin:12px 0}
 .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
 .panel-title{margin:0;font-size:18px;color:#f5f5f5}.panel-tag{font-size:12px;color:#9ca3af}
-.controls{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:end}
+.controls{display:grid;grid-template-columns:180px 1fr 1fr auto auto;gap:8px;align-items:end}
+.period-mode{min-width:0}.period-option{display:none}.period-option.show{display:block}
 label{display:block;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-input,button{font:inherit}input{width:100%;padding:12px 13px;border:1px solid #2c3038;border-radius:11px;background:#101217;color:#fff}
-input:focus{outline:none;border-color:#b8ff39}
+input,select,button{font:inherit}input,select{width:100%;padding:12px 13px;border:1px solid #2c3038;border-radius:11px;background:#101217;color:#fff}
+input:focus,select:focus{outline:none;border-color:#b8ff39}
+.period-helper{margin-top:8px;color:#8f96a3;font-size:11px}
+.controls select{height:44px}
+.controls .action-button{height:44px;white-space:nowrap}
+@media(max-width:900px){.controls{grid-template-columns:1fr 1fr}.period-mode{grid-column:1/-1}}
+
 button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
 .primary{border:0;background:#b8ff39;color:#111}.ghost{border:1px solid #2c3038;background:#111318;color:#fff}
 .summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
@@ -60,11 +66,30 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
   <section class="card">
     <div class="panel-heading"><h2 class="panel-title">Período de análisis</h2><span id="rangeTag" class="panel-tag">Cargando…</span></div>
     <div class="controls">
-      <div><label for="startDate">Desde</label><input id="startDate" type="date"></div>
-      <div><label for="endDate">Hasta</label><input id="endDate" type="date"></div>
-      <button id="allTimeBtn" class="ghost" type="button">DESDE EL PRIMER REGISTRO</button>
-      <button id="applyBtn" class="primary" type="button">ACTUALIZAR</button>
+      <div class="period-mode">
+        <label for="periodType">Tipo de período</label>
+        <select id="periodType">
+          <option value="custom">Personalizado</option>
+          <option value="month">Mensual</option>
+          <option value="week">Semanal</option>
+        </select>
+      </div>
+      <div id="customRange" class="period-option show">
+        <label for="startDate">Desde</label><input id="startDate" type="date">
+      </div>
+      <div id="customRangeEnd" class="period-option show">
+        <label for="endDate">Hasta</label><input id="endDate" type="date">
+      </div>
+      <div id="monthRange" class="period-option">
+        <label for="monthPicker">Mes</label><input id="monthPicker" type="month">
+      </div>
+      <div id="weekRange" class="period-option">
+        <label for="weekPicker">Semana</label><input id="weekPicker" type="date">
+      </div>
+      <button id="allTimeBtn" class="ghost action-button" type="button">DESDE EL PRIMER REGISTRO</button>
+      <button id="applyBtn" class="primary action-button" type="button">ACTUALIZAR</button>
     </div>
+    <div id="periodHelper" class="period-helper">Selecciona un rango libre de fechas.</div>
     <div id="status" class="status">Cargando estadísticas…</div>
   </section>
 
@@ -139,6 +164,46 @@ function marginClass(v){
 }
 function marginSpan(v){const margin=Number(v);return '<span class="margin-value '+marginClass(margin)+'">'+pct(margin)+'</span>'}
 function dateLabel(v){if(!v)return '—';const [y,m,d]=String(v).slice(0,10).split('-');return d+'/'+m+'/'+y}
+function todayLocal(){
+  const now=new Date();
+  return new Date(now.getFullYear(),now.getMonth(),now.getDate());
+}
+function isoLocalDate(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function monthBounds(value){
+  const [y,m]=String(value||'').split('-').map(Number);
+  if(!y||!m)return null;
+  const start=new Date(y,m-1,1),end=new Date(y,m,0);
+  return {start:isoLocalDate(start),end:isoLocalDate(end)};
+}
+function weekBounds(value){
+  if(!value)return null;
+  const [y,m,d]=String(value).slice(0,10).split('-').map(Number);
+  const day=new Date(y,m-1,d);
+  const monday=new Date(day);
+  const offset=(day.getDay()+6)%7;
+  monday.setDate(day.getDate()-offset);
+  const sunday=new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return {start:isoLocalDate(monday),end:isoLocalDate(sunday)};
+}
+function syncPeriodUI(){
+  const type=$('periodType').value;
+  $('customRange').classList.toggle('show',type==='custom');
+  $('customRangeEnd').classList.toggle('show',type==='custom');
+  $('monthRange').classList.toggle('show',type==='month');
+  $('weekRange').classList.toggle('show',type==='week');
+  $('allTimeBtn').disabled=type!=='custom';
+  if(type==='month'){
+    $('periodHelper').textContent='Se analizará el mes completo: día 1 hasta el último día del mes.';
+  }else if(type==='week'){
+    $('periodHelper').textContent='Se analizará la semana completa de lunes a domingo.';
+  }else{
+    $('periodHelper').textContent='Selecciona un rango libre de fechas.';
+  }
+}
 function showError(message){$('notice').hidden=false;$('notice').className='notice error';$('notice').textContent=message}
 function clearError(){$('notice').hidden=true}
 function destroyCharts(){Object.values(charts).forEach(c=>c?.destroy());charts={}}
@@ -192,7 +257,19 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 
 async function loadStats(){
   $('applyBtn').disabled=true;$('status').textContent='Consultando…';clearError();
-  const start=$('startDate').value||null,end=$('endDate').value||null;
+  const type=$('periodType').value;
+  let start=null,end=null;
+  if(type==='month'){
+    const bounds=monthBounds($('monthPicker').value);
+    if(!bounds){$('applyBtn').disabled=false;showError('Selecciona un mes.');return}
+    start=bounds.start;end=bounds.end;
+  }else if(type==='week'){
+    const bounds=weekBounds($('weekPicker').value);
+    if(!bounds){$('applyBtn').disabled=false;showError('Selecciona un día de la semana.');return}
+    start=bounds.start;end=bounds.end;
+  }else{
+    start=$('startDate').value||null;end=$('endDate').value||null;
+  }
   const {data,error}=await db.rpc('avohouse_get_sales_statistics',{p_start_date:start,p_end_date:end});
   $('applyBtn').disabled=false;
   if(error){$('status').textContent='';showError('No se pudieron cargar las estadísticas: '+error.message);return}
@@ -200,7 +277,8 @@ async function loadStats(){
 }
 
 async function allTime(){
-  $('startDate').value='';$('endDate').value=new Date().toISOString().slice(0,10);await loadStats();
+  $('periodType').value='custom';syncPeriodUI();
+  $('startDate').value='';$('endDate').value=isoLocalDate(todayLocal());await loadStats();
 }
 
 async function init(){
@@ -211,11 +289,17 @@ async function init(){
   if(adminError||!admin){window.location.href='../admin/?fromStats=1';return}
   const {data:first}=await db.from('loyverse_receipts').select('receipt_date').order('receipt_date',{ascending:true}).limit(1).maybeSingle();
   $('startDate').value=first?.receipt_date?String(first.receipt_date).slice(0,10):'';
-  $('endDate').value=new Date().toISOString().slice(0,10);
+  $('endDate').value=isoLocalDate(todayLocal());
+  $('monthPicker').value=isoLocalDate(todayLocal()).slice(0,7);
+  $('weekPicker').value=isoLocalDate(todayLocal());
+  syncPeriodUI();
   await loadStats();
 }
 $('applyBtn').addEventListener('click',loadStats);
 $('allTimeBtn').addEventListener('click',allTime);
+$('periodType').addEventListener('change',syncPeriodUI);
+$('monthPicker').addEventListener('change',()=>{$('periodType').value='month';syncPeriodUI()});
+$('weekPicker').addEventListener('change',()=>{$('periodType').value='week';syncPeriodUI()});
 $('logoutBtn').addEventListener('click',async()=>{await db.auth.signOut();window.location.href='../admin/'});
 init();
 </script>
