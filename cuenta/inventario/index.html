@@ -1295,7 +1295,6 @@ function updateInventoryEditUnitCost(){
 
 async function saveInventoryEditor(){
   if(!inventoryEditState?.data)return;
-  if($('inventoryEditSave').dataset.completed==='1'){closeInventoryEditor();return;}
   const composite=Boolean(inventoryEditState.isComposite);
   const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState.variantId));
   const selectedCategoryName=String($('editItemCategory')?.selectedOptions?.[0]?.textContent||'').trim().toLowerCase();
@@ -1348,12 +1347,12 @@ async function saveInventoryEditor(){
     if(error)throw error;
     if(!data?.ok)throw new Error(data?.error||'No se pudieron guardar los cambios.');
     await loadInventory();
-    $('inventoryEditNotice').textContent='Cambios guardados correctamente en Loyverse y reflejados en el inventario de AvoHouse.';
+    $('inventoryEditNotice').textContent='Cambios guardados correctamente en Loyverse y reflejados en el inventario de AvoHouse. Puedes continuar editando y volver a guardar.';
     $('inventoryEditNotice').className='notice show ok';
-    $('inventoryEditSave').textContent='LISTO';
-    $('inventoryEditSave').dataset.completed='1';
+    $('inventoryEditSave').textContent='GUARDAR EN LOYVERSE';
+    $('inventoryEditSave').dataset.completed='0';
     $('inventoryEditSave').disabled=false;
-    $('inventoryEditCancel').textContent='CERRAR';
+    $('inventoryEditCancel').textContent='CANCELAR';
   }catch(error){$('inventoryEditNotice').textContent=error?.message||'No se pudieron guardar los cambios.';$('inventoryEditNotice').className='notice show error'}
   finally{btn.disabled=false;$('inventoryEditCancel').disabled=false}
 }
@@ -1556,6 +1555,7 @@ try{
   $('inventoryList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-variant]');if(!button)return;openInventoryEditor(button.dataset.editVariant,button.dataset.editItem)});
   $('inventoryList').addEventListener('change',event=>{const input=event.target.closest('[data-pack-variant]');if(input)savePurchasePackSize(input)});
   $('editPurchasePackSize').addEventListener('input',updateInventoryEditUnitCost);
+  ['editItemName','editItemCategory','editTrackStock','editAvailable','editDefaultPrice','editStock','editLowStock','editPurchasePackSize','editContentMl','editPresentationCost'].forEach(id=>{const el=$(id);if(!el)return;const eventName=el.tagName==='SELECT'?'change':'input';el.addEventListener(eventName,()=>{if($('inventoryEditNotice').classList.contains('ok')){$('inventoryEditNotice').className='notice';$('inventoryEditNotice').textContent=''}})});
   $('editContentMl').addEventListener('input',updateInventoryEditUnitCost);
   $('editPresentationCost').addEventListener('input',updateInventoryEditUnitCost);
   $('editComponentsAdd').addEventListener('click',()=>addInventoryEditComponent({quantity:1}));
