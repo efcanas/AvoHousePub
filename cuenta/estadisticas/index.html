@@ -29,6 +29,7 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
 .metric{padding:11px;border:1px solid rgba(255,255,255,.08);border-radius:11px;background:rgba(0,0,0,.12)}
 .metric-label{font-size:10px;color:#8f96a3;text-transform:uppercase;letter-spacing:.06em}.metric-value{margin-top:4px;font-size:19px;font-weight:800}
 .metric-value.small{font-size:16px}.muted{color:#9ca3af}.error{color:#ffb7b7}.ok{color:#b8f5b8}
+.margin-value{font-weight:900}.margin-value.r1{color:#ff3b30}.margin-value.r2{color:#ff7a45}.margin-value.r3{color:#ffd166}.margin-value.r4{color:#9be564}.margin-value.r5{color:#39d98a}.margin-value.r6{color:#4ddde0}.margin-value.na{color:#8f96a3}
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.chart-wrap{position:relative;height:330px}
 .table-wrap{overflow:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px}.data-table th,.data-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;white-space:nowrap}.data-table th{color:#9ca3af;font-size:10px;text-transform:uppercase;letter-spacing:.06em;position:sticky;top:0;background:#15171c}.data-table td.num,.data-table th.num{text-align:right}.data-table td:first-child{max-width:290px;overflow:hidden;text-overflow:ellipsis}
 .status{text-align:center;color:#8f96a3;font-size:12px;min-height:20px;margin-top:8px}.badge{display:inline-block;border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:4px 8px;font-size:10px;color:#cfd2d8}
@@ -126,6 +127,17 @@ let charts={};
 function money(v){return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(v)||0)}
 function num(v){return new Intl.NumberFormat('es-CO',{maximumFractionDigits:2}).format(Number(v)||0)}
 function pct(v){return num(v)+'%'}
+function marginClass(v){
+  const margin=Number(v);
+  if(!Number.isFinite(margin))return 'na';
+  if(margin>=55)return 'r6';
+  if(margin>=45)return 'r5';
+  if(margin>=35)return 'r4';
+  if(margin>=30)return 'r3';
+  if(margin>=25)return 'r2';
+  return 'r1';
+}
+function marginSpan(v){const margin=Number(v);return '<span class="margin-value '+marginClass(margin)+'">'+pct(margin)+'</span>'}
 function dateLabel(v){if(!v)return '—';const [y,m,d]=String(v).slice(0,10).split('-');return d+'/'+m+'/'+y}
 function showError(message){$('notice').hidden=false;$('notice').className='notice error';$('notice').textContent=message}
 function clearError(){$('notice').hidden=true}
@@ -135,7 +147,7 @@ function renderPeriod(prefix,data){
   $(prefix+'Dates').textContent=dateLabel(data?.start)+' — '+dateLabel(data?.end);
   $(prefix+'Sales').textContent=money(data?.net_sales);
   $(prefix+'Profit').textContent=money(data?.gross_profit);
-  $(prefix+'Margin').textContent=pct(data?.margin_percent);
+  $(prefix+'Margin').innerHTML=marginSpan(data?.margin_percent);
 }
 
 function chartBase(){
@@ -167,12 +179,12 @@ function render(data){
   $('productCount').textContent=products.length+' productos';
   $('productsBody').innerHTML=products.map(x=>{
     const sales=Number(x.net_sales)||0,cost=Number(x.cost)||0,profit=sales-cost,margin=sales?profit/sales*100:0;
-    return '<tr><td>'+esc(x.product)+'</td><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+money(cost)+'</td><td class="num">'+money(profit)+'</td><td class="num">'+pct(margin)+'</td></tr>';
+    return '<tr><td>'+esc(x.product)+'</td><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+money(cost)+'</td><td class="num">'+money(profit)+'</td><td class="num">'+marginSpan(margin)+'</td></tr>';
   }).join('')||'<tr><td colspan="7" class="muted">Sin ventas en el período.</td></tr>';
 
   $('categoriesBody').innerHTML=cats.map(x=>{
     const sales=Number(x.net_sales)||0,cost=Number(x.cost)||0,profit=sales-cost,margin=sales?profit/sales*100:0;
-    return '<tr><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+money(cost)+'</td><td class="num">'+money(profit)+'</td><td class="num">'+pct(margin)+'</td></tr>';
+    return '<tr><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+money(cost)+'</td><td class="num">'+money(profit)+'</td><td class="num">'+marginSpan(margin)+'</td></tr>';
   }).join('')||'<tr><td colspan="6" class="muted">Sin ventas en el período.</td></tr>';
 }
 
