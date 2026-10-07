@@ -633,28 +633,128 @@ async function getCostDerivations(sourceVariantIds: string[] = []) {
   return Array.isArray(rows) ? rows : [];
 }
 
-async function getLatestCompletedSourceUnitCost(sourceVariantId: string) {
+async function getLatestCompletedPurchaseLine(variantId: string, excludePurchaseId = "") {
   const purchases = await supabaseRequest(
-    "/rest/v1/avohouse_inventory_purchases?select=id,created_at&status=eq.completed&order=created_at.desc&limit=1000",
+    "/rest/v1/avohouse_inventory_purchases?select=id,purchase_date,created_at&status=eq.completed&order=purchase_date.desc,created_at.desc,id.desc&limit=1000",
     { method: "GET" },
   );
   if (!Array.isArray(purchases) || !purchases.length) return null;
   const purchaseOrder = new Map<string, number>();
-  purchases.forEach((p: any, index: number) => purchaseOrder.set(String(p.id), index));
+  const purchaseMeta = new Map<string, any>();
+  purchases.forEach((p: any, index: number) => {
+    const id = String(p.id);
+    purchaseOrder.set(id, index);
+    purchaseMeta.set(id, p);
+  });
+
   const lines = await supabaseRequest(
-    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,created_at&variant_id=eq." + encodeURIComponent(sourceVariantId) + "&limit=1000",
+    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,purchase_total_value,presentation_quantity,pack_size,presentation_content_ml,purchase_unit,created_at&variant_id=eq." +
+      encodeURIComponent(variantId) + "&limit=1000",
     { method: "GET" },
   );
   if (!Array.isArray(lines) || !lines.length) return null;
+
   const candidates = lines
-    .filter((line: any) => purchaseOrder.has(String(line.purchase_id)) && Number.isFinite(Number(line.unit_cost)) && Number(line.unit_cost) > 0)
+    .filter((line: any) => {
+      const purchaseId = String(line.purchase_id);
+      return purchaseOrder.has(purchaseId) &&
+        purchaseId !== excludePurchaseId &&
+        Number.isFinite(Number(line.unit_cost)) &&
+        Number(line.unit_cost) > 0;
+    })
     .sort((a: any, b: any) => {
       const pa = purchaseOrder.get(String(a.purchase_id)) ?? 999999;
       const pb = purchaseOrder.get(String(b.purchase_id)) ?? 999999;
       if (pa !== pb) return pa - pb;
       return String(b.created_at || "").localeCompare(String(a.created_at || ""));
     });
-  return candidates.length ? Number(candidates[0].unit_cost) : null;
+
+  const line = candidates[0];
+  if (!line) return null;
+  const purchase = purchaseMeta.get(String(line.purchase_id)) ?? {};
+  return {
+    ...line,
+    purchase_date: purchase.purchase_date ?? null,
+    purchase_created_at: purchase.created_at ?? null,
+  };
+}
+
+async function getLatestCompletedSourceUnitCost(sourceVariantId: string) {
+  const latest = await getLatestCompletedPurchaseLine(sourceVariantId);
+  return latest ? Number(latest.unit_cost) : null;
+}
+
+async function setCurrentPurchaseCost(token: string, variantId: string) {
+  const latest = await getLatestCompletedPurchaseLine(variantId);
+  if (!latest) return null;
+
+  const unitCost = Number(latest.unit_cost);
+  const presentationQuantity = Number(latest.presentation_quantity);
+  const purchaseTotalValue = Number(latest.purchase_total_value);
+  const presentationCost = purchaseTotalValue / presentationQuantity;
+  const packSizeRaw = latest.pack_size;
+  const packSize = packSizeRaw === null || packSizeRaw === undefined || packSizeRaw === ""
+    ? null
+    : Number(packSizeRaw);
+
+  if (!Number.isFinite(unitCost) || unitCost < 0) {
+    throw new Error("No se pudo determinar un costo unitario válido para " + variantId + ".");
+  }
+  if (!Number.isFinite(presentationQuantity) || presentationQuantity <= 0 ||
+      !Number.isFinite(purchaseTotalValue) || purchaseTotalValue <= 0 ||
+      !Number.isFinite(presentationCost) || presentationCost <= 0) {
+    throw new Error("No se pudo determinar el costo por presentación de " + variantId + ".");
+  }
+  if (packSize !== null && (!Number.isInteger(packSize) || packSize <= 0)) {
+    throw new Error("La presentación de compra de " + variantId + " no es válida.");
+  }
+
+  await loyversePost(token, "/variants/" + encodeURIComponent(variantId), {
+    cost: unitCost,
+    purchase_cost: unitCost,
+  });
+
+  const verified = await loyverseGet(token, "/variants/" + encodeURIComponent(variantId));
+  const verifiedCost = Number(verified?.cost);
+  const verifiedPurchaseCost = Number(verified?.purchase_cost);
+  if (!Number.isFinite(verifiedCost) || Math.abs(verifiedCost - unitCost) > 0.000001 ||
+      !Number.isFinite(verifiedPurchaseCost) || Math.abs(verifiedPurchaseCost - unitCost) > 0.000001) {
+    throw new Error("Loyverse no confirmó el costo de compra vigente de " + variantId + ".");
+  }
+
+  await supabaseRequest(
+    "/rest/v1/loyverse_item_variants?variant_id=eq." + encodeURIComponent(variantId),
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        cost: unitCost,
+        purchase_cost: unitCost,
+        purchase_pack_size: packSize,
+        purchase_presentation_cost: presentationCost,
+        synced_at: new Date().toISOString(),
+      }),
+    },
+  );
+
+  return {
+    variant_id: variantId,
+    unit_cost: unitCost,
+    presentation_cost: presentationCost,
+    pack_size: packSize,
+    purchase_date: latest.purchase_date,
+    purchase_id: String(latest.purchase_id),
+  };
+}
+
+async function refreshCurrentPurchaseCosts(token: string, variantIds: string[]) {
+  const uniqueVariants = [...new Set(variantIds.map(String).filter(Boolean))];
+  const changed: any[] = [];
+  for (const variantId of uniqueVariants) {
+    const updated = await setCurrentPurchaseCost(token, variantId);
+    if (updated) changed.push(updated);
+  }
+  return changed;
 }
 
 async function setDerivedInsumoCost(token: string, targetVariantId: string, unitCost: number) {
@@ -744,7 +844,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
     seen.add(line.variant_id);
   }
 
-  const { preparedNew, storeAndStock, deltas, insumoUpdates } = await preparePurchaseLinesForDelta(token, normalized, []);
+  const { preparedNew, storeAndStock, deltas } = await preparePurchaseLinesForDelta(token, normalized, []);
   const totalUnits = preparedNew.reduce((sum, line) => sum + Number(line.units_received), 0);
   const totalValue = preparedNew.reduce((sum, line) => sum + Number(line.line_total), 0);
   const purchase = await createPurchaseRecord(userId, purchaseDate, notes, preparedNew, totalUnits, totalValue, "inventory");
@@ -776,20 +876,17 @@ async function registerPurchase(token: string, userId: string, payload: any) {
     });
 
     const inventoryChanges = await applyPurchaseInventoryDelta(token, deltas, storeAndStock);
-    for (const [variantId, update] of insumoUpdates.entries()) {
-      await setInsumoPurchaseCost(token, variantId, Number(update.purchaseCost));
-    }
-    const sourceOverrides = new Map<string, number>();
-    for (const line of preparedNew) {
-      if (!line.isInsumo) sourceOverrides.set(String(line.variant_id), Number(line.unit_cost));
-    }
-    const derivedUpdates = await refreshDerivedInsumoCosts(token, [...sourceOverrides.keys()], sourceOverrides);
 
     await patchPurchase(purchase.id, {
       status: "completed",
       completed_at: new Date().toISOString(),
       error_message: null,
     });
+
+    const affectedVariantIds = [...new Set(preparedNew.map((line: any) => String(line.variant_id)))];
+    const purchaseCostUpdates = await refreshCurrentPurchaseCosts(token, affectedVariantIds);
+    const sourceIds = [...new Set(preparedNew.filter((line: any) => !line.isInsumo).map((line: any) => String(line.variant_id)))];
+    const derivedUpdates = await refreshDerivedInsumoCosts(token, sourceIds);
 
     return {
       ok: true,
@@ -801,6 +898,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
       total_units: totalUnits,
       total_value: totalValue,
       inventory_adjusted: inventoryChanges.size,
+      purchase_costs_updated: purchaseCostUpdates.length,
       derived_costs_updated: derivedUpdates.length,
       lines: preparedNew,
       completed_at: new Date().toISOString(),
@@ -1056,8 +1154,6 @@ async function updatePurchase(token:string,userId:string,payload:any){
   const newVariantIds=new Set(preparedNew.map(line=>String(line.variant_id)));
   const inventoryChanges=await applyPurchaseInventoryDelta(token,deltas,storeAndStock);
   try{
-    await restoreRemovedInsumoCosts(token,purchaseId,oldLines,newVariantIds);
-    for(const [variantId,update] of insumoUpdates.entries())await setInsumoPurchaseCost(token,variantId,Number(update.purchaseCost));
     await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq."+encodeURIComponent(purchaseId),{method:"DELETE"});
     const lineRows=preparedNew.map((line,index)=>{
       const delta=Number(deltas.get(line.variant_id)||0),state=storeAndStock.get(line.variant_id);
@@ -1074,7 +1170,12 @@ async function updatePurchase(token:string,userId:string,payload:any){
     const purchaseDate=typeof payload?.purchase_date==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)?payload.purchase_date:purchase.purchase_date;
     const notesRaw=typeof payload?.notes==="string"?payload.notes.trim():"";
     await patchPurchase(purchaseId,{purchase_date:purchaseDate,status:"completed",line_count:preparedNew.length,total_units:totalUnits,total_value:totalValue,notes:notesRaw?notesRaw.slice(0,1000):null,updated_at:new Date().toISOString(),updated_by:userId,completed_at:purchase.completed_at||new Date().toISOString(),error_message:null});
-    const sourceIds=[...new Set(preparedNew.filter((line:any)=>!line.isInsumo).map((line:any)=>String(line.variant_id)))];
+    const affectedVariantIds=[...new Set([...oldLines,...preparedNew].map((line:any)=>String(line.variant_id)).filter(Boolean))];
+    await refreshCurrentPurchaseCosts(token,affectedVariantIds);
+    const sourceIds=[...new Set([
+      ...oldLines.filter((line:any)=>Number(line?.presentation_content_ml||0)<=0&&String(line?.purchase_unit||"").toUpperCase()!=="PRESENTACIÓN").map((line:any)=>String(line.variant_id)),
+      ...preparedNew.filter((line:any)=>!line.isInsumo).map((line:any)=>String(line.variant_id))
+    ])];
     await refreshDerivedInsumoCosts(token,sourceIds);
     return{ok:true,purchase_id:purchaseId,purchase_number:purchase.purchase_number,purchase_date:purchaseDate,line_count:preparedNew.length,total_units:totalUnits,total_value:totalValue,updated_at:new Date().toISOString()};
   }catch(error){throw error;}
@@ -1089,8 +1190,9 @@ async function deletePurchase(token:string,userId:string,payload:any){
   const {deltas,storeAndStock}=await preparePurchaseLinesForDelta(token,[],oldLines);
   const inventoryChanges=await applyPurchaseInventoryDelta(token,deltas,storeAndStock);
   try{
-    await restoreRemovedInsumoCosts(token,purchaseId,oldLines,new Set<string>());
     await patchPurchase(purchaseId,{status:"cancelled",deleted_at:new Date().toISOString(),deleted_by:userId,updated_at:new Date().toISOString(),updated_by:userId,error_message:null});
+    const affectedVariantIds=[...new Set(oldLines.map((line:any)=>String(line.variant_id)).filter(Boolean))];
+    await refreshCurrentPurchaseCosts(token,affectedVariantIds);
     const sourceIds=[...new Set(oldLines.filter((line:any)=>Number(line?.presentation_content_ml||0)<=0&&String(line?.purchase_unit||"").toUpperCase()!=="PRESENTACIÓN").map((line:any)=>String(line.variant_id)))];
     const derivedUpdates=await refreshDerivedInsumoCosts(token,sourceIds);
     return{ok:true,purchase_id:purchaseId,purchase_number:purchase.purchase_number,status:"cancelled",inventory_adjusted:inventoryChanges.size,derived_costs_updated:derivedUpdates.length,deleted_at:new Date().toISOString()};
@@ -1175,7 +1277,6 @@ async function registerInsumoPurchase(token: string, userId: string, payload: an
     const currentCost=Number(live?.purchase_cost??0);
     const presentationCost=line.purchase_total_value/line.quantity;
     const costPerMl=presentationCost/configuredContent;
-    await setInsumoPurchaseCost(token,line.variant_id,costPerMl);
     prepared.push({variant_id:line.variant_id,item_id:String(info.variant.item_id),product_name:String(info.item.item_name||"Sin nombre"),sku:info.variant.sku??null,pack_size:1,presentation_quantity:line.quantity,presentation_content_ml:configuredContent,purchase_unit:"PRESENTACIÓN",purchase_total_value:line.purchase_total_value,unit_cost:costPerMl,line_total:line.purchase_total_value,units_received:line.quantity,stock_before:null,stock_after:null,previous_purchase_cost:currentCost,purchase_cost_after:costPerMl});
   }
   const totalUnits=prepared.reduce((sum,line)=>sum+Number(line.units_received),0);
@@ -1213,13 +1314,7 @@ async function updateInsumoPurchase(token: string, userId: string, payload: any,
     const previousCost=Number(currentLive?.purchase_cost??0);
     const presentationCost=line.purchase_total_value/line.quantity;
     const costPerMl=presentationCost/configuredContent;
-    await setInsumoPurchaseCost(token,line.variant_id,costPerMl);
     newPrepared.push({variant_id:line.variant_id,item_id:String(info.variant.item_id),product_name:String(info.item.item_name||"Sin nombre"),sku:info.variant.sku??null,pack_size:1,presentation_quantity:line.quantity,presentation_content_ml:configuredContent,purchase_unit:"PRESENTACIÓN",purchase_total_value:line.purchase_total_value,unit_cost:costPerMl,line_total:line.purchase_total_value,units_received:line.quantity,stock_before:null,stock_after:null,previous_purchase_cost:previousCost,was_existing_line:Boolean(oldByVariant.get(line.variant_id))});
-  }
-  for(const old of oldLines){
-    const oldVariantId=String(old.variant_id); if(normalized.some((l:any)=>l.variant_id===oldVariantId))continue;
-    const prior=await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,purchase_id&variant_id=eq."+encodeURIComponent(oldVariantId)+"&purchase_id=neq."+encodeURIComponent(purchase.id)+"&order=purchase_id.desc&limit=1",{method:"GET"});
-    if(Array.isArray(prior)&&prior[0]&&Number(prior[0].unit_cost)>0)await setInsumoPurchaseCost(token,oldVariantId,Number(prior[0].unit_cost));
   }
   const totalUnits=newPrepared.reduce((s,l)=>s+Number(l.units_received),0),totalValue=newPrepared.reduce((s,l)=>s+Number(l.line_total),0);
   await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq."+encodeURIComponent(purchase.id),{method:"DELETE"});
@@ -1228,25 +1323,16 @@ async function updateInsumoPurchase(token: string, userId: string, payload: any,
   const purchaseDate=typeof payload?.purchase_date==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(payload.purchase_date)?payload.purchase_date:purchase.purchase_date;
   const notesRaw=typeof payload?.notes==="string"?payload.notes.trim():"";
   await patchPurchase(purchase.id,{purchase_date:purchaseDate,status:"completed",line_count:newPrepared.length,total_units:totalUnits,total_value:totalValue,notes:notesRaw?notesRaw.slice(0,1000):null,updated_at:new Date().toISOString(),updated_by:userId,error_message:null});
-  return{ok:true,purchase_id:purchase.id,purchase_number:purchase.purchase_number,purchase_type:"insumo",purchase_date:purchaseDate,line_count:newPrepared.length,total_units:totalUnits,total_value:totalValue,updated_at:new Date().toISOString()};
+  const affectedVariantIds=[...new Set([...oldLines,...newPrepared].map((line:any)=>String(line.variant_id)).filter(Boolean))];
+  const purchaseCostUpdates=await refreshCurrentPurchaseCosts(token,affectedVariantIds);
+  return{ok:true,purchase_id:purchase.id,purchase_number:purchase.purchase_number,purchase_type:"insumo",purchase_date:purchaseDate,line_count:newPrepared.length,total_units:totalUnits,total_value:totalValue,purchase_costs_updated:purchaseCostUpdates.length,updated_at:new Date().toISOString()};
 }
 
 async function deleteInsumoPurchase(token: string, userId: string, purchase: any, oldLines: any[]) {
   if (purchase.status !== "completed") throw new Error("La compra ya no está activa.");
   if (!oldLines.length) throw new Error("La compra no tiene líneas para revertir.");
-  // Deleting an insumo purchase should restore the purchase cost that existed before this purchase,
-  // when that value is available. Otherwise, leave the current cost untouched and preserve the history.
-  // For a safe first implementation, the immediately preceding recorded purchase for each variant is used.
-  const affected = new Set(oldLines.map((l: any) => String(l.variant_id)));
-  for (const variantId of affected) {
-    const prior = await supabaseRequest(
-      "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,purchase_id&variant_id=eq." + encodeURIComponent(variantId) + "&purchase_id=neq." + encodeURIComponent(purchase.id) + "&order=purchase_id.desc&limit=1",
-      { method: "GET" },
-    );
-    if (Array.isArray(prior) && prior[0] && Number(prior[0].unit_cost) > 0) {
-      await setInsumoPurchaseCost(token, variantId, Number(prior[0].unit_cost));
-    }
-  }
+
+  const affectedVariantIds = [...new Set(oldLines.map((line: any) => String(line.variant_id)).filter(Boolean))];
   await patchPurchase(purchase.id, {
     status: "cancelled",
     deleted_at: new Date().toISOString(),
@@ -1255,8 +1341,19 @@ async function deleteInsumoPurchase(token: string, userId: string, purchase: any
     updated_by: userId,
     error_message: null,
   });
-  return { ok: true, purchase_id: purchase.id, purchase_number: purchase.purchase_number, purchase_type: "insumo", status: "cancelled", inventory_adjusted: 0, deleted_at: new Date().toISOString() };
+  const purchaseCostUpdates = await refreshCurrentPurchaseCosts(token, affectedVariantIds);
+  return {
+    ok: true,
+    purchase_id: purchase.id,
+    purchase_number: purchase.purchase_number,
+    purchase_type: "insumo",
+    status: "cancelled",
+    inventory_adjusted: 0,
+    purchase_costs_updated: purchaseCostUpdates.length,
+    deleted_at: new Date().toISOString(),
+  };
 }
+
 
 async function upsert(path: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
