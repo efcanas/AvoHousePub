@@ -441,7 +441,26 @@ async function updateCatalogItem(token: string, payload: any) {
       category_id:categoryId,
       track_stock:nextTrackStock,
       is_composite:Boolean(currentItem?.is_composite),
+      variants:[{
+        variant_id:variantId,
+        item_id:itemId,
+        sku:currentVariant?.sku??undefined,
+        reference_variant_id:currentVariant?.reference_variant_id??null,
+        option1_value:currentVariant?.option1_value??null,
+        option2_value:currentVariant?.option2_value??null,
+        option3_value:currentVariant?.option3_value??null,
+        barcode:currentVariant?.barcode??undefined,
+        cost:currentVariant?.cost??null,
+        purchase_cost:currentVariant?.purchase_cost??null,
+        default_pricing_type:currentVariant?.default_pricing_type??"FIXED",
+        default_price:currentVariant?.default_price??null,
+        stores:Array.isArray(currentVariant?.stores)?currentVariant.stores:[],
+      }],
     };
+    const itemVariantPayload=itemPayload.variants[0] as Record<string,unknown>;
+    for(const key of ["sku","barcode"]){
+      if(itemVariantPayload[key]===undefined)delete itemVariantPayload[key];
+    }
     if(Boolean(currentItem?.is_composite)&&itemChanges?.components!==undefined)itemPayload.components=nextComponents;
     await loyversePost(token,"/items",itemPayload);
   }
