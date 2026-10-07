@@ -72,6 +72,7 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
           <option value="custom">Personalizado</option>
           <option value="month">Mensual</option>
           <option value="week">Semanal</option>
+          <option value="year">Anual</option>
         </select>
       </div>
       <div id="customRange" class="period-option show">
@@ -85,6 +86,9 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
       </div>
       <div id="weekRange" class="period-option">
         <label for="weekPicker">Semana</label><input id="weekPicker" type="date">
+      </div>
+      <div id="yearRange" class="period-option">
+        <label for="yearPicker">Año</label><input id="yearPicker" type="number" min="2024" step="1" inputmode="numeric">
       </div>
       <button id="allTimeBtn" class="ghost action-button" type="button">DESDE EL PRIMER REGISTRO</button>
       <button id="applyBtn" class="primary action-button" type="button">ACTUALIZAR</button>
@@ -178,6 +182,11 @@ function monthBounds(value){
   const start=new Date(y,m-1,1),end=new Date(y,m,0);
   return {start:isoLocalDate(start),end:isoLocalDate(end)};
 }
+function yearBounds(value){
+  const year=Number(value);
+  if(!Number.isInteger(year)||year<2000||year>2200)return null;
+  return {start:year+'-01-01',end:year+'-12-31'};
+}
 function weekBounds(value){
   if(!value)return null;
   const [y,m,d]=String(value).slice(0,10).split('-').map(Number);
@@ -195,11 +204,14 @@ function syncPeriodUI(){
   $('customRangeEnd').classList.toggle('show',type==='custom');
   $('monthRange').classList.toggle('show',type==='month');
   $('weekRange').classList.toggle('show',type==='week');
+  $('yearRange').classList.toggle('show',type==='year');
   $('allTimeBtn').disabled=type!=='custom';
   if(type==='month'){
     $('periodHelper').textContent='Se analizará el mes completo: día 1 hasta el último día del mes.';
   }else if(type==='week'){
     $('periodHelper').textContent='Se analizará la semana completa de lunes a domingo.';
+  }else if(type==='year'){
+    $('periodHelper').textContent='Se analizará el año completo: 1 de enero hasta 31 de diciembre.';
   }else{
     $('periodHelper').textContent='Selecciona un rango libre de fechas.';
   }
@@ -267,6 +279,10 @@ async function loadStats(){
     const bounds=weekBounds($('weekPicker').value);
     if(!bounds){$('applyBtn').disabled=false;showError('Selecciona un día de la semana.');return}
     start=bounds.start;end=bounds.end;
+  }else if(type==='year'){
+    const bounds=yearBounds($('yearPicker').value);
+    if(!bounds){$('applyBtn').disabled=false;showError('Selecciona un año válido.');return}
+    start=bounds.start;end=bounds.end;
   }else{
     start=$('startDate').value||null;end=$('endDate').value||null;
   }
@@ -292,6 +308,7 @@ async function init(){
   $('endDate').value=isoLocalDate(todayLocal());
   $('monthPicker').value=isoLocalDate(todayLocal()).slice(0,7);
   $('weekPicker').value=isoLocalDate(todayLocal());
+  $('yearPicker').value=String(todayLocal().getFullYear());
   syncPeriodUI();
   await loadStats();
 }
@@ -300,6 +317,7 @@ $('allTimeBtn').addEventListener('click',allTime);
 $('periodType').addEventListener('change',syncPeriodUI);
 $('monthPicker').addEventListener('change',()=>{$('periodType').value='month';syncPeriodUI()});
 $('weekPicker').addEventListener('change',()=>{$('periodType').value='week';syncPeriodUI()});
+$('yearPicker').addEventListener('change',()=>{$('periodType').value='year';syncPeriodUI()});
 $('logoutBtn').addEventListener('click',async()=>{await db.auth.signOut();window.location.href='../admin/'});
 init();
 </script>
