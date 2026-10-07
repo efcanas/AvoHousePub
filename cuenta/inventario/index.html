@@ -660,7 +660,18 @@ function renderPurchaseDetail(p){
     ((p.notes||'')?'<div class="purchase-detail-note"><strong>Nota:</strong> '+String(p.notes).replace(/[&<>]/g,'')+'</div>':'')+
     '<div class="purchase-detail-actions"><button class="ghost" data-purchase-detail-close type="button">CERRAR</button><button class="ghost" data-purchase-edit type="button">MODIFICAR</button><button class="ghost" data-purchase-delete type="button" style="border-color:rgba(255,93,93,.25);color:#ffb7b7">ELIMINAR</button></div>';
 }
-function editPurchaseLineOptions(selectedId=''){const products=purchaseProducts();return '<option value="">Selecciona un producto</option>'+products.map(r=>'<option value="'+r.variantId+'" '+(r.variantId===selectedId?'selected':'')+'>'+String(purchaseProductLabel(r)).replace(/[&<>]/g,'')+'</option>').join('')}
+function editPurchaseLineOptions(selectedId=''){
+  const products=purchaseProducts();
+  const selected=selectedId?inventoryRows.find(r=>String(r.variantId)===String(selectedId)):null;
+  const options=[...products];
+  if(selected&&!options.some(r=>String(r.variantId)===String(selectedId)))options.push(selected);
+  options.sort((a,b)=>{
+    const c=a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true});
+    if(c!==0)return c;
+    return [a.option1,a.option2,a.option3].filter(Boolean).join(' · ').localeCompare([b.option1,b.option2,b.option3].filter(Boolean).join(' · '),'es',{sensitivity:'base',numeric:true});
+  });
+  return '<option value="">Selecciona un producto</option>'+options.map(r=>'<option value="'+r.variantId+'" '+(r.variantId===selectedId?'selected':'')+'>'+String(purchaseProductLabel(r)).replace(/[&<>]/g,'')+'</option>').join('');
+}
 function addEditPurchaseLine(data={}){
   const row=document.createElement('div');row.className='purchase-edit-line';
   const p=inventoryRows.find(r=>r.variantId===data.variantId),
