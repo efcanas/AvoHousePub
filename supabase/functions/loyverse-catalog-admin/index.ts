@@ -443,6 +443,11 @@ async function updateCatalogItem(token: string, payload: any) {
     }
     if(!liveVariants.length)throw new Error("Loyverse no devolvió la variante existente del artículo "+itemName+".");
 
+    const hasVariantOptions=Boolean(
+      String(currentItem?.option1_name??"").trim()||
+      String(currentItem?.option2_name??"").trim()||
+      String(currentItem?.option3_name??"").trim()
+    );
     const itemPayload:Record<string,unknown>={
       id:itemId,
       item_name:itemName,
@@ -461,7 +466,9 @@ async function updateCatalogItem(token: string, payload: any) {
       option1_name:currentItem?.option1_name??null,
       option2_name:currentItem?.option2_name??null,
       option3_name:currentItem?.option3_name??null,
-      variants:liveVariants.map((v:any)=>({
+    };
+    if(hasVariantOptions){
+      itemPayload.variants=liveVariants.map((v:any)=>({
         variant_id:v?.variant_id,
         item_id:v?.item_id??itemId,
         sku:v?.sku,
@@ -475,10 +482,10 @@ async function updateCatalogItem(token: string, payload: any) {
         default_pricing_type:v?.default_pricing_type??"VARIABLE",
         default_price:v?.default_price??null,
         stores:Array.isArray(v?.stores)?v.stores:[],
-      })),
-    };
-    for(const v of itemPayload.variants as any[]){
-      for(const key of ["sku","barcode"])if(v[key]===undefined)delete v[key];
+      }));
+      for(const v of itemPayload.variants as any[]){
+        for(const key of ["sku","barcode"])if(v[key]===undefined)delete v[key];
+      }
     }
     await loyversePost(token,"/items",itemPayload);
   }
