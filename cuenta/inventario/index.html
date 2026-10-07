@@ -196,6 +196,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 .purchase-line-pack input,.purchase-line-value input,.purchase-line-quantity input{text-align:center}
 .purchase-line-value input{width:100%}
 .purchase-line-readonly{min-height:42px;display:flex;align-items:center;justify-content:center;padding:10px 6px;border:1px solid #2c3038;border-radius:11px;background:#101217;color:#e4e7ec;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden}
+.purchase-product-search{position:relative;min-width:0}.purchase-product-search>input[data-purchase-product-search]{margin:0;width:100%;height:51px;min-height:51px;box-sizing:border-box}.purchase-product-results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;display:none;max-height:260px;overflow:auto;padding:5px;border:1px solid #3b404a;border-radius:11px;background:#111318;box-shadow:0 16px 35px rgba(0,0,0,.45)}.purchase-product-results.show{display:block}.purchase-product-result{display:block;width:100%;padding:10px;border:0;border-radius:8px;background:transparent;color:#f5f5f5;text-align:left;font:inherit;font-size:13px;cursor:pointer}.purchase-product-result:hover,.purchase-product-result:focus,.purchase-product-result.active{background:rgba(184,255,57,.10);color:#b8ff39;outline:none}.purchase-product-result-meta{display:block;margin-top:2px;color:#8f96a3;font-size:10px}.purchase-product-result-empty{padding:10px;color:#8f96a3;font-size:12px;line-height:1.35}
 .purchase-line-unit-cost{color:#bfc5cf}
 .purchase-line-total{color:#b8ff39}
 .purchase-line-stock{color:#9ca3af;font-size:12px;text-align:center}
@@ -210,7 +211,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
   .inventory-actions{justify-content:flex-start}
   .purchase-meta-grid{grid-template-columns:1fr}
   .purchase-line{grid-template-columns:1fr 1fr;gap:7px}
-  .purchase-line select{grid-column:1/-1}
+  .purchase-line-product{grid-column:1/-1}
   .purchase-line-pack,.purchase-line-units,.purchase-line-stock{text-align:left}
   .purchase-line-remove{justify-self:start}
 }
@@ -1400,13 +1401,52 @@ function purchaseProductLabel(row){
   return [row.name,option].filter(Boolean).join(' · ');
 }
 function purchaseOptionsHtml(selectedId=''){
-  return '<option value="">Selecciona un producto</option>'+purchaseProducts().map(r=>'<option value="'+r.variantId+'" '+(r.variantId===selectedId?'selected':'')+'>'+String(purchaseProductLabel(r)).replace(/[&<>]/g,'')+'</option>').join('');
+  return '<input data-purchase-product-search type="search" placeholder="Buscar producto…" autocomplete="off" spellcheck="false"><input data-purchase-product type="hidden" value="'+String(selectedId||'').replace(/"/g,'&quot;')+'"><div class="purchase-product-results" data-purchase-product-results></div>';
+}
+function purchaseProductSearchableText(product){
+  return [product?.name,product?.sku,product?.barcode,product?.option1,product?.option2,product?.option3].filter(Boolean).join(' ').toLowerCase();
+}
+function hidePurchaseProductResults(row){
+  const results=row.querySelector('[data-purchase-product-results]');if(!results)return;
+  results.classList.remove('show');results.innerHTML='';row.dataset.purchaseProductActive='0';
+}
+function renderPurchaseProductResults(row,activeIndex=0){
+  const input=row.querySelector('[data-purchase-product-search]'),results=row.querySelector('[data-purchase-product-results]');
+  if(!input||!results)return;
+  const query=input.value.trim().toLowerCase();
+  if(query.length<2){hidePurchaseProductResults(row);return}
+  const products=purchaseProducts().filter(product=>purchaseProductSearchableText(product).includes(query)).slice(0,20);
+  if(!products.length){
+    results.innerHTML='<div class="purchase-product-result-empty">No se encontraron productos que coincidan con la búsqueda.</div>';
+    results.classList.add('show');row.dataset.purchaseProductActive='0';return;
+  }
+  const active=Math.min(Math.max(Number(activeIndex)||0,0),products.length-1);
+  results.innerHTML=products.map((product,index)=>{
+    const label=String(purchaseProductLabel(product)||'').replace(/[&<>]/g,'');
+    const option=[product.option1,product.option2,product.option3].filter(Boolean).join(' · ');
+    const meta=[option,product.sku?'SKU '+product.sku:''].filter(Boolean).join(' · ');
+    return '<button type="button" class="purchase-product-result '+(index===active?'active':'')+'" data-purchase-result="'+String(product.variantId).replace(/"/g,'&quot;')+'"><span>'+label+'</span>'+(meta?'<span class="purchase-product-result-meta">'+String(meta).replace(/[&<>]/g,'')+'</span>':'')+'</button>';
+  }).join('');
+  results.classList.add('show');row.dataset.purchaseProductActive=String(active);
+}
+function selectPurchaseProduct(row,variantId){
+  const product=inventoryRows.find(product=>String(product.variantId)===String(variantId));if(!product)return;
+  row.querySelector('[data-purchase-product]').value=String(product.variantId);
+  row.querySelector('[data-purchase-product-search]').value=purchaseProductLabel(product);
+  row.dataset.purchaseVariant='';hidePurchaseProductResults(row);updatePurchaseTotal();
+}
+function movePurchaseProductActive(row,delta){
+  const input=row.querySelector('[data-purchase-product-search]'),current=Number(row.dataset.purchaseProductActive)||0;
+  if(!input||input.value.trim().length<2)return;renderPurchaseProductResults(row,current+delta);
+}
+function chooseActivePurchaseProduct(row){
+  const active=Number(row.dataset.purchaseProductActive)||0,result=row.querySelectorAll('[data-purchase-result]')[active];
+  if(result)selectPurchaseProduct(row,result.dataset.purchaseResult);
 }
 let purchaseLineSeq=0;
 function addPurchaseLine(selectedId=''){
-  const id=++purchaseLineSeq,row=document.createElement('div');
-  row.className='purchase-line';row.dataset.purchaseLine=String(id);
-  row.innerHTML='<div class="purchase-cell purchase-cell-product"><span class="purchase-cell-label">Producto</span><select data-purchase-product aria-label="Producto">'+purchaseOptionsHtml(selectedId)+'</select></div>'+
+  const id=++purchaseLineSeq,row=document.createElement('div');row.className='purchase-line';row.dataset.purchaseLine=String(id);row.dataset.purchaseProductActive='0';
+  row.innerHTML='<div class="purchase-cell purchase-cell-product purchase-line-product"><span class="purchase-cell-label">Producto</span><div class="purchase-product-search">'+purchaseOptionsHtml(selectedId)+'</div></div>'+
     '<div class="purchase-cell purchase-cell-quantity"><span class="purchase-cell-label">Cantidad</span><input data-purchase-quantity type="number" min="1" step="1" value="1" aria-label="Cantidad de presentaciones"></div>'+
     '<div class="purchase-cell purchase-cell-pack"><span class="purchase-cell-label">Presentación</span><input data-purchase-pack type="number" min="1" step="0.001" value="" placeholder="—" aria-label="Presentación"></div>'+
     '<div class="purchase-cell"><span class="purchase-cell-label">Unidades</span><div class="purchase-line-readonly purchase-line-units" data-purchase-units>0</div></div>'+
@@ -1414,58 +1454,34 @@ function addPurchaseLine(selectedId=''){
     '<div class="purchase-cell"><span class="purchase-cell-label">Valor unidad</span><div class="purchase-line-readonly purchase-line-unit-cost" data-purchase-unit-cost>—</div></div>'+
     '<div class="purchase-cell"><span class="purchase-cell-label">Stock actual</span><div class="purchase-line-readonly purchase-line-stock" data-purchase-stock>—</div></div>'+
     '<button class="purchase-line-remove" data-purchase-remove type="button" aria-label="Eliminar producto">×</button>';
-  $('purchaseLines').appendChild(row);updatePurchaseLine(row);return row;
+  $('purchaseLines').appendChild(row);
+  if(selectedId){const product=inventoryRows.find(product=>String(product.variantId)===String(selectedId));if(product)row.querySelector('[data-purchase-product-search]').value=purchaseProductLabel(product)}
+  updatePurchaseLine(row);return row;
 }
 function updatePurchaseLine(row){
-  const variantId=row.querySelector('[data-purchase-product]')?.value||'',
-    previousVariant=row.dataset.purchaseVariant||'',
-    product=inventoryRows.find(r=>r.variantId===variantId),
-    isInsumo=String(product?.categoryName||'').trim().toLowerCase()==='insumos',
-    derivation=purchaseCostDerivationBySource.get(String(variantId))||null,
-    isCostSource=Boolean(derivation),
-    quantityRaw=row.querySelector('[data-purchase-quantity]')?.value||'',
-    packInput=row.querySelector('[data-purchase-pack]'),
-    valueInput=row.querySelector('[data-purchase-value]'),
-    labelPack=packInput.parentElement?.querySelector('.purchase-cell-label'),
-    labelUnits=row.querySelector('[data-purchase-units]')?.parentElement?.querySelector('.purchase-cell-label'),
-    labelUnit=row.querySelector('[data-purchase-unit-cost]')?.parentElement?.querySelector('.purchase-cell-label'),
-    labelValue=valueInput.parentElement?.querySelector('.purchase-cell-label');
+  const variantId=row.querySelector('[data-purchase-product]')?.value||'',previousVariant=row.dataset.purchaseVariant||'',
+    product=inventoryRows.find(r=>r.variantId===variantId),isInsumo=String(product?.categoryName||'').trim().toLowerCase()==='insumos',
+    derivation=purchaseCostDerivationBySource.get(String(variantId))||null,isCostSource=Boolean(derivation),
+    quantityRaw=row.querySelector('[data-purchase-quantity]')?.value||'',packInput=row.querySelector('[data-purchase-pack]'),valueInput=row.querySelector('[data-purchase-value]'),
+    labelPack=packInput.parentElement?.querySelector('.purchase-cell-label'),labelUnits=row.querySelector('[data-purchase-units]')?.parentElement?.querySelector('.purchase-cell-label'),
+    labelUnit=row.querySelector('[data-purchase-unit-cost]')?.parentElement?.querySelector('.purchase-cell-label'),labelValue=valueInput.parentElement?.querySelector('.purchase-cell-label');
   if(variantId!==previousVariant){row.dataset.purchaseVariant=variantId;valueInput.value='';}
+  if(product&&variantId&&row.querySelector('[data-purchase-product-search]')?.value==='')row.querySelector('[data-purchase-product-search]').value=purchaseProductLabel(product);
   packInput.disabled=isInsumo;
   if(isInsumo){
-    const content=Number(product?.presentationContentMl||0);
-    packInput.value=content>0?content:'';
-    labelPack.textContent='Presentación (ml)';
-    labelUnits.textContent='Contenido total';
-    labelUnit.textContent='Costo/ml';
-    labelValue.textContent='Valor total';
-    valueInput.placeholder='$';
+    const content=Number(product?.presentationContentMl||0);packInput.value=content>0?content:'';
+    labelPack.textContent='Presentación (ml)';labelUnits.textContent='Contenido total';labelUnit.textContent='Costo/ml';labelValue.textContent='Valor total';valueInput.placeholder='$';
     row.querySelector('[data-purchase-stock]').textContent='No se controla';
   }else{
-    if(variantId!==previousVariant){
-      if(product?.packSize!==null&&product?.packSize!==undefined&&Number.isFinite(product?.packSize))packInput.value=product.packSize;
-      else packInput.value='';
-    }
-    labelPack.textContent='Presentación';
-    labelUnits.textContent='Unidades';
-    labelUnit.textContent=isCostSource?'Costo por unidad':'Valor unidad';
-    labelValue.textContent=isCostSource?'Valor por unidad':'Valor total';
-    valueInput.placeholder=isCostSource?'$ / unidad':'$';
+    if(variantId!==previousVariant){if(product?.packSize!==null&&product?.packSize!==undefined&&Number.isFinite(product?.packSize))packInput.value=product.packSize;else packInput.value='';}
+    labelPack.textContent='Presentación';labelUnits.textContent='Unidades';labelUnit.textContent=isCostSource?'Costo por unidad':'Valor unidad';labelValue.textContent=isCostSource?'Valor por unidad':'Valor total';valueInput.placeholder=isCostSource?'$ / unidad':'$';
     row.querySelector('[data-purchase-stock]').textContent=product?'Stock '+(product.stock===null?'—':product.stock.toLocaleString('es-CO')):'—';
   }
-  const quantity=Number(quantityRaw),
-    presentation=Number(packInput?.value||0),
-    enteredValue=Number(valueInput?.value||0),
+  const quantity=Number(quantityRaw),presentation=Number(packInput?.value||0),enteredValue=Number(valueInput?.value||0),
     validBase=Number.isFinite(quantity)&&quantity>0&&Number.isFinite(presentation)&&presentation>0,
-    units=isInsumo?(validBase?quantity:0):(validBase?quantity*presentation:0),
-    displayUnits=isInsumo?(validBase?quantity*presentation:0):units,
-    purchaseTotalValue=isCostSource
-      ? (Number.isFinite(enteredValue)&&enteredValue>0&&displayUnits>0?enteredValue*displayUnits:0)
-      : (Number.isFinite(enteredValue)&&enteredValue>0?enteredValue:0),
-    unitCost=isCostSource
-      ? (Number.isFinite(enteredValue)&&enteredValue>0?enteredValue:0)
-      : (Number.isFinite(purchaseTotalValue)&&purchaseTotalValue>0&&displayUnits>0?purchaseTotalValue/displayUnits:0),
-    lineTotal=purchaseTotalValue;
+    units=isInsumo?(validBase?quantity:0):(validBase?quantity*presentation:0),displayUnits=isInsumo?(validBase?quantity*presentation:0):units,
+    purchaseTotalValue=isCostSource?(Number.isFinite(enteredValue)&&enteredValue>0&&displayUnits>0?enteredValue*displayUnits:0):(Number.isFinite(enteredValue)&&enteredValue>0?enteredValue:0),
+    unitCost=isCostSource?(Number.isFinite(enteredValue)&&enteredValue>0?enteredValue:0):(Number.isFinite(purchaseTotalValue)&&purchaseTotalValue>0&&displayUnits>0?purchaseTotalValue/displayUnits:0),lineTotal=purchaseTotalValue;
   row.querySelector('[data-purchase-units]').textContent=displayUnits.toLocaleString('es-CO')+(isInsumo?' ml':'');
   row.querySelector('[data-purchase-unit-cost]').textContent=unitCost>0?(formatMoney(unitCost)+(isInsumo?' / ml':'')):'—';
   return{variantId,quantity,pack:isInsumo?1:presentation,presentationContentMl:isInsumo?presentation:null,purchaseTotalValue,product,units:displayUnits,lineTotal,unitCost,isInsumo,isCostSource};
@@ -1485,7 +1501,7 @@ function updatePurchaseTotal(){
   const warnings=[];
   if(missingPack)warnings.push('Hay '+missingPack+' línea(s) sin Presentación válida.');
   if(missingContent)warnings.push('Hay '+missingContent+' insumo(s) sin contenido de presentación configurado.');
-  if(missingValue)warnings.push('Falta el Valor total de '+missingValue+' línea(s).');
+  if(missingValue)warnings.push('Falta el valor de compra de '+missingValue+' línea(s).');
   if(invalidQty)warnings.push('Hay '+invalidQty+' cantidad(es) inválida(s).');
   if(duplicate)warnings.push('Hay productos repetidos. Cada producto debe aparecer una sola vez.');
   $('purchaseWarning').textContent=warnings.join(' ');$('purchaseWarning').classList.toggle('hidden',warnings.length===0);
@@ -1591,9 +1607,34 @@ try{
   $('purchaseCancel').addEventListener('click',closePurchaseModal);
   $('purchaseSave').addEventListener('click',savePurchase);
   $('purchaseAddLine').addEventListener('click',()=>{addPurchaseLine();updatePurchaseTotal()});
-  $('purchaseLines').addEventListener('change',event=>{if(event.target.matches('[data-purchase-product],[data-purchase-quantity],[data-purchase-pack],[data-purchase-value]'))updatePurchaseTotal()});
-  $('purchaseLines').addEventListener('input',event=>{if(event.target.matches('[data-purchase-quantity],[data-purchase-pack],[data-purchase-value]'))updatePurchaseTotal()});
-  $('purchaseLines').addEventListener('click',event=>{const remove=event.target.closest('[data-purchase-remove]');if(!remove)return;remove.closest('.purchase-line')?.remove();if(!$('purchaseLines').children.length)addPurchaseLine();updatePurchaseTotal()});
+  $('purchaseLines').addEventListener('change',event=>{if(event.target.matches('[data-purchase-quantity],[data-purchase-pack],[data-purchase-value]'))updatePurchaseTotal()});
+  $('purchaseLines').addEventListener('input',event=>{
+    if(event.target.matches('[data-purchase-product-search]')){
+      const row=event.target.closest('.purchase-line');if(!row)return;
+      row.querySelector('[data-purchase-product]').value='';row.dataset.purchaseProductActive='0';renderPurchaseProductResults(row,0);updatePurchaseTotal();
+    }else if(event.target.matches('[data-purchase-quantity],[data-purchase-pack],[data-purchase-value]'))updatePurchaseTotal();
+  });
+  $('purchaseLines').addEventListener('keydown',event=>{
+    const row=event.target.closest('.purchase-line');if(!row||!event.target.matches('[data-purchase-product-search]'))return;
+    if(event.key==='ArrowDown'){event.preventDefault();movePurchaseProductActive(row,1)}
+    else if(event.key==='ArrowUp'){event.preventDefault();movePurchaseProductActive(row,-1)}
+    else if(event.key==='Enter'){const query=event.target.value.trim();if(query.length>=2){event.preventDefault();chooseActivePurchaseProduct(row)}}
+    else if(event.key==='Escape')hidePurchaseProductResults(row);
+  });
+  $('purchaseLines').addEventListener('pointerdown',event=>{
+    const result=event.target.closest('[data-purchase-result]');if(!result)return;
+    const row=result.closest('.purchase-line');if(row){event.preventDefault();selectPurchaseProduct(row,result.dataset.purchaseResult)}
+  });
+  $('purchaseLines').addEventListener('focusout',event=>{
+    const row=event.target.closest('.purchase-line');if(!row||!event.target.matches('[data-purchase-product-search]'))return;
+    const next=event.relatedTarget;if(next&&row.contains(next))return;setTimeout(()=>hidePurchaseProductResults(row),160);
+  });
+  $('purchaseLines').addEventListener('click',event=>{
+    const remove=event.target.closest('[data-purchase-remove]');
+    if(remove){remove.closest('.purchase-line')?.remove();if(!$('purchaseLines').children.length)addPurchaseLine();updatePurchaseTotal();return}
+    const result=event.target.closest('[data-purchase-result]');
+    if(result){const row=result.closest('.purchase-line');if(row)selectPurchaseProduct(row,result.dataset.purchaseResult)}
+  });
   $('purchaseBackdrop').addEventListener('click',event=>{if(event.target.id==='purchaseBackdrop')closePurchaseModal()});
   $('inventoryList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-variant]');if(!button)return;openInventoryEditor(button.dataset.editVariant,button.dataset.editItem)});
   $('inventoryList').addEventListener('change',event=>{const input=event.target.closest('[data-pack-variant]');if(input)savePurchasePackSize(input)});
