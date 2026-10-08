@@ -126,7 +126,7 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
 
   <div class="chart-grid">
     <section class="card"><div class="panel-heading"><h2 class="panel-title">Ventas por categoría</h2><span class="panel-tag">Ranking</span></div><div class="chart-wrap"><canvas id="categoryChart"></canvas></div></section>
-    <section class="card"><div class="panel-heading"><h2 class="panel-title">Medios de pago</h2><span class="panel-tag">Ventas netas</span></div><div class="chart-wrap"><canvas id="paymentChart"></canvas></div></section>
+    <section class="card"><div class="panel-heading"><h2 class="panel-title">Medios de pago</h2><span class="panel-tag">Desde 01/10/2026</span></div><div class="chart-wrap"><canvas id="paymentChart"></canvas></div></section>
   </div>
 
   <section class="card">
@@ -140,7 +140,7 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
   </section>
 
   <section class="card">
-    <div class="panel-heading"><h2 class="panel-title">Ventas diarias</h2><span class="panel-tag">Período seleccionado</span></div>
+    <div class="panel-heading"><h2 class="panel-title">Ventas diarias</h2><span class="panel-tag">Desde 01/10/2026</span></div>
     <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
   </section>
 </div>
@@ -166,7 +166,18 @@ function marginClass(v){
   if(margin>=25)return 'r2';
   return 'r1';
 }
-function marginSpan(v){const margin=Number(v);return '<span class="margin-value '+marginClass(margin)+'">'+pct(margin)+'</span>'}
+function marginSpan(v){
+  const margin=Number(v);
+  if(v===null||v===undefined||!Number.isFinite(margin))return '<span class="margin-value na">N/D</span>';
+  return '<span class="margin-value '+marginClass(margin)+'">'+pct(margin)+'</span>';
+}
+function moneyOrDash(v){return v===null||v===undefined?'—':money(v)}
+function profitAndMargin(sales,cost){
+  if(cost===null||cost===undefined)return {profit:null,margin:null};
+  const profit=(Number(sales)||0)-(Number(cost)||0);
+  const margin=Number(sales)?profit/Number(sales)*100:0;
+  return {profit,margin};
+}
 function dateLabel(v){if(!v)return '—';const [y,m,d]=String(v).slice(0,10).split('-');return d+'/'+m+'/'+y}
 function todayLocal(){
   const now=new Date();
@@ -235,12 +246,20 @@ function render(data){
   clearError();destroyCharts();
   renderPeriod('prev',data.previous_month);renderPeriod('curr',data.current_month);
   $('rangeTag').textContent=dateLabel(data.range.start)+' — '+dateLabel(data.range.end);
-  $('status').textContent='Datos actualizados desde el histórico propio de AvoHouse · '+new Date().toLocaleTimeString('es-CO');
+  const quality=data.data_quality||{};
+  const notices=[];
+  if(quality.has_partial_historical_month)notices.push('El rango seleccionado toca un mes histórico de forma parcial. Antes del 01/10/2026 el histórico está disponible por meses completos, por lo que esa parte parcial no se incorpora.');
+  if(quality.history_used)notices.push('Fuente histórica: registros propios de AvoHouse hasta el 30/09/2026. Fuente viva: recibos sincronizados desde Loyverse desde el 01/10/2026.');
+  if(quality.history_used && quality.payments_from==='2026-10-01')notices.push('Medios de pago y ventas diarias disponibles desde el 01/10/2026.');
+  $('notice').hidden=notices.length===0;
+  $('notice').className='notice';
+  $('notice').textContent=notices.join(' ');
+  $('status').textContent='Datos unificados en Supabase · '+new Date().toLocaleTimeString('es-CO');
 
   const monthly=data.monthly||[];
   charts.monthly=new Chart($('monthlyChart'),{type:'line',data:{labels:monthly.map(x=>dateLabel(x.month).slice(3)),datasets:[
     {label:'Ventas netas',data:monthly.map(x=>Number(x.net_sales)||0),tension:.25},
-    {label:'Costo',data:monthly.map(x=>Number(x.cost)||0),tension:.25}
+    {label:'Costo',data:monthly.map(x=>x.cost===null||x.cost===undefined?null:Number(x.cost)||0),tension:.25}
   ]},options:chartBase()});
 
   const cats=data.categories||[];
@@ -255,13 +274,15 @@ function render(data){
   const products=data.products||[];
   $('productCount').textContent=products.length+' productos';
   $('productsBody').innerHTML=products.map(x=>{
-    const sales=Number(x.net_sales)||0,cost=Number(x.cost)||0,profit=sales-cost,margin=sales?profit/sales*100:0;
-    return '<tr><td>'+esc(x.product)+'</td><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+money(cost)+'</td><td class="num">'+money(profit)+'</td><td class="num">'+marginSpan(margin)+'</td></tr>';
+    const sales=Number(x.net_sales)||0,cost=x.cost===null||x.cost===undefined?null:Number(x.cost)||0;
+    const pm=profitAndMargin(sales,cost);
+    return '<tr><td>'+esc(x.product)+'</td><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+moneyOrDash(cost)+'</td><td class="num">'+moneyOrDash(pm.profit)+'</td><td class="num">'+marginSpan(pm.margin)+'</td></tr>';
   }).join('')||'<tr><td colspan="7" class="muted">Sin ventas en el período.</td></tr>';
 
   $('categoriesBody').innerHTML=cats.map(x=>{
-    const sales=Number(x.net_sales)||0,cost=Number(x.cost)||0,profit=sales-cost,margin=sales?profit/sales*100:0;
-    return '<tr><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+money(cost)+'</td><td class="num">'+money(profit)+'</td><td class="num">'+marginSpan(margin)+'</td></tr>';
+    const sales=Number(x.net_sales)||0,cost=x.cost===null||x.cost===undefined?null:Number(x.cost)||0;
+    const pm=profitAndMargin(sales,cost);
+    return '<tr><td>'+esc(x.category)+'</td><td class="num">'+num(x.units)+'</td><td class="num">'+money(sales)+'</td><td class="num">'+moneyOrDash(cost)+'</td><td class="num">'+moneyOrDash(pm.profit)+'</td><td class="num">'+marginSpan(pm.margin)+'</td></tr>';
   }).join('')||'<tr><td colspan="6" class="muted">Sin ventas en el período.</td></tr>';
 }
 
@@ -304,7 +325,7 @@ async function init(){
   const {data:admin,error:adminError}=await db.from('admin_users').select('user_id').eq('user_id',user?.user?.id).maybeSingle();
   if(adminError||!admin){window.location.href='../admin/?fromStats=1';return}
   const {data:first}=await db.from('avohouse_sales_receipts').select('receipt_date').order('receipt_date',{ascending:true}).limit(1).maybeSingle();
-  $('startDate').value=first?.receipt_date?String(first.receipt_date).slice(0,10):'';
+  $('startDate').value='2024-11-01';
   $('endDate').value=isoLocalDate(todayLocal());
   $('monthPicker').value=isoLocalDate(todayLocal()).slice(0,7);
   $('weekPicker').value=isoLocalDate(todayLocal());
