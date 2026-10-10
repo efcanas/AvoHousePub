@@ -149,6 +149,27 @@ async function loyversePost(token: string, path: string, payload: unknown) {
   return body;
 }
 
+async function updateLoyverseVariantCosts(token: string, variantId: string, cost: number, purchaseCost: number) {
+  const current = await loyverseGet(token, "/variants/" + encodeURIComponent(variantId));
+  if (!current?.item_id) throw new Error("Loyverse no devolvió los datos de la variante " + variantId + ".");
+
+  // Loyverse updates variants through POST /variants with variant_id in the body.
+  // Preserve price, availability, store overrides and all existing variant fields.
+  const payload: Record<string, unknown> = {
+    variant_id: String(current.variant_id || variantId),
+    item_id: String(current.item_id),
+    cost,
+    purchase_cost: purchaseCost,
+    default_pricing_type: current.default_pricing_type ?? "VARIABLE",
+    default_price: current.default_price ?? null,
+    stores: Array.isArray(current.stores) ? current.stores : [],
+  };
+  for (const key of ["sku", "reference_variant_id", "option1_value", "option2_value", "option3_value", "barcode"] as const) {
+    if (current[key] !== undefined) payload[key] = current[key];
+  }
+  return await loyversePost(token, "/variants", payload);
+}
+
 function finiteNumber(value: unknown, field: string): number {
   const n = Number(value);
   if (!Number.isFinite(n)) throw new Error(`El campo ${field} no contiene un número válido.`);
@@ -709,10 +730,7 @@ async function setCurrentPurchaseCost(token: string, variantId: string) {
     throw new Error("La presentación de compra de " + variantId + " no es válida.");
   }
 
-  await loyversePost(token, "/variants/" + encodeURIComponent(variantId), {
-    cost: unitCost,
-    purchase_cost: unitCost,
-  });
+  await updateLoyverseVariantCosts(token, variantId, unitCost, unitCost);
 
   const verified = await loyverseGet(token, "/variants/" + encodeURIComponent(variantId));
   const verifiedCost = Number(verified?.cost);
@@ -759,10 +777,7 @@ async function refreshCurrentPurchaseCosts(token: string, variantIds: string[]) 
 
 async function setDerivedInsumoCost(token: string, targetVariantId: string, unitCost: number) {
   if (!Number.isFinite(unitCost) || unitCost < 0) throw new Error("El costo derivado calculado no es válido.");
-  await loyversePost(token, "/variants/" + encodeURIComponent(targetVariantId), {
-    cost: unitCost,
-    purchase_cost: unitCost,
-  });
+  await updateLoyverseVariantCosts(token, targetVariantId, unitCost, unitCost);
   const verified = await loyverseGet(token, "/variants/" + encodeURIComponent(targetVariantId));
   const verifiedCost = Number(verified?.cost);
   const verifiedPurchaseCost = Number(verified?.purchase_cost);
@@ -1265,10 +1280,7 @@ async function setInsumoPurchaseCost(token: string, variantId: string, purchaseC
   const current = Number(live?.purchase_cost ?? 0);
   if (!Number.isFinite(purchaseCost) || purchaseCost < 0) throw new Error("El costo de compra no puede ser negativo.");
 
-  await loyversePost(token, "/variants/" + encodeURIComponent(variantId), {
-    cost: purchaseCost,
-    purchase_cost: purchaseCost,
-  });
+  await updateLoyverseVariantCosts(token, variantId, purchaseCost, purchaseCost);
 
   const verified = await loyverseGet(token, "/variants/" + encodeURIComponent(variantId));
   const verifiedCost = Number(verified?.cost);
