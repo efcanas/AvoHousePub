@@ -221,6 +221,8 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
 
 /* Historial de compras · vista compacta tipo AvoPuntos */
 .purchase-history{margin-bottom:16px}
+.purchase-history-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+@media(max-width:620px){.purchase-history-actions{justify-content:flex-start}.purchase-history-actions button{font-size:10px;padding:8px 9px}}
 .purchase-history-search{display:grid;grid-template-columns:140px 180px auto auto;gap:8px;margin-top:12px}
 .purchase-history-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .purchase-history-item{display:grid;grid-template-columns:42px minmax(0,1fr) 130px;gap:11px;align-items:center;padding:11px 12px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.025);cursor:pointer}
@@ -330,7 +332,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
         <h2 class="panel-title">Historial de compras</h2>
         <div id="purchaseHistorySummary" class="history-summary">Últimas compras registradas</div>
       </div>
-      <span id="purchaseHistoryStatus" class="panel-tag">Recientes</span>
+      <div class="purchase-history-actions"><button id="syncPendingInventoryBtn" class="ghost" type="button">APLICAR PENDIENTES</button><span id="purchaseHistoryStatus" class="panel-tag">Recientes</span></div>
     </div>
     <div class="purchase-history-search">
       <input id="purchaseHistorySearch" type="search" placeholder="Buscar producto, SKU, nota o número de compra" autocomplete="off">
@@ -633,6 +635,31 @@ function refreshPurchaseHistoryMonths(rows){const year=Number($('purchaseHistory
 function markPurchaseLimit(){document.querySelectorAll('[data-purchase-limit]').forEach(btn=>btn.classList.toggle('active',Number(btn.dataset.purchaseLimit)===purchaseHistoryRecentLimit))}
 function renderPurchaseHistory(rows,mode='recent'){const list=$('purchaseHistoryList');if(!rows?.length){list.innerHTML='<div class="purchase-history-empty">'+(mode==='recent'?'Todavía no hay compras registradas.':'No hay compras registradas para el período seleccionado.')+'</div>';$('purchaseHistoryStatus').textContent=mode==='recent'?'Sin registros':'Sin resultados';$('purchaseHistorySummary').textContent=mode==='recent'?'Últimas compras registradas':'Sin compras en el período';return}const lineMap=purchaseHistoryLineMap();list.innerHTML=rows.map(p=>{const lines=lineMap.get(String(p.id))||[],names=lines.map(l=>l.product_name).filter(Boolean).join(' · '),isInsumo=p.purchase_type==='insumo';return'<div class="purchase-history-item" data-purchase-id="'+String(p.id).replace(/"/g,'&quot;')+'" tabindex="0"><div class="purchase-history-sign">'+(isInsumo?'$':'+')+'</div><div class="purchase-history-main"><div class="purchase-history-title">'+formatPurchaseInvoiceDate(p.purchase_date)+'</div><div class="purchase-history-meta">'+(isInsumo?'Insumos · ':'')+Number(p.line_count||0).toLocaleString('es-CO')+' productos · '+Number(p.total_units||0).toLocaleString('es-CO')+(isInsumo?' botellas':' unidades')+'</div><div class="purchase-history-products">'+(names||'Sin detalle')+'</div></div><div class="purchase-history-amount">'+formatMoney(p.total_value||0)+'</div></div>'}).join('');$('purchaseHistoryStatus').textContent=mode==='recent'?'Últimas '+rows.length:'Resultado '+rows.length;$('purchaseHistorySummary').textContent=mode==='recent'?'Mostrando las últimas '+rows.length+' compras':'Compras encontradas: '+rows.length;markPurchaseLimit()}
 
+async function syncAllPendingInventory(){
+  const button=$('syncPendingInventoryBtn');
+  if(!button)return;
+  if(!confirm('Se aplicarán en Loyverse los movimientos de inventario pendientes de las compras ya registradas y se recalcularán los costos vigentes. Si un movimiento no coincide con el stock actual, se detendrá para evitar duplicarlo. ¿Continuar?'))return;
+  const oldLabel=button.textContent;
+  button.disabled=true;button.textContent='SINCRONIZANDO…';
+  $('purchaseHistorySummary').textContent='Aplicando los movimientos de inventario pendientes y recalculando costos…';
+  try{
+    const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'sync_all_pending_purchase_inventory'}});
+    if(error)throw error;
+    if(!data)throw new Error('Supabase no devolvió el resultado de la sincronización.');
+    if(data.ok===false){
+      const detail=Array.isArray(data.failures)&&data.failures.length?' '+data.failures.join(' · '):'';
+      throw new Error((data.error||'La sincronización terminó con incidencias.')+detail);
+    }
+    await Promise.all([loadInventory(),loadPurchaseHistory()]);
+    showNotice('Inventario sincronizado. Compras procesadas: '+Number(data.purchases_processed||0)+'. Movimientos aplicados: '+Number(data.inventory_applied||0)+'. Ya aplicados: '+Number(data.inventory_already_applied||0)+'. Sin control de inventario: '+Number(data.inventory_skipped_nonstock||0)+'. Costos actualizados: '+Number(data.purchase_costs_updated||0)+'. Insumos derivados: '+Number(data.derived_costs_updated||0)+'.',false);
+  }catch(error){
+    $('purchaseHistorySummary').textContent='La sincronización encontró una incidencia. Revisa el aviso y vuelve a intentarlo solo después de revisar el movimiento señalado.';
+    showNotice(error?.message||'No se pudieron aplicar los movimientos pendientes.',true);
+  }finally{
+    button.disabled=false;button.textContent=oldLabel;
+    await loadPurchaseHistory();
+  }
+}
 async function loadPurchaseHistory(){const list=$('purchaseHistoryList');if(!list)return;list.innerHTML='<div class="purchase-history-empty">Cargando historial…</div>';const[{data:purchases,error:pError},{data:lines,error:lError}]=await Promise.all([db.from('avohouse_inventory_purchases').select('id,purchase_number,purchase_date,purchase_type,status,line_count,total_units,total_value,notes,created_at,completed_at,updated_at').eq('status','completed').order('purchase_date',{ascending:false}).order('created_at',{ascending:false}).order('purchase_number',{ascending:false}).limit(1000),db.from('avohouse_inventory_purchase_lines').select('purchase_id,line_number,variant_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,cost_only,inventory_sync_pending').order('purchase_id').order('line_number')]);if(pError||lError){list.innerHTML='<div class="purchase-history-empty">No se pudo cargar el historial de compras.</div>';if(pError)console.error(pError);if(lError)console.error(lError);return}purchaseHistoryAll={purchases:purchases||[],lines:lines||[]};populatePurchaseHistoryFilters(purchaseHistoryAll.purchases);renderPurchaseHistory(purchaseHistoryAll.purchases.slice(0,purchaseHistoryRecentLimit),'recent')}
 function filterPurchaseHistory(){const term=$('purchaseHistorySearch').value.trim().toLowerCase(),year=Number($('purchaseHistoryYear').value)||0,month=Number($('purchaseHistoryMonth').value)||0;let rows=purchaseHistoryAll.purchases||[];if(term)rows=rows.filter(p=>{const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));const hay=[p.purchase_number,p.purchase_date,p.notes,...lines.flatMap(l=>[l.product_name,l.sku])].filter(v=>v!==null&&v!==undefined).join(' ').toLowerCase();return hay.includes(term)});if(year)rows=rows.filter(p=>Number(String(p.purchase_date||'').slice(0,4))===year);if(month)rows=rows.filter(p=>Number(String(p.purchase_date||'').slice(5,7))===month);purchaseHistoryMode='search';renderPurchaseHistory(rows,'search')}
 function openPurchaseDetail(purchaseId){const purchase=purchaseHistoryAll.purchases.find(p=>String(p.id)===String(purchaseId));if(!purchase)return;purchaseHistorySelected=purchase;renderPurchaseDetail(purchase);$('purchaseDetailBackdrop').classList.remove('hidden')}
@@ -1751,6 +1778,7 @@ try{
   $('inventoryEditBackdrop').addEventListener('click',event=>{if(event.target.id==='inventoryEditBackdrop')closeInventoryEditor()});
   $('purchaseHistoryYear').addEventListener('change',()=>refreshPurchaseHistoryMonths(purchaseHistoryAll.purchases||[]));
   $('purchaseHistorySearchBtn').addEventListener('click',filterPurchaseHistory);
+  $('syncPendingInventoryBtn').addEventListener('click',syncAllPendingInventory);
   $('purchaseHistorySearch').addEventListener('keydown',event=>{if(event.key==='Enter')filterPurchaseHistory()});
   document.querySelectorAll('[data-purchase-limit]').forEach(btn=>btn.addEventListener('click',()=>{purchaseHistoryRecentLimit=Number(btn.dataset.purchaseLimit)||10;purchaseHistoryMode='recent';markPurchaseLimit();renderPurchaseHistory((purchaseHistoryAll.purchases||[]).slice(0,purchaseHistoryRecentLimit),'recent')}));
   $('purchaseHistoryList').addEventListener('click',event=>{const row=event.target.closest('[data-purchase-id]');if(row)openPurchaseDetail(row.dataset.purchaseId)});
