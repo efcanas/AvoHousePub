@@ -151,23 +151,26 @@ async function loyversePost(token: string, path: string, payload: unknown) {
 
 async function updateLoyverseVariantCosts(token: string, variantId: string, cost: number, purchaseCost: number) {
   const current = await loyverseGet(token, "/variants/" + encodeURIComponent(variantId));
-  if (!current?.item_id) throw new Error("Loyverse no devolvió los datos de la variante " + variantId + ".");
+  const currentVariantId = String(current?.variant_id || "").trim();
+  if (!currentVariantId) throw new Error("Loyverse no devolvió la variante " + variantId + ".");
 
-  // Loyverse updates variants through POST /variants with variant_id in the body.
-  // Preserve price, availability, store overrides and all existing variant fields.
-  const payload: Record<string, unknown> = {
-    variant_id: String(current.variant_id || variantId),
-    item_id: String(current.item_id),
+  // Only send the fields being changed. Sending item_id and store/option fields
+  // made Loyverse treat the call as adding a variant, which fails for items
+  // without option definitions (the usual one-variant products in AvoHouse).
+  await loyversePost(token, "/variants", {
+    variant_id: currentVariantId,
     cost,
     purchase_cost: purchaseCost,
-    default_pricing_type: current.default_pricing_type ?? "VARIABLE",
-    default_price: current.default_price ?? null,
-    stores: Array.isArray(current.stores) ? current.stores : [],
-  };
-  for (const key of ["sku", "reference_variant_id", "option1_value", "option2_value", "option3_value", "barcode"] as const) {
-    if (current[key] !== undefined) payload[key] = current[key];
+  });
+
+  const verified = await loyverseGet(token, "/variants/" + encodeURIComponent(currentVariantId));
+  const verifiedCost = Number(verified?.cost);
+  const verifiedPurchaseCost = Number(verified?.purchase_cost);
+  if (!Number.isFinite(verifiedCost) || Math.abs(verifiedCost - cost) > 0.000001 ||
+      !Number.isFinite(verifiedPurchaseCost) || Math.abs(verifiedPurchaseCost - purchaseCost) > 0.000001) {
+    throw new Error("Loyverse no confirmó la actualización del costo de la variante " + currentVariantId + ".");
   }
-  return await loyversePost(token, "/variants", payload);
+  return verified;
 }
 
 function finiteNumber(value: unknown, field: string): number {
@@ -974,6 +977,7 @@ async function refreshPurchaseCostsForAdmin(token: string, payload: any) {
       String(line?.purchase_unit || "").toUpperCase() !== "PRESENTACIÓN")
     .map((line: any) => String(line.variant_id || "")).filter(Boolean))];
   const derivedUpdates = await refreshDerivedInsumoCosts(token, sourceIds);
+  await patchPurchase(purchaseId, { error_message: null, updated_at: new Date().toISOString() });
   return {
     ok: true,
     purchase_id: purchaseId,
