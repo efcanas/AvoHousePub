@@ -1051,6 +1051,68 @@ async function syncPendingPurchaseInventory(token: string, purchaseId: string, l
   return { applied, alreadyApplied, skippedNonStock };
 }
 
+async function syncAllPendingPurchaseInventory(token: string) {
+  const purchases = await supabaseRequest(
+    "/rest/v1/avohouse_inventory_purchases?select=id,purchase_number,purchase_date,created_at,notes&status=eq.completed&order=purchase_date.asc,created_at.asc&limit=1000",
+    { method: "GET" },
+  );
+  if (!Array.isArray(purchases)) throw new Error("No se pudo cargar el historial de compras para sincronizar inventario.");
+
+  let purchasesProcessed = 0, inventoryApplied = 0, inventoryAlreadyApplied = 0, inventorySkippedNonstock = 0;
+  const affectedVariantIds = new Set<string>();
+  const sourceVariantIds = new Set<string>();
+  const failures: string[] = [];
+
+  for (const purchase of purchases) {
+    const purchaseId = String(purchase.id || "");
+    if (!purchaseId) continue;
+    const lines = await getPurchaseLinesForAdmin(purchaseId);
+    if (!lines.some((line: any) => Boolean(line.inventory_sync_pending))) continue;
+
+    try {
+      const result = await syncPendingPurchaseInventory(token, purchaseId, lines);
+      purchasesProcessed++;
+      inventoryApplied += Number(result.applied || 0);
+      inventoryAlreadyApplied += Number(result.alreadyApplied || 0);
+      inventorySkippedNonstock += Number(result.skippedNonStock || 0);
+
+      for (const line of lines) {
+        const variantId = String(line.variant_id || "");
+        if (!variantId) continue;
+        affectedVariantIds.add(variantId);
+        if (!Boolean(line.cost_only) &&
+            Number(line.presentation_content_ml || 0) <= 0 &&
+            String(line.purchase_unit || "").toUpperCase() !== "PRESENTACIÓN") {
+          sourceVariantIds.add(variantId);
+        }
+      }
+      await patchPurchase(purchaseId, { error_message: null, updated_at: new Date().toISOString() });
+    } catch (error) {
+      failures.push("Compra #" + String(purchase.purchase_number || purchaseId) + ": " + cleanError(error));
+      if (failures.length >= 10) break;
+    }
+  }
+
+  let purchaseCostUpdates: any[] = [];
+  let derivedUpdates: any[] = [];
+  if (affectedVariantIds.size) {
+    purchaseCostUpdates = await refreshCurrentPurchaseCosts(token, [...affectedVariantIds]);
+    derivedUpdates = await refreshDerivedInsumoCosts(token, [...sourceVariantIds]);
+  }
+
+  return {
+    ok: failures.length === 0,
+    purchases_processed: purchasesProcessed,
+    inventory_applied: inventoryApplied,
+    inventory_already_applied: inventoryAlreadyApplied,
+    inventory_skipped_nonstock: inventorySkippedNonstock,
+    purchase_costs_updated: purchaseCostUpdates.length,
+    derived_costs_updated: derivedUpdates.length,
+    failures,
+    completed_at: new Date().toISOString(),
+  };
+}
+
 async function refreshPurchaseCostsForAdmin(token: string, payload: any) {
   const purchaseId = requiredString(payload?.purchase_id, "purchase_id");
   const purchase = await getPurchaseForAdmin(purchaseId);
@@ -1831,6 +1893,11 @@ Deno.serve(async (req: Request) => {
     if (action === "refresh_purchase_costs") {
       await assertAdmin(req);
       return json(await refreshPurchaseCostsForAdmin(token, body));
+    }
+
+    if (action === "sync_all_pending_purchase_inventory") {
+      await assertAdmin(req);
+      return json(await syncAllPendingPurchaseInventory(token));
     }
 
     if (action !== "sync") return json({ ok: false, error: "Acción no reconocida." }, 400);
