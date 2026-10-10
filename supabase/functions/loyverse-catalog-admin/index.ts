@@ -19,6 +19,8 @@ const SUPABASE_AUTH = getSupabaseAuth();
 const LOYVERSE_BASE_URL = "https://api.loyverse.com/v1.0";
 const PAGE_SIZE = 250;
 const MAX_PAGES = 100;
+// Agreed historical-cost period: invoices before October 2026 must not change today's stock.
+const HISTORICAL_PURCHASE_CUTOFF = "2026-10-01";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -865,10 +867,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
     seen.add(line.variant_id);
   }
 
-  const bogotaToday = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(new Date());
-  const historicalNoStock = purchaseDate < bogotaToday;
+  const historicalNoStock = purchaseDate < HISTORICAL_PURCHASE_CUTOFF;
   const { preparedNew, storeAndStock, deltas } = await preparePurchaseLinesForDelta(token, normalized, [], historicalNoStock);
   const totalUnits = preparedNew.reduce((sum, line) => sum + Number(line.units_received), 0);
   const totalValue = preparedNew.reduce((sum, line) => sum + Number(line.line_total), 0);
