@@ -1390,7 +1390,7 @@ async function saveInventoryEditor(){
 
 function purchaseProducts(){
   return inventoryRows
-    .filter(r=>(r.trackStock||String(r.categoryName||'').trim().toLowerCase()==='insumos')&&!r.isComposite&&!purchaseCostDerivationByTarget.has(String(r.variantId)))
+    .filter(r=>!r.isComposite&&!purchaseCostDerivationByTarget.has(String(r.variantId)))
     .sort((a,b)=>{
       const c=a.name.localeCompare(b.name,'es',{sensitivity:'base',numeric:true});
       if(c!==0)return c;
@@ -1476,7 +1476,7 @@ function updatePurchaseLine(row){
   }else{
     if(variantId!==previousVariant){if(product?.packSize!==null&&product?.packSize!==undefined&&Number.isFinite(product?.packSize))packInput.value=product.packSize;else packInput.value='';}
     labelPack.textContent='Presentación';labelUnits.textContent='Unidades';labelUnit.textContent=isCostSource?'Costo por unidad':'Valor unidad';labelValue.textContent=isCostSource?'Valor por unidad':'Valor total';valueInput.placeholder=isCostSource?'$ / unidad':'$';
-    row.querySelector('[data-purchase-stock]').textContent=product?'Stock '+(product.stock===null?'—':product.stock.toLocaleString('es-CO')):'—';
+    row.querySelector('[data-purchase-stock]').textContent=product?(product.trackStock?'Stock '+(product.stock===null?'—':product.stock.toLocaleString('es-CO')):'No se controla'):'—';
   }
   const quantity=Number(quantityRaw),presentation=Number(packInput?.value||0),enteredValue=Number(valueInput?.value||0),
     validBase=Number.isFinite(quantity)&&quantity>0&&Number.isFinite(presentation)&&presentation>0,
