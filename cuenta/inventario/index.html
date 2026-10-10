@@ -381,7 +381,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
     <div class="purchase-modal">
       <div class="purchase-modal-header">
         <h3 id="purchaseTitle" class="purchase-modal-title">Nueva compra</h3>
-        <div class="purchase-modal-subtitle">Registra una compra completa en una sola entrada. Las facturas anteriores al 01/10/2026 se guardan como históricas y no modifican existencias actuales. Desde esa fecha, los productos con control de inventario activo aumentan existencias; los insumos y los demás productos sin control de inventario solo actualizan su costo. En productos que alimentan un insumo, introduce el <strong>valor por unidad</strong>; AvoHouse calcula el total de la compra y actualiza automáticamente el costo del insumo derivado.</div>
+        <div class="purchase-modal-subtitle">Registra una compra completa en una sola entrada. La fecha de la factura determina qué costo queda vigente para el período correspondiente, pero no impide el movimiento de inventario: los productos con control de inventario activo aumentan existencias al registrar la compra, aunque la factura sea antigua. Los insumos y los demás productos sin control de inventario solo actualizan su costo. Al terminar de cargar las facturas históricas, puedes ajustar manualmente las existencias reales. En productos que alimentan un insumo, introduce el <strong>valor por unidad</strong>; AvoHouse calcula el total de la compra y actualiza automáticamente el costo del insumo derivado.</div>
       </div>
       <div class="purchase-modal-body">
         <div id="purchaseNotice" class="notice" style="margin-bottom:12px"></div>
