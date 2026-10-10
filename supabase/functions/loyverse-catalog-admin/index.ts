@@ -866,8 +866,8 @@ async function registerPurchase(token: string, userId: string, payload: any) {
       line_total: line.line_total,
       units_received: line.units_received,
       previous_purchase_cost: line.previous_purchase_cost,
-      stock_before: line.isInsumo ? null : Number(line.stock_before ?? 0),
-      stock_after: line.isInsumo ? null : Number(line.stock_after ?? 0),
+      stock_before: line.affectsInventory ? Number(line.stock_before ?? 0) : null,
+      stock_after: line.affectsInventory ? Number(line.stock_after ?? 0) : null,
     }));
     await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines", {
       method: "POST",
@@ -985,8 +985,10 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
   const deltas = new Map<string, number>();
   for (const old of oldLines) {
     const id = String(old.variant_id);
+    const oldVariant = variantMap.get(id);
+    const oldItem = oldVariant ? itemMap.get(String(oldVariant.item_id)) : null;
     const isOldInsumo = Number(old?.presentation_content_ml) > 0 || String(old?.purchase_unit || "").toUpperCase() === "PRESENTACIÓN";
-    if (isOldInsumo) continue;
+    if (isOldInsumo || !Boolean(oldItem?.track_stock)) continue;
     const units = Number(old.units_received || 0);
     if (!Number.isFinite(units) || units < 0) throw new Error("La compra existente contiene una cantidad de inventario inválida.");
     deltas.set(id, (deltas.get(id) || 0) - units);
@@ -1033,15 +1035,50 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
         stock_after: null,
         previous_purchase_cost: currentCost,
         isInsumo: true,
+        affectsInventory: false,
       });
       insumoUpdates.set(String(line.variant_id), { purchaseCost: unitCost });
       continue;
     }
 
-    if (!item?.track_stock) {
-      throw new Error(String(item?.item_name || "Este producto") + " no tiene seguimiento de inventario activo en Loyverse.");
+    if (!item || !v) {
+      throw new Error("No se pudo identificar el producto seleccionado en el catálogo.");
     }
-    if (line.pack_size === null) throw new Error("La Presentación de " + String(item?.item_name || "este producto") + " debe ser un entero mayor que 0.");
+    if (line.pack_size === null) throw new Error("La Presentación de " + String(item.item_name || "este producto") + " debe ser un entero mayor que 0.");
+
+    const unitsReceived = line.quantity * line.pack_size;
+    const unitCost = line.purchase_total_value / unitsReceived;
+    if (!Number.isFinite(unitsReceived) || unitsReceived <= 0 ||
+        !Number.isFinite(unitCost) || unitCost <= 0) {
+      throw new Error("No se pudo calcular el costo unitario de " + String(item.item_name || "este producto") + ".");
+    }
+
+    if (!Boolean(item.track_stock)) {
+      const currentCost = Number(v.purchase_cost ?? 0);
+      if (!Number.isFinite(currentCost) || currentCost < 0) {
+        throw new Error("El costo actual de " + String(item.item_name || "este producto") + " no es válido.");
+      }
+      preparedNew.push({
+        variant_id: String(line.variant_id),
+        item_id: String(v.item_id),
+        product_name: String(item.item_name || "Sin nombre"),
+        sku: v?.sku ?? null,
+        pack_size: line.pack_size,
+        presentation_quantity: line.quantity,
+        presentation_content_ml: null,
+        purchase_unit: "UNIDAD",
+        purchase_total_value: line.purchase_total_value,
+        unit_cost: unitCost,
+        line_total: line.purchase_total_value,
+        units_received: unitsReceived,
+        stock_before: null,
+        stock_after: null,
+        previous_purchase_cost: currentCost,
+        isInsumo: false,
+        affectsInventory: false,
+      });
+      continue;
+    }
 
     const [liveVariant, inventoryBody] = await Promise.all([
       loyverseGet(token, "/variants/" + encodeURIComponent(line.variant_id)),
@@ -1050,19 +1087,17 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
     const stores = Array.isArray(liveVariant?.stores) ? liveVariant.stores : [];
     const store = stores[0] || null;
     const storeId = String(store?.store_id || "");
-    if (!storeId) throw new Error(String(item?.item_name || "El producto") + " no tiene una tienda configurada en Loyverse.");
+    if (!storeId) throw new Error(String(item.item_name || "El producto") + " no tiene una tienda configurada en Loyverse.");
     const levels = Array.isArray(inventoryBody?.inventory_levels) ? inventoryBody.inventory_levels : [];
     const level = levels.find((x: any) => String(x?.store_id || "") === storeId) || levels[0] || null;
     const stockBefore = level ? Number(level.in_stock ?? 0) : 0;
-    if (!Number.isFinite(stockBefore)) throw new Error("No se pudo determinar el stock actual de " + String(item?.item_name || "este producto") + ".");
-    const unitsReceived = line.quantity * line.pack_size;
-    const unitCost = line.purchase_total_value / unitsReceived;
+    if (!Number.isFinite(stockBefore)) throw new Error("No se pudo determinar el stock actual de " + String(item.item_name || "este producto") + ".");
     const stockAfter = stockBefore + unitsReceived;
     deltas.set(String(line.variant_id), (deltas.get(String(line.variant_id)) || 0) + unitsReceived);
     preparedNew.push({
       variant_id: String(line.variant_id),
       item_id: String(v.item_id),
-      product_name: String(item?.item_name || "Sin nombre"),
+      product_name: String(item.item_name || "Sin nombre"),
       sku: v?.sku ?? null,
       pack_size: line.pack_size,
       presentation_quantity: line.quantity,
@@ -1076,6 +1111,7 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
       stock_after: stockAfter,
       previous_purchase_cost: null,
       isInsumo: false,
+      affectsInventory: true,
     });
     storeAndStock.set(String(line.variant_id), { storeId, stockBefore, item });
   }
@@ -1162,7 +1198,7 @@ async function updatePurchase(token:string,userId:string,payload:any){
         purchase_id:purchaseId,line_number:index+1,variant_id:line.variant_id,item_id:line.item_id,product_name:line.product_name,sku:line.sku,
         pack_size:line.pack_size,presentation_quantity:line.presentation_quantity,presentation_content_ml:line.presentation_content_ml,
         purchase_unit:line.purchase_unit,purchase_total_value:line.purchase_total_value,unit_cost:line.unit_cost,line_total:line.line_total,
-        units_received:line.units_received,stock_before:line.isInsumo?null:stockBefore,stock_after:line.isInsumo?null:stockBefore+delta,
+        units_received:line.units_received,stock_before:line.affectsInventory?stockBefore:null,stock_after:line.affectsInventory?stockBefore+delta:null,
         previous_purchase_cost:line.previous_purchase_cost
       };
     });
