@@ -672,7 +672,7 @@ async function getLatestCompletedPurchaseLine(variantId: string, excludePurchase
   });
 
   const lines = await supabaseRequest(
-    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,purchase_total_value,presentation_quantity,pack_size,presentation_content_ml,purchase_unit,created_at&variant_id=eq." +
+    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,unit_cost,purchase_total_value,presentation_quantity,pack_size,presentation_content_ml,purchase_unit,cost_only,created_at&variant_id=eq." +
       encodeURIComponent(variantId) + "&limit=1000",
     { method: "GET" },
   );
@@ -713,20 +713,23 @@ async function setCurrentPurchaseCost(token: string, variantId: string) {
   if (!latest) return null;
 
   const unitCost = Number(latest.unit_cost);
-  const presentationQuantity = Number(latest.presentation_quantity);
+  const isCostOnly = Boolean(latest.cost_only);
+  const presentationQuantity = isCostOnly ? 1 : Number(latest.presentation_quantity);
   const purchaseTotalValue = Number(latest.purchase_total_value);
-  const presentationCost = purchaseTotalValue / presentationQuantity;
   const packSizeRaw = latest.pack_size;
   const packSize = packSizeRaw === null || packSizeRaw === undefined || packSizeRaw === ""
     ? null
     : Number(packSizeRaw);
+  const presentationCost = isCostOnly
+    ? unitCost * Number(packSize || 1)
+    : purchaseTotalValue / presentationQuantity;
 
   if (!Number.isFinite(unitCost) || unitCost < 0) {
     throw new Error("No se pudo determinar un costo unitario válido para " + variantId + ".");
   }
-  if (!Number.isFinite(presentationQuantity) || presentationQuantity <= 0 ||
-      !Number.isFinite(purchaseTotalValue) || purchaseTotalValue <= 0 ||
-      !Number.isFinite(presentationCost) || presentationCost <= 0) {
+  if (!Number.isFinite(presentationCost) || presentationCost <= 0 ||
+      (!isCostOnly && (!Number.isFinite(presentationQuantity) || presentationQuantity <= 0 ||
+        !Number.isFinite(purchaseTotalValue) || purchaseTotalValue <= 0))) {
     throw new Error("No se pudo determinar el costo por presentación de " + variantId + ".");
   }
   if (packSize !== null && (!Number.isInteger(packSize) || packSize <= 0)) {
@@ -862,7 +865,11 @@ async function registerPurchase(token: string, userId: string, payload: any) {
     seen.add(line.variant_id);
   }
 
-  const { preparedNew, storeAndStock, deltas } = await preparePurchaseLinesForDelta(token, normalized, []);
+  const bogotaToday = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  const historicalNoStock = purchaseDate < bogotaToday;
+  const { preparedNew, storeAndStock, deltas } = await preparePurchaseLinesForDelta(token, normalized, [], historicalNoStock);
   const totalUnits = preparedNew.reduce((sum, line) => sum + Number(line.units_received), 0);
   const totalValue = preparedNew.reduce((sum, line) => sum + Number(line.line_total), 0);
   const purchase = await createPurchaseRecord(userId, purchaseDate, notes, preparedNew, totalUnits, totalValue, "inventory");
@@ -884,6 +891,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
       line_total: line.line_total,
       units_received: line.units_received,
       previous_purchase_cost: line.previous_purchase_cost,
+      cost_only: false,
       stock_before: line.affectsInventory ? Number(line.stock_before ?? 0) : null,
       stock_after: line.affectsInventory ? Number(line.stock_after ?? 0) : null,
     }));
@@ -933,6 +941,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
       total_units: totalUnits,
       total_value: totalValue,
       inventory_adjusted: inventoryChanges.size,
+      historical_no_stock: historicalNoStock,
       purchase_costs_updated: purchaseCostUpdates.length,
       derived_costs_updated: derivedUpdates.length,
       warnings,
@@ -957,7 +966,7 @@ async function getPurchaseForAdmin(purchaseId: string) {
 
 async function getPurchaseLinesForAdmin(purchaseId: string) {
   const rows = await supabaseRequest(
-    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,line_number,variant_id,item_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_unit,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,previous_purchase_cost&purchase_id=eq." + encodeURIComponent(purchaseId) + "&order=line_number",
+    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,line_number,variant_id,item_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_unit,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,previous_purchase_cost,cost_only&purchase_id=eq." + encodeURIComponent(purchaseId) + "&order=line_number",
     { method: "GET" },
   );
   return Array.isArray(rows) ? rows : [];
@@ -1017,7 +1026,7 @@ async function normalizePurchaseLines(rawLines: any[]) {
   return normalized;
 }
 
-async function preparePurchaseLinesForDelta(token: string, normalized: any[], oldLines: any[]) {
+async function preparePurchaseLinesForDelta(token: string, normalized: any[], oldLines: any[], historicalNoStock = false) {
   const variantIds = [...new Set([
     ...normalized.map((l: any) => String(l.variant_id)),
     ...oldLines.map((l: any) => String(l.variant_id)),
@@ -1117,7 +1126,7 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
       throw new Error("No se pudo calcular el costo unitario de " + String(item.item_name || "este producto") + ".");
     }
 
-    if (!Boolean(item.track_stock)) {
+    if (!Boolean(item.track_stock) || historicalNoStock) {
       const currentCost = Number(v.purchase_cost ?? 0);
       if (!Number.isFinite(currentCost) || currentCost < 0) {
         throw new Error("El costo actual de " + String(item.item_name || "este producto") + " no es válido.");
@@ -1263,7 +1272,7 @@ async function updatePurchase(token:string,userId:string,payload:any){
         pack_size:line.pack_size,presentation_quantity:line.presentation_quantity,presentation_content_ml:line.presentation_content_ml,
         purchase_unit:line.purchase_unit,purchase_total_value:line.purchase_total_value,unit_cost:line.unit_cost,line_total:line.line_total,
         units_received:line.units_received,stock_before:line.affectsInventory?stockBefore:null,stock_after:line.affectsInventory?stockBefore+delta:null,
-        previous_purchase_cost:line.previous_purchase_cost
+        previous_purchase_cost:line.previous_purchase_cost,cost_only:false
       };
     });
     await supabaseRequest("/rest/v1/avohouse_inventory_purchase_lines",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(lineRows)});
