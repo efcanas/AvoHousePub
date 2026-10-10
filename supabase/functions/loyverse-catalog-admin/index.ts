@@ -19,8 +19,6 @@ const SUPABASE_AUTH = getSupabaseAuth();
 const LOYVERSE_BASE_URL = "https://api.loyverse.com/v1.0";
 const PAGE_SIZE = 250;
 const MAX_PAGES = 100;
-// Agreed historical-cost period: invoices before October 2026 must not change today's stock.
-const HISTORICAL_PURCHASE_CUTOFF = "2026-10-01";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -867,8 +865,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
     seen.add(line.variant_id);
   }
 
-  const historicalNoStock = purchaseDate < HISTORICAL_PURCHASE_CUTOFF;
-  const { preparedNew, storeAndStock, deltas } = await preparePurchaseLinesForDelta(token, normalized, [], historicalNoStock);
+  const { preparedNew, storeAndStock, deltas } = await preparePurchaseLinesForDelta(token, normalized, []);
   const totalUnits = preparedNew.reduce((sum, line) => sum + Number(line.units_received), 0);
   const totalValue = preparedNew.reduce((sum, line) => sum + Number(line.line_total), 0);
   const purchase = await createPurchaseRecord(userId, purchaseDate, notes, preparedNew, totalUnits, totalValue, "inventory");
@@ -940,7 +937,6 @@ async function registerPurchase(token: string, userId: string, payload: any) {
       total_units: totalUnits,
       total_value: totalValue,
       inventory_adjusted: inventoryChanges.size,
-      historical_no_stock: historicalNoStock,
       purchase_costs_updated: purchaseCostUpdates.length,
       derived_costs_updated: derivedUpdates.length,
       warnings,
@@ -1025,7 +1021,7 @@ async function normalizePurchaseLines(rawLines: any[]) {
   return normalized;
 }
 
-async function preparePurchaseLinesForDelta(token: string, normalized: any[], oldLines: any[], historicalNoStock = false) {
+async function preparePurchaseLinesForDelta(token: string, normalized: any[], oldLines: any[]) {
   const variantIds = [...new Set([
     ...normalized.map((l: any) => String(l.variant_id)),
     ...oldLines.map((l: any) => String(l.variant_id)),
@@ -1125,7 +1121,7 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
       throw new Error("No se pudo calcular el costo unitario de " + String(item.item_name || "este producto") + ".");
     }
 
-    if (!Boolean(item.track_stock) || historicalNoStock) {
+    if (!Boolean(item.track_stock)) {
       const currentCost = Number(v.purchase_cost ?? 0);
       if (!Number.isFinite(currentCost) || currentCost < 0) {
         throw new Error("El costo actual de " + String(item.item_name || "este producto") + " no es válido.");
