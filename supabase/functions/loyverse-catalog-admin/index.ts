@@ -899,9 +899,26 @@ async function registerPurchase(token: string, userId: string, payload: any) {
     });
 
     const affectedVariantIds = [...new Set(preparedNew.map((line: any) => String(line.variant_id)))];
-    const purchaseCostUpdates = await refreshCurrentPurchaseCosts(token, affectedVariantIds);
     const sourceIds = [...new Set(preparedNew.filter((line: any) => !line.isInsumo).map((line: any) => String(line.variant_id)))];
-    const derivedUpdates = await refreshDerivedInsumoCosts(token, sourceIds);
+    const warnings: string[] = [];
+    let purchaseCostUpdates: any[] = [];
+    let derivedUpdates: any[] = [];
+
+    // Once the purchase and any inventory movements are committed, a later cost-sync
+    // failure must not make the invoice appear unregistered or invite a duplicate retry.
+    try {
+      purchaseCostUpdates = await refreshCurrentPurchaseCosts(token, affectedVariantIds);
+    } catch (error) {
+      warnings.push("La compra quedó guardada, pero no se pudo sincronizar el costo vigente en Loyverse: " + cleanError(error));
+    }
+    try {
+      derivedUpdates = await refreshDerivedInsumoCosts(token, sourceIds);
+    } catch (error) {
+      warnings.push("La compra quedó guardada, pero no se pudo recalcular uno o más costos de insumos derivados: " + cleanError(error));
+    }
+    if (warnings.length) {
+      try { await patchPurchase(purchase.id, { error_message: warnings.join(" ").slice(0, 1500) }); } catch {}
+    }
 
     return {
       ok: true,
@@ -915,6 +932,7 @@ async function registerPurchase(token: string, userId: string, payload: any) {
       inventory_adjusted: inventoryChanges.size,
       purchase_costs_updated: purchaseCostUpdates.length,
       derived_costs_updated: derivedUpdates.length,
+      warnings,
       lines: preparedNew,
       completed_at: new Date().toISOString(),
     };
@@ -940,6 +958,32 @@ async function getPurchaseLinesForAdmin(purchaseId: string) {
     { method: "GET" },
   );
   return Array.isArray(rows) ? rows : [];
+}
+
+async function refreshPurchaseCostsForAdmin(token: string, payload: any) {
+  const purchaseId = requiredString(payload?.purchase_id, "purchase_id");
+  const purchase = await getPurchaseForAdmin(purchaseId);
+  if (purchase.status !== "completed") throw new Error("Solo se pueden recalcular costos de compras completadas.");
+  const lines = await getPurchaseLinesForAdmin(purchaseId);
+  if (!lines.length) throw new Error("La compra no tiene líneas para recalcular.");
+
+  const variantIds = [...new Set(lines.map((line: any) => String(line.variant_id || "")).filter(Boolean))];
+  const purchaseCostUpdates = await refreshCurrentPurchaseCosts(token, variantIds);
+  const sourceIds = [...new Set(lines
+    .filter((line: any) => Number(line?.presentation_content_ml || 0) <= 0 &&
+      String(line?.purchase_unit || "").toUpperCase() !== "PRESENTACIÓN")
+    .map((line: any) => String(line.variant_id || "")).filter(Boolean))];
+  const derivedUpdates = await refreshDerivedInsumoCosts(token, sourceIds);
+  return {
+    ok: true,
+    purchase_id: purchaseId,
+    purchase_number: purchase.purchase_number,
+    purchase_costs_updated: purchaseCostUpdates.length,
+    derived_costs_updated: derivedUpdates.length,
+    purchase_costs: purchaseCostUpdates,
+    derived_costs: derivedUpdates,
+    completed_at: new Date().toISOString(),
+  };
 }
 
 async function normalizePurchaseLines(rawLines: any[]) {
@@ -1686,6 +1730,11 @@ Deno.serve(async (req: Request) => {
         return json(await deleteInsumoPurchase(token, userId, purchase, oldLines));
       }
       return json(await deletePurchase(token, userId, body));
+    }
+
+    if (action === "refresh_purchase_costs") {
+      await assertAdmin(req);
+      return json(await refreshPurchaseCostsForAdmin(token, body));
     }
 
     if (action !== "sync") return json({ ok: false, error: "Acción no reconocida." }, 400);
