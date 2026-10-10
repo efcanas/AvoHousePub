@@ -378,7 +378,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
     <div class="purchase-modal">
       <div class="purchase-modal-header">
         <h3 id="purchaseTitle" class="purchase-modal-title">Nueva compra</h3>
-        <div class="purchase-modal-subtitle">Registra una compra completa en una sola entrada. Los productos con inventario activo aumentan existencias; los insumos actualizan su costo por ml sin generar movimiento de inventario. En productos que alimentan un insumo, introduce el <strong>valor por unidad</strong>; AvoHouse calcula el total de la compra y actualiza automáticamente el costo del insumo derivado.</div>
+        <div class="purchase-modal-subtitle">Registra una compra completa en una sola entrada. Solo los productos con control de inventario activo aumentan existencias. Los insumos y los demás productos sin control de inventario actualizan su costo sin sumar unidades a las neveras. En productos que alimentan un insumo, introduce el <strong>valor por unidad</strong>; AvoHouse calcula el total de la compra y actualiza automáticamente el costo del insumo derivado.</div>
       </div>
       <div class="purchase-modal-body">
         <div id="purchaseNotice" class="notice" style="margin-bottom:12px"></div>
@@ -1522,7 +1522,7 @@ async function savePurchase(){
   if(lines.some(x=>x.isInsumo&&(!Number.isFinite(x.presentationContentMl)||x.presentationContentMl<=0))){$('purchaseNotice').textContent='Todos los insumos deben tener contenido de presentación configurado.';$('purchaseNotice').className='notice show error';return}
   if(lines.some(x=>!Number.isFinite(x.purchaseTotalValue)||x.purchaseTotalValue<=0)){$('purchaseNotice').textContent='Indica el Valor total de todas las líneas.';$('purchaseNotice').className='notice show error';return}
   if(lines.some((x,i)=>lines.findIndex(y=>y.variantId===x.variantId)!==i)){$('purchaseNotice').textContent='No repitas un mismo producto dentro de la compra.';$('purchaseNotice').className='notice show error';return}
-  if(!confirm('Se registrará la compra completa. Los productos con inventario activo aumentarán sus existencias y los insumos actualizarán su costo unitario sin generar inventario. ¿Deseas continuar?'))return;
+  if(!confirm('Se registrará la compra completa. Solo los productos con control de inventario activo aumentarán sus existencias; los insumos y los demás productos sin control actualizarán sus costos sin generar existencias físicas. ¿Deseas continuar?'))return;
   const btn=$('purchaseSave');btn.disabled=true;$('purchaseCancel').disabled=true;$('purchaseAddLine').disabled=true;$('purchaseNotice').className='notice show';$('purchaseNotice').textContent='Registrando compra…';
   try{
     const body={action:'register_purchase',purchase_date:$('purchaseDate').value,notes:$('purchaseNotes').value.trim(),lines:lines.map(x=>({variant_id:x.variantId,quantity:x.quantity,pack_size:x.pack,presentation_content_ml:x.presentationContentMl,purchase_total_value:x.purchaseTotalValue}))};
