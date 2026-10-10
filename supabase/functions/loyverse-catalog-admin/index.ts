@@ -985,10 +985,11 @@ async function preparePurchaseLinesForDelta(token: string, normalized: any[], ol
   const deltas = new Map<string, number>();
   for (const old of oldLines) {
     const id = String(old.variant_id);
-    const oldVariant = variantMap.get(id);
-    const oldItem = oldVariant ? itemMap.get(String(oldVariant.item_id)) : null;
     const isOldInsumo = Number(old?.presentation_content_ml) > 0 || String(old?.purchase_unit || "").toUpperCase() === "PRESENTACIÓN";
-    if (isOldInsumo || !Boolean(oldItem?.track_stock)) continue;
+    const hadInventoryEffect =
+      old?.stock_before !== null && old?.stock_before !== undefined &&
+      old?.stock_after !== null && old?.stock_after !== undefined;
+    if (isOldInsumo || !hadInventoryEffect) continue;
     const units = Number(old.units_received || 0);
     if (!Number.isFinite(units) || units < 0) throw new Error("La compra existente contiene una cantidad de inventario inválida.");
     deltas.set(id, (deltas.get(id) || 0) - units);
