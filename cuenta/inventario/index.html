@@ -632,7 +632,7 @@ function refreshPurchaseHistoryMonths(rows){const year=Number($('purchaseHistory
 function markPurchaseLimit(){document.querySelectorAll('[data-purchase-limit]').forEach(btn=>btn.classList.toggle('active',Number(btn.dataset.purchaseLimit)===purchaseHistoryRecentLimit))}
 function renderPurchaseHistory(rows,mode='recent'){const list=$('purchaseHistoryList');if(!rows?.length){list.innerHTML='<div class="purchase-history-empty">'+(mode==='recent'?'Todavía no hay compras registradas.':'No hay compras registradas para el período seleccionado.')+'</div>';$('purchaseHistoryStatus').textContent=mode==='recent'?'Sin registros':'Sin resultados';$('purchaseHistorySummary').textContent=mode==='recent'?'Últimas compras registradas':'Sin compras en el período';return}const lineMap=purchaseHistoryLineMap();list.innerHTML=rows.map(p=>{const lines=lineMap.get(String(p.id))||[],names=lines.map(l=>l.product_name).filter(Boolean).join(' · '),isInsumo=p.purchase_type==='insumo';return'<div class="purchase-history-item" data-purchase-id="'+String(p.id).replace(/"/g,'&quot;')+'" tabindex="0"><div class="purchase-history-sign">'+(isInsumo?'$':'+')+'</div><div class="purchase-history-main"><div class="purchase-history-title">'+formatPurchaseInvoiceDate(p.purchase_date)+'</div><div class="purchase-history-meta">'+(isInsumo?'Insumos · ':'')+Number(p.line_count||0).toLocaleString('es-CO')+' productos · '+Number(p.total_units||0).toLocaleString('es-CO')+(isInsumo?' botellas':' unidades')+'</div><div class="purchase-history-products">'+(names||'Sin detalle')+'</div></div><div class="purchase-history-amount">'+formatMoney(p.total_value||0)+'</div></div>'}).join('');$('purchaseHistoryStatus').textContent=mode==='recent'?'Últimas '+rows.length:'Resultado '+rows.length;$('purchaseHistorySummary').textContent=mode==='recent'?'Mostrando las últimas '+rows.length+' compras':'Compras encontradas: '+rows.length;markPurchaseLimit()}
 
-async function loadPurchaseHistory(){const list=$('purchaseHistoryList');if(!list)return;list.innerHTML='<div class="purchase-history-empty">Cargando historial…</div>';const[{data:purchases,error:pError},{data:lines,error:lError}]=await Promise.all([db.from('avohouse_inventory_purchases').select('id,purchase_number,purchase_date,purchase_type,status,line_count,total_units,total_value,notes,created_at,completed_at,updated_at').eq('status','completed').order('purchase_date',{ascending:false}).order('created_at',{ascending:false}).order('purchase_number',{ascending:false}).limit(1000),db.from('avohouse_inventory_purchase_lines').select('purchase_id,line_number,variant_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after').order('purchase_id').order('line_number')]);if(pError||lError){list.innerHTML='<div class="purchase-history-empty">No se pudo cargar el historial de compras.</div>';if(pError)console.error(pError);if(lError)console.error(lError);return}purchaseHistoryAll={purchases:purchases||[],lines:lines||[]};populatePurchaseHistoryFilters(purchaseHistoryAll.purchases);renderPurchaseHistory(purchaseHistoryAll.purchases.slice(0,purchaseHistoryRecentLimit),'recent')}
+async function loadPurchaseHistory(){const list=$('purchaseHistoryList');if(!list)return;list.innerHTML='<div class="purchase-history-empty">Cargando historial…</div>';const[{data:purchases,error:pError},{data:lines,error:lError}]=await Promise.all([db.from('avohouse_inventory_purchases').select('id,purchase_number,purchase_date,purchase_type,status,line_count,total_units,total_value,notes,created_at,completed_at,updated_at').eq('status','completed').order('purchase_date',{ascending:false}).order('created_at',{ascending:false}).order('purchase_number',{ascending:false}).limit(1000),db.from('avohouse_inventory_purchase_lines').select('purchase_id,line_number,variant_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,cost_only').order('purchase_id').order('line_number')]);if(pError||lError){list.innerHTML='<div class="purchase-history-empty">No se pudo cargar el historial de compras.</div>';if(pError)console.error(pError);if(lError)console.error(lError);return}purchaseHistoryAll={purchases:purchases||[],lines:lines||[]};populatePurchaseHistoryFilters(purchaseHistoryAll.purchases);renderPurchaseHistory(purchaseHistoryAll.purchases.slice(0,purchaseHistoryRecentLimit),'recent')}
 function filterPurchaseHistory(){const term=$('purchaseHistorySearch').value.trim().toLowerCase(),year=Number($('purchaseHistoryYear').value)||0,month=Number($('purchaseHistoryMonth').value)||0;let rows=purchaseHistoryAll.purchases||[];if(term)rows=rows.filter(p=>{const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));const hay=[p.purchase_number,p.purchase_date,p.notes,...lines.flatMap(l=>[l.product_name,l.sku])].filter(v=>v!==null&&v!==undefined).join(' ').toLowerCase();return hay.includes(term)});if(year)rows=rows.filter(p=>Number(String(p.purchase_date||'').slice(0,4))===year);if(month)rows=rows.filter(p=>Number(String(p.purchase_date||'').slice(5,7))===month);purchaseHistoryMode='search';renderPurchaseHistory(rows,'search')}
 function openPurchaseDetail(purchaseId){const purchase=purchaseHistoryAll.purchases.find(p=>String(p.id)===String(purchaseId));if(!purchase)return;purchaseHistorySelected=purchase;renderPurchaseDetail(purchase);$('purchaseDetailBackdrop').classList.remove('hidden')}
 async function refreshSelectedPurchaseCosts(button){
@@ -663,20 +663,22 @@ function renderPurchaseDetail(p){
   const head='<div class="purchase-detail-line head"><div>Producto</div><div>Cant.</div><div>Presentación</div><div>Unidades / contenido</div><div>Valor total</div><div>Costo unitario</div></div>';
   const rows=lines.map(l=>{
     const isInsumo=Number(l.presentation_content_ml)>0;
+    const isCostOnly=Boolean(l.cost_only);
     const quantity=Number(l.presentation_quantity||0);
     const content=Number(l.presentation_content_ml||0);
     const pack=Number(l.pack_size||0);
-    const fourth=isInsumo
+    const fourth=isCostOnly?'Solo costo':(isInsumo
       ? (quantity>0&&content>0?(quantity*content).toLocaleString('es-CO')+' ml':'—')
-      : Number(l.units_received||0).toLocaleString('es-CO');
-    const presentation=isInsumo
+      : Number(l.units_received||0).toLocaleString('es-CO'));
+    const presentation=isCostOnly?'Referencia':(isInsumo
       ? (content>0?content.toLocaleString('es-CO')+' ml':'—')
-      : (pack>0?pack.toLocaleString('es-CO'):'—');
-    const unitLabel=isInsumo?'Costo/ml':'Valor unidad';
+      : (pack>0?pack.toLocaleString('es-CO'):'—'));
+    const unitLabel=isInsumo?'Costo/ml':'Costo unitario';
+    const costOnlyNote=isCostOnly?'<div style="color:#b8ff39;font-size:11px;margin-top:3px">Referencia de costo; no suma unidades ni valor a la factura</div>':'';
     return '<div class="purchase-detail-line"><div><strong>'+String(l.product_name||'').replace(/[&<>]/g,'')+'</strong>'+
-      (l.sku?'<div style="color:#8f96a3;margin-top:2px">SKU '+String(l.sku).replace(/[&<>]/g,'')+'</div>':'')+
-      '</div><div>'+quantity.toLocaleString('es-CO')+'</div><div>'+presentation+'</div><div>'+fourth+'</div>'+
-      '<div>'+formatMoney(l.purchase_total_value||0)+'</div><div><span style="display:none">'+unitLabel+'</span>'+formatMoney(l.unit_cost||0)+'</div></div>';
+      (l.sku?'<div style="color:#8f96a3;margin-top:2px">SKU '+String(l.sku).replace(/[&<>]/g,'')+'</div>':'')+costOnlyNote+
+      '</div><div>'+(isCostOnly?'—':quantity.toLocaleString('es-CO'))+'</div><div>'+presentation+'</div><div>'+fourth+'</div>'+
+      '<div>'+(isCostOnly?'—':formatMoney(l.purchase_total_value||0))+'</div><div><span style="display:none">'+unitLabel+'</span>'+formatMoney(l.unit_cost||0)+'</div></div>';
   }).join('');
   const countLabel='Unidades / presentaciones';
   $('purchaseDetailBody').innerHTML=
@@ -686,7 +688,7 @@ function renderPurchaseDetail(p){
     '<div class="purchase-detail-lines">'+head+rows+'</div>'+
     ((p.notes||'')?'<div class="purchase-detail-note"><strong>Nota:</strong> '+String(p.notes).replace(/[&<>]/g,'')+'</div>':'')+
     '<div id="purchaseDetailStatus" class="purchase-detail-status hidden" role="status"></div>'+
-    '<div class="purchase-detail-actions"><button class="ghost" data-purchase-detail-close type="button">CERRAR</button><button class="ghost" data-purchase-refresh-costs type="button">RECALCULAR COSTOS</button><button class="ghost" data-purchase-edit type="button">MODIFICAR</button><button class="ghost" data-purchase-delete type="button" style="border-color:rgba(255,93,93,.25);color:#ffb7b7">ELIMINAR</button></div>';
+    '<div class="purchase-detail-actions"><button class="ghost" data-purchase-detail-close type="button">CERRAR</button><button class="ghost" data-purchase-refresh-costs type="button">RECALCULAR COSTOS</button>'+(lines.some(l=>Boolean(l.cost_only))?'':'<button class="ghost" data-purchase-edit type="button">MODIFICAR</button>')+'<button class="ghost" data-purchase-delete type="button" style="border-color:rgba(255,93,93,.25);color:#ffb7b7">ELIMINAR</button></div>';
 }
 function editPurchaseLineOptions(selectedId=''){
   const products=purchaseProducts();
