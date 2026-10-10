@@ -961,10 +961,94 @@ async function getPurchaseForAdmin(purchaseId: string) {
 
 async function getPurchaseLinesForAdmin(purchaseId: string) {
   const rows = await supabaseRequest(
-    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,line_number,variant_id,item_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_unit,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,previous_purchase_cost,cost_only&purchase_id=eq." + encodeURIComponent(purchaseId) + "&order=line_number",
+    "/rest/v1/avohouse_inventory_purchase_lines?select=purchase_id,line_number,variant_id,item_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_unit,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,previous_purchase_cost,cost_only,inventory_sync_pending&purchase_id=eq." + encodeURIComponent(purchaseId) + "&order=line_number",
     { method: "GET" },
   );
   return Array.isArray(rows) ? rows : [];
+}
+
+async function syncPendingPurchaseInventory(token: string, purchaseId: string, lines: any[]) {
+  const pending = lines.filter((line: any) => Boolean(line.inventory_sync_pending));
+  if (!pending.length) return { applied: 0, alreadyApplied: 0, skippedNonStock: 0 };
+
+  const itemIds = [...new Set(pending.map((line: any) => String(line.item_id || "")).filter(Boolean))];
+  const itemRows = await supabaseRequest(
+    "/rest/v1/loyverse_items?select=id,item_name,track_stock&id=in.(" + encodeURIComponent(itemIds.join(",")) + ")",
+    { method: "GET" },
+  );
+  const items = new Map((Array.isArray(itemRows) ? itemRows : []).map((item: any) => [String(item.id), item]));
+  let applied = 0, alreadyApplied = 0, skippedNonStock = 0;
+
+  for (const line of pending) {
+    const lineNumber = Number(line.line_number);
+    const variantId = String(line.variant_id || "");
+    if (!variantId) throw new Error("Una línea pendiente no tiene variante de Loyverse.");
+    if (Boolean(line.cost_only)) {
+      await supabaseRequest(
+        "/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq." + encodeURIComponent(purchaseId) + "&line_number=eq." + encodeURIComponent(String(lineNumber)),
+        { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ inventory_sync_pending: false }) },
+      );
+      continue;
+    }
+
+    const item = items.get(String(line.item_id || ""));
+    if (!item) throw new Error("No se encontró el producto de la línea " + lineNumber + " en el catálogo local.");
+    if (!Boolean(item.track_stock)) {
+      await supabaseRequest(
+        "/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq." + encodeURIComponent(purchaseId) + "&line_number=eq." + encodeURIComponent(String(lineNumber)),
+        { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ inventory_sync_pending: false, stock_before: null, stock_after: null }) },
+      );
+      skippedNonStock++;
+      continue;
+    }
+
+    const units = Number(line.units_received || 0);
+    if (!Number.isFinite(units) || units <= 0) throw new Error("Cantidad no válida en la línea " + lineNumber + ".");
+    const [liveVariant, inventoryBody] = await Promise.all([
+      loyverseGet(token, "/variants/" + encodeURIComponent(variantId)),
+      loyverseGet(token, "/inventory?variant_ids=" + encodeURIComponent(variantId) + "&limit=250"),
+    ]);
+    const stores = Array.isArray(liveVariant?.stores) ? liveVariant.stores : [];
+    const store = stores[0] || null;
+    const storeId = String(store?.store_id || "");
+    if (!storeId) throw new Error(String(item.item_name || "El producto") + " no tiene una tienda configurada en Loyverse.");
+    const levels = Array.isArray(inventoryBody?.inventory_levels) ? inventoryBody.inventory_levels : [];
+    const level = levels.find((entry: any) => String(entry?.store_id || "") === storeId) || levels[0] || null;
+    const currentStock = level ? Number(level.in_stock ?? 0) : 0;
+    if (!Number.isFinite(currentStock)) throw new Error("No se pudo determinar el stock actual de " + String(item.item_name || variantId) + ".");
+
+    let before = line.stock_before === null || line.stock_before === undefined ? null : Number(line.stock_before);
+    let after = line.stock_after === null || line.stock_after === undefined ? null : Number(line.stock_after);
+    if (before === null || after === null) {
+      before = currentStock;
+      after = before + units;
+      await supabaseRequest(
+        "/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq." + encodeURIComponent(purchaseId) + "&line_number=eq." + encodeURIComponent(String(lineNumber)),
+        { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ stock_before: before, stock_after: after }) },
+      );
+    }
+
+    if (Math.abs(currentStock - before) < 0.000001) {
+      const deltas = new Map<string, number>([[variantId, after - before]]);
+      const storeAndStock = new Map<string, any>([[variantId, { storeId, stockBefore: before, item }]]);
+      await applyPurchaseInventoryDelta(token, deltas, storeAndStock);
+      applied++;
+    } else if (Math.abs(currentStock - after) < 0.000001) {
+      alreadyApplied++;
+    } else {
+      throw new Error(
+        "No se aplicó dos veces el movimiento de " + String(item.item_name || variantId) +
+        " porque el stock actual (" + currentStock + ") no coincide con el anterior (" + before +
+        ") ni con el esperado (" + after + "). Requiere revisión manual."
+      );
+    }
+
+    await supabaseRequest(
+      "/rest/v1/avohouse_inventory_purchase_lines?purchase_id=eq." + encodeURIComponent(purchaseId) + "&line_number=eq." + encodeURIComponent(String(lineNumber)),
+      { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ inventory_sync_pending: false }) },
+    );
+  }
+  return { applied, alreadyApplied, skippedNonStock };
 }
 
 async function refreshPurchaseCostsForAdmin(token: string, payload: any) {
@@ -974,6 +1058,7 @@ async function refreshPurchaseCostsForAdmin(token: string, payload: any) {
   const lines = await getPurchaseLinesForAdmin(purchaseId);
   if (!lines.length) throw new Error("La compra no tiene líneas para recalcular.");
 
+  const inventorySync = await syncPendingPurchaseInventory(token, purchaseId, lines);
   const variantIds = [...new Set(lines.map((line: any) => String(line.variant_id || "")).filter(Boolean))];
   const purchaseCostUpdates = await refreshCurrentPurchaseCosts(token, variantIds);
   const sourceIds = [...new Set(lines
@@ -986,6 +1071,9 @@ async function refreshPurchaseCostsForAdmin(token: string, payload: any) {
     ok: true,
     purchase_id: purchaseId,
     purchase_number: purchase.purchase_number,
+    inventory_synced: inventorySync.applied,
+    inventory_already_applied: inventorySync.alreadyApplied,
+    inventory_skipped_nonstock: inventorySync.skippedNonStock,
     purchase_costs_updated: purchaseCostUpdates.length,
     derived_costs_updated: derivedUpdates.length,
     purchase_costs: purchaseCostUpdates,
