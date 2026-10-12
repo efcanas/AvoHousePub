@@ -660,7 +660,7 @@ async function syncAllPendingInventory(){
     await loadPurchaseHistory();
   }
 }
-async function loadPurchaseHistory(){const list=$('purchaseHistoryList');if(!list)return;list.innerHTML='<div class="purchase-history-empty">Cargando historial…</div>';const[{data:purchases,error:pError},{data:lines,error:lError}]=await Promise.all([db.from('avohouse_inventory_purchases').select('id,purchase_number,purchase_date,purchase_type,status,line_count,total_units,total_value,notes,created_at,completed_at,updated_at').eq('status','completed').order('purchase_date',{ascending:false}).order('created_at',{ascending:false}).order('purchase_number',{ascending:false}).limit(1000),db.from('avohouse_inventory_purchase_lines').select('purchase_id,line_number,variant_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,cost_only,inventory_sync_pending').order('purchase_id').order('line_number')]);if(pError||lError){list.innerHTML='<div class="purchase-history-empty">No se pudo cargar el historial de compras.</div>';if(pError)console.error(pError);if(lError)console.error(lError);return}purchaseHistoryAll={purchases:purchases||[],lines:lines||[]};populatePurchaseHistoryFilters(purchaseHistoryAll.purchases);renderPurchaseHistory(purchaseHistoryAll.purchases.slice(0,purchaseHistoryRecentLimit),'recent')}
+async function loadPurchaseHistory(){const list=$('purchaseHistoryList');if(!list)return;list.innerHTML='<div class="purchase-history-empty">Cargando historial…</div>';const[{data:purchases,error:pError},{data:lines,error:lError}]=await Promise.all([db.from('avohouse_inventory_purchases').select('id,purchase_number,purchase_date,purchase_type,status,line_count,total_units,total_value,notes,created_at,completed_at,updated_at,deleted_at').eq('status','completed').is('deleted_at',null).order('purchase_date',{ascending:false}).order('created_at',{ascending:false}).order('purchase_number',{ascending:false}).limit(1000),db.from('avohouse_inventory_purchase_lines').select('purchase_id,line_number,variant_id,product_name,sku,pack_size,presentation_quantity,presentation_content_ml,purchase_total_value,unit_cost,line_total,units_received,stock_before,stock_after,cost_only,inventory_sync_pending').order('purchase_id').order('line_number')]);if(pError||lError){list.innerHTML='<div class="purchase-history-empty">No se pudo cargar el historial de compras.</div>';if(pError)console.error(pError);if(lError)console.error(lError);return}purchaseHistoryAll={purchases:purchases||[],lines:lines||[]};populatePurchaseHistoryFilters(purchaseHistoryAll.purchases);renderPurchaseHistory(purchaseHistoryAll.purchases.slice(0,purchaseHistoryRecentLimit),'recent')}
 function filterPurchaseHistory(){const term=$('purchaseHistorySearch').value.trim().toLowerCase(),year=Number($('purchaseHistoryYear').value)||0,month=Number($('purchaseHistoryMonth').value)||0;let rows=purchaseHistoryAll.purchases||[];if(term)rows=rows.filter(p=>{const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));const hay=[p.purchase_number,p.purchase_date,p.notes,...lines.flatMap(l=>[l.product_name,l.sku])].filter(v=>v!==null&&v!==undefined).join(' ').toLowerCase();return hay.includes(term)});if(year)rows=rows.filter(p=>Number(String(p.purchase_date||'').slice(0,4))===year);if(month)rows=rows.filter(p=>Number(String(p.purchase_date||'').slice(5,7))===month);purchaseHistoryMode='search';renderPurchaseHistory(rows,'search')}
 function openPurchaseDetail(purchaseId){const purchase=purchaseHistoryAll.purchases.find(p=>String(p.id)===String(purchaseId));if(!purchase)return;purchaseHistorySelected=purchase;renderPurchaseDetail(purchase);$('purchaseDetailBackdrop').classList.remove('hidden')}
 async function refreshSelectedPurchaseCosts(button){
@@ -774,7 +774,147 @@ function renderPurchaseEdit(p){const lines=purchaseHistoryAll.lines.filter(l=>St
 async function saveEditedPurchase(){const errorEl=$('purchaseDetailError'),lines=[...document.querySelectorAll('#editPurchaseLines .purchase-edit-line')].map(updateEditPurchaseLine).filter(l=>l.variantId);if(!lines.length){errorEl.textContent='Agrega al menos un producto.';errorEl.classList.remove('hidden');return}if(lines.some(l=>!Number.isInteger(l.quantity)||l.quantity<=0||!Number.isInteger(l.pack)||l.pack<=0||!Number.isFinite(l.purchaseTotalValue)||l.purchaseTotalValue<=0||((l.isInsumo)&&(!Number.isFinite(l.presentationContentMl)||l.presentationContentMl<=0)))){errorEl.textContent='Revisa cantidades, Presentación y Valor total.';errorEl.classList.remove('hidden');return}if(new Set(lines.map(l=>l.variantId)).size!==lines.length){errorEl.textContent='No repitas un mismo producto en la compra.';errorEl.classList.remove('hidden');return}if(!confirm('Se modificarán la compra y las existencias correspondientes en Loyverse. ¿Deseas continuar?'))return;const btn=$('purchaseDetailBody').querySelector('[data-purchase-edit-save]');btn.disabled=true;try{const body={action:'update_purchase',purchase_id:purchaseHistorySelected.id,purchase_date:$('editPurchaseDate').value,notes:$('editPurchaseNotes').value.trim(),lines:lines.map(l=>({variant_id:l.variantId,quantity:l.quantity,pack_size:l.pack,presentation_content_ml:l.presentationContentMl,purchase_total_value:l.purchaseTotalValue}))};const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo modificar la compra.');await Promise.all([loadInventory(),loadPurchaseHistory()]);purchaseHistorySelected=purchaseHistoryAll.purchases.find(p=>String(p.id)===String(data.purchase_id))||null;if(purchaseHistorySelected){renderPurchaseDetail(purchaseHistorySelected)}else{$('purchaseDetailBackdrop').classList.add('hidden')}showNotice('Compra modificada correctamente.',false)}catch(e){errorEl.textContent=e?.message||'No se pudo modificar la compra.';errorEl.classList.remove('hidden')}finally{btn.disabled=false}}
 async function deleteSelectedPurchase(){if(!purchaseHistorySelected)return;const p=purchaseHistorySelected;const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));const units=lines.reduce((s,l)=>s+Number(l.units_received||0),0);if(!confirm('Se eliminará la compra registrada de AvoHouse. Se revertirán los movimientos de inventario correspondientes y se restaurará el costo anterior de los insumos incluidos, cuando exista. ¿Deseas continuar?'))return;try{const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'delete_purchase',purchase_id:p.id}});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo eliminar la compra.');$('purchaseDetailBackdrop').classList.add('hidden');purchaseHistorySelected=null;await Promise.all([loadInventory(),loadPurchaseHistory()]);showNotice('Compra eliminada y existencias revertidas correctamente.',false)}catch(e){showNotice(e?.message||'No se pudo eliminar la compra.',true)}}
 
-async function loadInventory(){ $('inventoryStatus').textContent='Cargando…';$('inventoryList').innerHTML='<div class="empty">Cargando inventario…</div>';const [{data:categories,error:categoryError},{data:items,error:itemError},{data:variants,error:variantError},{data:levels,error:inventoryError},{data:syncState,error:syncError},{data:derivationData,error:derivationError}]=await Promise.all([db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),db.from('loyverse_items').select('id,item_name,category_id,track_stock,is_composite,components').is('deleted_at',null),db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,cost,default_price,purchase_pack_size,purchase_presentation_content_ml,stores,option1_value,option2_value,option3_value').is('deleted_at',null),db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle(),db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_cost_derivations'}})]);if(categoryError||itemError||variantError||inventoryError||syncError){const first=[categoryError,itemError,variantError,inventoryError,syncError].find(Boolean);$('inventoryStatus').textContent='Error';showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);return}inventoryCategories=categories||[];purchaseCostDerivations=Array.isArray(derivationData?.derivations)?derivationData.derivations:[];purchaseCostDerivationBySource=new Map(purchaseCostDerivations.map(d=>[String(d.source_variant_id),d]));purchaseCostDerivationByTarget=new Map(purchaseCostDerivations.map(d=>[String(d.target_variant_id),d]));if(derivationError)console.error(derivationError);populateInventoryCategories();const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name])),itemMap=new Map((items||[]).map(i=>[String(i.id),i])),inventoryByVariant=new Map((levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)]));const variantMap=new Map((variants||[]).map(v=>[String(v.variant_id),v]));const unitCostMemo=new Map();const unitCostVisiting=new Set();function inventoryCalculatedCost(variantId){const key=String(variantId||'');if(unitCostMemo.has(key))return unitCostMemo.get(key);if(unitCostVisiting.has(key))return null;const v=variantMap.get(key);if(!v)return null;const item=itemMap.get(String(v.item_id))||{};if(!Boolean(item.is_composite)){const n=Number(v.cost);const value=Number.isFinite(n)&&n>=0?n:null;unitCostMemo.set(key,value);return value}unitCostVisiting.add(key);let total=0,valid=true;const components=Array.isArray(item.components)?item.components:[];if(!components.length)valid=false;for(const component of components){const qty=Number(component?.quantity);const componentCost=inventoryCalculatedCost(component?.variant_id);if(!Number.isFinite(qty)||qty<0||componentCost===null||!Number.isFinite(componentCost)){valid=false;break}total+=qty*componentCost}unitCostVisiting.delete(key);const value=valid&&Number.isFinite(total)?total:null;unitCostMemo.set(key,value);return value}inventoryRows=(variants||[]).map(v=>{const item=itemMap.get(String(v.item_id))||{},store=inventoryStoreState(v);return{storeId:String(store?.store_id||''),variantId:String(v.variant_id),itemId:String(v.item_id),name:String(item.item_name||'Sin nombre'),categoryId:String(item.category_id||''),categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',trackStock:Boolean(item.track_stock),isComposite:Boolean(item.is_composite),stock:inventoryStockInfo(v,inventoryByVariant),cost:inventoryCalculatedCost(v.variant_id),lowStock:store?.low_stock===null||store?.low_stock===undefined?null:Number(store.low_stock),available:store?.available_for_sale!==false,price:store?.price??v.default_price,packSize:v.purchase_pack_size===null||v.purchase_pack_size===undefined?null:Number(v.purchase_pack_size),presentationContentMl:v.purchase_presentation_content_ml===null||v.purchase_presentation_content_ml===undefined?null:Number(v.purchase_presentation_content_ml),sku:String(v.sku||''),barcode:String(v.barcode||''),option1:String(v.option1_value||''),option2:String(v.option2_value||''),option3:String(v.option3_value||'')}});$('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');$('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');$('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');$('inventoryStatLevels').textContent=(levels||[]).length.toLocaleString('es-CO');$('inventoryStatus').textContent=syncState?.last_success_at?'Actualizado '+formatDate(syncState.last_success_at):'Loyverse';renderInventory()}
+async function loadInventory(){
+  $('inventoryStatus').textContent='Cargando…';
+  $('inventoryList').innerHTML='<div class="empty">Cargando inventario…</div>';
+  const [
+    {data:categories,error:categoryError},
+    {data:items,error:itemError},
+    {data:variants,error:variantError},
+    {data:levels,error:inventoryError},
+    {data:syncState,error:syncError},
+    {data:derivationData,error:derivationError},
+    {data:purchaseHeaders,error:purchaseHeaderError},
+    {data:purchaseLines,error:purchaseLineError}
+  ]=await Promise.all([
+    db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),
+    db.from('loyverse_items').select('id,item_name,category_id,track_stock,is_composite,components').is('deleted_at',null),
+    db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,cost,default_price,purchase_pack_size,purchase_presentation_content_ml,stores,option1_value,option2_value,option3_value').is('deleted_at',null),
+    db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),
+    db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle(),
+    db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_cost_derivations'}}),
+    db.from('avohouse_inventory_purchases').select('id,purchase_number,purchase_date,created_at,status,deleted_at').eq('status','completed').is('deleted_at',null).order('purchase_date',{ascending:false}).order('created_at',{ascending:false}).order('purchase_number',{ascending:false}).limit(1000),
+    db.from('avohouse_inventory_purchase_lines').select('purchase_id,variant_id,unit_cost,cost_only,created_at')
+  ]);
+  const errors=[categoryError,itemError,variantError,inventoryError,syncError,purchaseHeaderError,purchaseLineError];
+  if(errors.some(Boolean)){
+    const first=errors.find(Boolean);
+    $('inventoryStatus').textContent='Error';
+    showNotice('No se pudo cargar el inventario: '+(first?.message||'error desconocido'),true);
+    return;
+  }
+  inventoryCategories=categories||[];
+  purchaseCostDerivations=Array.isArray(derivationData?.derivations)?derivationData.derivations:[];
+  purchaseCostDerivationBySource=new Map(purchaseCostDerivations.map(d=>[String(d.source_variant_id),d]));
+  purchaseCostDerivationByTarget=new Map(purchaseCostDerivations.map(d=>[String(d.target_variant_id),d]));
+  if(derivationError)console.error(derivationError);
+  populateInventoryCategories();
+
+  const categoryMap=new Map(inventoryCategories.map(c=>[String(c.id),c.name]));
+  const itemMap=new Map((items||[]).map(i=>[String(i.id),i]));
+  const inventoryByVariant=new Map((levels||[]).map(l=>[String(l.variant_id)+'|'+String(l.store_id),Number(l.in_stock||0)]));
+  const variantMap=new Map((variants||[]).map(v=>[String(v.variant_id),v]));
+
+  // El costo vigente sale de la factura completada más reciente por fecha de compra.
+  // No se usa el costo espejo de Loyverse si existe un costo respaldado por una factura.
+  const purchaseRank=new Map((purchaseHeaders||[]).map((p,index)=>[String(p.id),index]));
+  const invoiceCostByVariant=new Map();
+  const purchaseMetaById=new Map((purchaseHeaders||[]).map(p=>[String(p.id),p]));
+  for(const line of (purchaseLines||[])){
+    if(Boolean(line.cost_only))continue;
+    const purchaseId=String(line.purchase_id||'');
+    const variantId=String(line.variant_id||'');
+    if(!variantId||!purchaseMetaById.has(purchaseId))continue;
+    const unitCost=Number(line.unit_cost);
+    if(!Number.isFinite(unitCost)||unitCost<0)continue;
+    const rank=purchaseRank.get(purchaseId);
+    const createdAt=String(line.created_at||'');
+    const previous=invoiceCostByVariant.get(variantId);
+    if(!previous||rank<previous.rank||(rank===previous.rank&&createdAt>previous.createdAt)){
+      invoiceCostByVariant.set(variantId,{unitCost,rank,createdAt,purchaseId});
+    }
+  }
+
+  const unitCostMemo=new Map();
+  const unitCostVisiting=new Set();
+  function inventoryCalculatedCost(variantId){
+    const key=String(variantId||'');
+    if(unitCostMemo.has(key))return unitCostMemo.get(key);
+    if(unitCostVisiting.has(key))return null;
+    const v=variantMap.get(key);
+    if(!v)return null;
+    const item=itemMap.get(String(v.item_id))||{};
+    unitCostVisiting.add(key);
+    let value=null;
+
+    // Los insumos derivados toman el costo de su producto fuente según la última factura.
+    const derivation=purchaseCostDerivationByTarget.get(key);
+    if(derivation){
+      const sourceCost=inventoryCalculatedCost(derivation.source_variant_id);
+      const contentMl=Number(derivation.source_content_ml);
+      if(sourceCost!==null&&Number.isFinite(sourceCost)&&sourceCost>=0&&Number.isFinite(contentMl)&&contentMl>0){
+        value=sourceCost/contentMl;
+      }else if(derivation.fallback_unit_cost!==null&&derivation.fallback_unit_cost!==undefined&&derivation.fallback_unit_cost!==''){
+        const fallback=Number(derivation.fallback_unit_cost);
+        if(Number.isFinite(fallback)&&fallback>=0)value=fallback;
+      }
+    }else if(Boolean(item.is_composite)){
+      let total=0,valid=true;
+      const components=Array.isArray(item.components)?item.components:[];
+      if(!components.length)valid=false;
+      for(const component of components){
+        const qty=Number(component?.quantity);
+        const componentCost=inventoryCalculatedCost(component?.variant_id);
+        if(!Number.isFinite(qty)||qty<0||componentCost===null||!Number.isFinite(componentCost)){
+          valid=false;
+          break;
+        }
+        total+=qty*componentCost;
+      }
+      if(valid&&Number.isFinite(total))value=total;
+    }else{
+      const invoiceCost=invoiceCostByVariant.get(key);
+      const rawCost=invoiceCost?invoiceCost.unitCost:Number(v.cost);
+      if(Number.isFinite(rawCost)&&rawCost>=0)value=rawCost;
+    }
+
+    unitCostVisiting.delete(key);
+    unitCostMemo.set(key,value);
+    return value;
+  }
+
+  inventoryRows=(variants||[]).map(v=>{
+    const item=itemMap.get(String(v.item_id))||{},store=inventoryStoreState(v);
+    return{
+      storeId:String(store?.store_id||''),
+      variantId:String(v.variant_id),
+      itemId:String(v.item_id),
+      name:String(item.item_name||'Sin nombre'),
+      categoryId:String(item.category_id||''),
+      categoryName:categoryMap.get(String(item.category_id||''))||'Sin categoría',
+      trackStock:Boolean(item.track_stock),
+      isComposite:Boolean(item.is_composite),
+      stock:inventoryStockInfo(v,inventoryByVariant),
+      cost:inventoryCalculatedCost(v.variant_id),
+      lowStock:store?.low_stock===null||store?.low_stock===undefined?null:Number(store.low_stock),
+      available:store?.available_for_sale!==false,
+      price:store?.price??v.default_price,
+      packSize:v.purchase_pack_size===null||v.purchase_pack_size===undefined?null:Number(v.purchase_pack_size),
+      presentationContentMl:v.purchase_presentation_content_ml===null||v.purchase_presentation_content_ml===undefined?null:Number(v.purchase_presentation_content_ml),
+      sku:String(v.sku||''),
+      barcode:String(v.barcode||''),
+      option1:String(v.option1_value||''),
+      option2:String(v.option2_value||''),
+      option3:String(v.option3_value||'')
+    };
+  });
+  $('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');
+  $('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');
+  $('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');
+  $('inventoryStatLevels').textContent=(levels||[]).length.toLocaleString('es-CO');
+  $('inventoryStatus').textContent=syncState?.last_success_at?'Actualizado '+formatDate(syncState.last_success_at):'Loyverse';
+  renderInventory();
+}
 function inventoryComponentLabel(row){
   const option=[row.option1,row.option2,row.option3].filter(Boolean).join(' · ');
   return [row.name,option].filter(Boolean).join(' · ');
