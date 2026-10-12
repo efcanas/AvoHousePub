@@ -794,7 +794,7 @@ async function loadInventory(){
     db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle(),
     db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_cost_derivations'}}),
     db.from('avohouse_inventory_purchases').select('id,purchase_number,purchase_date,created_at,status,deleted_at').eq('status','completed').is('deleted_at',null).order('purchase_date',{ascending:false}).order('created_at',{ascending:false}).order('purchase_number',{ascending:false}).limit(1000),
-    db.from('avohouse_inventory_purchase_lines').select('purchase_id,variant_id,unit_cost,cost_only,created_at')
+    db.from('avohouse_inventory_purchase_lines').select('purchase_id,variant_id,unit_cost,cost_only,created_at,purchase_total_value,line_total')
   ]);
   const errors=[categoryError,itemError,variantError,inventoryError,syncError,purchaseHeaderError,purchaseLineError];
   if(errors.some(Boolean)){
@@ -821,12 +821,19 @@ async function loadInventory(){
   const invoiceCostByVariant=new Map();
   const purchaseMetaById=new Map((purchaseHeaders||[]).map(p=>[String(p.id),p]));
   for(const line of (purchaseLines||[])){
-    if(Boolean(line.cost_only))continue;
     const purchaseId=String(line.purchase_id||'');
     const variantId=String(line.variant_id||'');
     if(!variantId||!purchaseMetaById.has(purchaseId))continue;
     const unitCost=Number(line.unit_cost);
+    const isCostOnly=Boolean(line.cost_only);
+    const purchaseValue=Number(line.purchase_total_value);
+    const lineTotal=Number(line.line_total);
     if(!Number.isFinite(unitCost)||unitCost<0)continue;
+    if(isCostOnly){
+      if(!(unitCost>0&&purchaseValue===0&&lineTotal===0))continue;
+    }else{
+      if(!(purchaseValue>0&&lineTotal>0))continue;
+    }
     const rank=purchaseRank.get(purchaseId);
     const createdAt=String(line.created_at||'');
     const previous=invoiceCostByVariant.get(variantId);
@@ -854,9 +861,6 @@ async function loadInventory(){
       const contentMl=Number(derivation.source_content_ml);
       if(sourceCost!==null&&Number.isFinite(sourceCost)&&sourceCost>=0&&Number.isFinite(contentMl)&&contentMl>0){
         value=sourceCost/contentMl;
-      }else if(derivation.fallback_unit_cost!==null&&derivation.fallback_unit_cost!==undefined&&derivation.fallback_unit_cost!==''){
-        const fallback=Number(derivation.fallback_unit_cost);
-        if(Number.isFinite(fallback)&&fallback>=0)value=fallback;
       }
     }else if(Boolean(item.is_composite)){
       let total=0,valid=true;
@@ -874,8 +878,8 @@ async function loadInventory(){
       if(valid&&Number.isFinite(total))value=total;
     }else{
       const invoiceCost=invoiceCostByVariant.get(key);
-      const rawCost=invoiceCost?invoiceCost.unitCost:Number(v.cost);
-      if(Number.isFinite(rawCost)&&rawCost>=0)value=rawCost;
+      const rawCost=invoiceCost?invoiceCost.unitCost:null;
+      if(rawCost!==null&&Number.isFinite(rawCost)&&rawCost>=0)value=rawCost;
     }
 
     unitCostVisiting.delete(key);
