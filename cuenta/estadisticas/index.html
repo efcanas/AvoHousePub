@@ -251,7 +251,7 @@ function renderPeriod(prefix,data){
   profitNode.title=hasPartialProfit?partialTitle:'';
   marginNode.title=hasPartialProfit?partialTitle:'';
 
-  const coverage=$($(prefix==='prev'?'prevCostCoverage':'currCostCoverage'));
+  const coverage=$(prefix==='prev'?'prevCostCoverage':'currCostCoverage');
   if(coverage){
     if(data?.cost_coverage_percent!==null&&data?.cost_coverage_percent!==undefined){
       coverage.hidden=false;
