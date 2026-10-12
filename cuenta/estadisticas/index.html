@@ -107,6 +107,7 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
           <div class="metric"><div class="metric-label">Utilidad bruta</div><div id="prevProfit" class="metric-value">—</div></div>
           <div class="metric"><div class="metric-label">Margen</div><div id="prevMargin" class="metric-value">—</div></div>
         </div>
+        <div id="prevCostCoverage" class="period-dates cost-coverage" hidden></div>
       </div>
       <div class="period">
         <div class="period-title">Mes en curso</div><div id="currDates" class="period-dates">—</div>
@@ -115,6 +116,7 @@ button{border-radius:10px;padding:12px 15px;font-weight:800;cursor:pointer}
           <div class="metric"><div class="metric-label">Utilidad bruta</div><div id="currProfit" class="metric-value">—</div></div>
           <div class="metric"><div class="metric-label">Margen</div><div id="currMargin" class="metric-value">—</div></div>
         </div>
+        <div id="currCostCoverage" class="period-dates cost-coverage" hidden></div>
       </div>
     </div>
   </section>
@@ -234,8 +236,31 @@ function destroyCharts(){Object.values(charts).forEach(c=>c?.destroy());charts={
 function renderPeriod(prefix,data){
   $(prefix+'Dates').textContent=dateLabel(data?.start)+' — '+dateLabel(data?.end);
   $(prefix+'Sales').textContent=money(data?.net_sales);
-  $(prefix+'Profit').textContent=money(data?.gross_profit);
-  $(prefix+'Margin').innerHTML=marginSpan(data?.margin_percent);
+
+  const profitNode=$(prefix+'Profit');
+  const marginNode=$(prefix+'Margin');
+  const profitLabel=profitNode.parentElement.querySelector('.metric-label');
+  const marginLabel=marginNode.parentElement.querySelector('.metric-label');
+  const hasFullProfit=data?.gross_profit!==null&&data?.gross_profit!==undefined;
+  const hasPartialProfit=!hasFullProfit&&data?.partial_gross_profit!==null&&data?.partial_gross_profit!==undefined;
+  profitNode.textContent=hasFullProfit?money(data.gross_profit):(hasPartialProfit?money(data.partial_gross_profit):'N/D');
+  marginNode.innerHTML=marginSpan(hasFullProfit?data.margin_percent:(hasPartialProfit?data.partial_margin_percent:null));
+  if(profitLabel)profitLabel.textContent=hasFullProfit?'Utilidad bruta':(hasPartialProfit?'Utilidad parcial':'Utilidad bruta');
+  if(marginLabel)marginLabel.textContent=hasFullProfit?'Margen':(hasPartialProfit?'Margen parcial':'Margen');
+  const partialTitle='Calculado solo sobre '+money(data?.costed_sales)+' de ventas con costo documentado; cobertura '+num(data?.cost_coverage_percent)+'% de las ventas contables.';
+  profitNode.title=hasPartialProfit?partialTitle:'';
+  marginNode.title=hasPartialProfit?partialTitle:'';
+
+  const coverage=$($(prefix==='prev'?'prevCostCoverage':'currCostCoverage'));
+  if(coverage){
+    if(data?.cost_coverage_percent!==null&&data?.cost_coverage_percent!==undefined){
+      coverage.hidden=false;
+      coverage.textContent='Cobertura de costos: '+pct(data.cost_coverage_percent)+' · '+num(data.uncosted_lines)+' líneas de venta sin costo documentado';
+    }else{
+      coverage.hidden=true;
+      coverage.textContent='';
+    }
+  }
 }
 
 function chartBase(){
@@ -250,6 +275,8 @@ function render(data){
   const notices=[];
   if(quality.has_partial_historical_month)notices.push('El rango seleccionado toca un mes histórico de forma parcial. Antes del 01/10/2026 el histórico está disponible por meses completos, por lo que esa parte parcial no se incorpora.');
   if(quality.history_used)notices.push('Fuente histórica: registros propios de AvoHouse hasta el 30/09/2026. Fuente viva: recibos sincronizados desde Loyverse desde el 01/10/2026.');
+  if(quality.historical_cost_rule)notices.push(quality.historical_cost_rule);
+  if(data.summary&&Number(data.summary.uncosted_lines||0)>0)notices.push('La utilidad total y el margen total se muestran como N/D cuando faltan costos de compra para algunos productos. La utilidad y el margen parciales corresponden solo a las ventas cuyo costo sí está documentado.');
   if(quality.history_used && quality.payments_from==='2026-10-01')notices.push('Medios de pago y ventas diarias disponibles desde el 01/10/2026.');
   $('notice').hidden=notices.length===0;
   $('notice').className='notice';
