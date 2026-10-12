@@ -255,7 +255,7 @@ function renderPeriod(prefix,data){
   if(coverage){
     if(data?.cost_coverage_percent!==null&&data?.cost_coverage_percent!==undefined){
       coverage.hidden=false;
-      coverage.textContent='Cobertura de costos: '+pct(data.cost_coverage_percent)+' · '+num(data.uncosted_lines)+' líneas de venta sin costo documentado';
+      coverage.textContent='Cobertura de costos: '+pct(data.cost_coverage_percent)+' · '+num(data.uncosted_lines)+' elementos sin costo documentado';
     }else{
       coverage.hidden=true;
       coverage.textContent='';
