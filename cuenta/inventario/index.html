@@ -330,9 +330,9 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
     <div class="panel-heading">
       <div>
         <h2 class="panel-title">Historial de compras</h2>
-        <div id="purchaseHistorySummary" class="history-summary">Últimas compras registradas</div>
+        <div id="purchaseHistorySummary" class="history-summary">Costos de factura activos · existencias pausadas durante la conciliación</div>
       </div>
-      <div class="purchase-history-actions"><button id="syncPendingInventoryBtn" class="ghost" type="button">APLICAR PENDIENTES</button><span id="purchaseHistoryStatus" class="panel-tag">Recientes</span></div>
+      <div class="purchase-history-actions"><button id="syncPendingInventoryBtn" class="ghost" type="button" title="Pausado durante la conciliación de costos" disabled>STOCK PAUSADO</button><span id="purchaseHistoryStatus" class="panel-tag">Recientes</span></div>
     </div>
     <div class="purchase-history-search">
       <input id="purchaseHistorySearch" type="search" placeholder="Buscar producto, SKU, nota o número de compra" autocomplete="off">
@@ -350,7 +350,7 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
   </section>
   <section class="card">
     <div class="panel-heading"><h2 class="panel-title">Inventario</h2><span id="inventoryStatus" class="panel-tag">Loyverse</span></div>
-    <div class="helper">Consulta el catálogo sincronizado desde Loyverse. Para Bebidas y Cervezas, <strong>Presentación</strong> es la cantidad de unidades que trae cada presentación de compra. Ejemplo: 30. La <strong>NUEVA COMPRA</strong> multiplica automáticamente la cantidad comprada por ese valor.</div>
+    <div class="helper">Consulta el catálogo sincronizado desde Loyverse. Para Bebidas y Cervezas, <strong>Presentación</strong> es la cantidad de unidades que trae cada presentación de compra. Ejemplo: 30. La <strong>NUEVA COMPRA</strong> calcula las unidades y el costo de la factura, pero durante esta conciliación <strong>no modifica las existencias</strong>. El inventario se ajustará manualmente al finalizar.</div>
     <div class="inventory-toolbar" style="margin-top:12px">
       <input id="inventorySearch" type="search" placeholder="Buscar producto" autocomplete="off">
       <select id="inventoryCategory" aria-label="Filtrar por categoría"><option value="">Todas las categorías</option></select>
@@ -638,10 +638,10 @@ function renderPurchaseHistory(rows,mode='recent'){const list=$('purchaseHistory
 async function syncAllPendingInventory(){
   const button=$('syncPendingInventoryBtn');
   if(!button)return;
-  if(!confirm('Se aplicarán en Loyverse los movimientos de inventario pendientes de las compras ya registradas y se recalcularán los costos vigentes. Si un movimiento no coincide con el stock actual, se detendrá para evitar duplicarlo. ¿Continuar?'))return;
+  if(!confirm('La sincronización de existencias está pausada. No se modificarán cantidades de inventario. Solo se recalcularán costos y se limpiarán indicadores de movimientos pendientes para que no se apliquen por accidente. ¿Continuar?'))return;
   const oldLabel=button.textContent;
   button.disabled=true;button.textContent='SINCRONIZANDO…';
-  $('purchaseHistorySummary').textContent='Aplicando los movimientos de inventario pendientes y recalculando costos…';
+  $('purchaseHistorySummary').textContent='Recalculando costos; no se modificarán existencias…';
   try{
     const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'sync_all_pending_purchase_inventory'}});
     if(error)throw error;
@@ -651,7 +651,9 @@ async function syncAllPendingInventory(){
       throw new Error((data.error||'La sincronización terminó con incidencias.')+detail);
     }
     await Promise.all([loadInventory(),loadPurchaseHistory()]);
-    showNotice('Inventario sincronizado. Compras procesadas: '+Number(data.purchases_processed||0)+'. Movimientos aplicados: '+Number(data.inventory_applied||0)+'. Ya aplicados: '+Number(data.inventory_already_applied||0)+'. Sin control de inventario: '+Number(data.inventory_skipped_nonstock||0)+'. Costos actualizados: '+Number(data.purchase_costs_updated||0)+'. Insumos derivados: '+Number(data.derived_costs_updated||0)+'.',false);
+    showNotice(data.inventory_movements_enabled===false
+      ? 'Conciliación completada. No se modificó el inventario. Compras revisadas: '+Number(data.purchases_processed||0)+'. Costos actualizados: '+Number(data.purchase_costs_updated||0)+'. Insumos derivados: '+Number(data.derived_costs_updated||0)+'. Ajusta las existencias manualmente cuando termines.'
+      : 'Inventario sincronizado. Compras procesadas: '+Number(data.purchases_processed||0)+'. Movimientos aplicados: '+Number(data.inventory_applied||0)+'. Ya aplicados: '+Number(data.inventory_already_applied||0)+'. Sin control de inventario: '+Number(data.inventory_skipped_nonstock||0)+'. Costos actualizados: '+Number(data.purchase_costs_updated||0)+'. Insumos derivados: '+Number(data.derived_costs_updated||0)+'.',false);
   }catch(error){
     $('purchaseHistorySummary').textContent='La sincronización encontró una incidencia. Revisa el aviso y vuelve a intentarlo solo después de revisar el movimiento señalado.';
     showNotice(error?.message||'No se pudieron aplicar los movimientos pendientes.',true);
@@ -668,14 +670,17 @@ async function refreshSelectedPurchaseCosts(button){
   const status=$('purchaseDetailStatus');
   const originalLabel=button.textContent;
   button.disabled=true;button.textContent='ACTUALIZANDO…';
-  if(status){status.textContent='Sincronizando movimientos de inventario pendientes en Loyverse y recalculando los costos vigentes…';status.className='purchase-detail-status';}
+  if(status){status.textContent='Recalculando los costos desde las facturas. Durante esta fase no se modifican existencias…';status.className='purchase-detail-status';}
   try{
     const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'refresh_purchase_costs',purchase_id:purchase.id}});
     if(error)throw error;
     if(!data?.ok)throw new Error(data?.error||'No se pudieron recalcular los costos.');
     await loadInventory();
     if(status){
-      status.textContent='Proceso completado. Movimientos de inventario aplicados: '+Number(data.inventory_synced||0)+'. Movimientos que ya estaban aplicados: '+Number(data.inventory_already_applied||0)+'. Costos revisados: '+Number(data.purchase_costs_updated||0)+'. Insumos derivados actualizados: '+Number(data.derived_costs_updated||0)+'.';
+      status.textContent=(data.inventory_movements_enabled===false
+        ? 'Costos recalculados. No se modificó el inventario; se ajustará manualmente al finalizar. '
+        : 'Proceso completado. Movimientos aplicados: '+Number(data.inventory_synced||0)+'. Ya aplicados: '+Number(data.inventory_already_applied||0)+'. ')+
+        'Costos revisados: '+Number(data.purchase_costs_updated||0)+'. Insumos derivados actualizados: '+Number(data.derived_costs_updated||0)+'.';
       status.className='purchase-detail-status success';
     }
   }catch(error){
@@ -716,7 +721,7 @@ function renderPurchaseDetail(p){
     '<div class="purchase-detail-lines">'+head+rows+'</div>'+
     ((p.notes||'')?'<div class="purchase-detail-note"><strong>Nota:</strong> '+String(p.notes).replace(/[&<>]/g,'')+'</div>':'')+
     '<div id="purchaseDetailStatus" class="purchase-detail-status '+(lines.some(l=>Boolean(l.inventory_sync_pending))?'pending':'hidden')+'" role="status">'+(lines.some(l=>Boolean(l.inventory_sync_pending))?'Esta factura aún tiene movimientos de inventario pendientes. Pulsa el botón siguiente para aplicarlos en Loyverse y recalcular los costos.':'')+'</div>'+
-    '<div class="purchase-detail-actions"><button class="ghost" data-purchase-detail-close type="button">CERRAR</button><button class="ghost" data-purchase-refresh-costs type="button">'+(lines.some(l=>Boolean(l.inventory_sync_pending))?'APLICAR INVENTARIO Y RECALCULAR COSTOS':'RECALCULAR COSTOS')+'</button>'+(lines.some(l=>Boolean(l.cost_only))?'':'<button class="ghost" data-purchase-edit type="button">MODIFICAR</button>')+'<button class="ghost" data-purchase-delete type="button" style="border-color:rgba(255,93,93,.25);color:#ffb7b7">ELIMINAR</button></div>';
+    '<div class="purchase-detail-actions"><button class="ghost" data-purchase-detail-close type="button">CERRAR</button><button class="ghost" data-purchase-refresh-costs type="button">'+(lines.some(l=>Boolean(l.inventory_sync_pending))?'RECALCULAR COSTOS (STOCK PAUSADO)':'RECALCULAR COSTOS')+'</button>'+(lines.some(l=>Boolean(l.cost_only))?'':'<button class="ghost" data-purchase-edit type="button">MODIFICAR</button>')+'<button class="ghost" data-purchase-delete type="button" style="border-color:rgba(255,93,93,.25);color:#ffb7b7">ELIMINAR</button></div>';
 }
 function editPurchaseLineOptions(selectedId=''){
   const products=purchaseProducts();
@@ -1723,7 +1728,7 @@ async function savePurchase(){
   if(lines.some(x=>x.isInsumo&&(!Number.isFinite(x.presentationContentMl)||x.presentationContentMl<=0))){$('purchaseNotice').textContent='Todos los insumos deben tener contenido de presentación configurado.';$('purchaseNotice').className='notice show error';return}
   if(lines.some(x=>!Number.isFinite(x.purchaseTotalValue)||x.purchaseTotalValue<=0)){$('purchaseNotice').textContent='Indica el Valor total de todas las líneas.';$('purchaseNotice').className='notice show error';return}
   if(lines.some((x,i)=>lines.findIndex(y=>y.variantId===x.variantId)!==i)){$('purchaseNotice').textContent='No repitas un mismo producto dentro de la compra.';$('purchaseNotice').className='notice show error';return}
-  if(!confirm('Se registrará la compra completa. Solo los productos con control de inventario activo aumentarán sus existencias; los insumos y los demás productos sin control actualizarán sus costos sin generar existencias físicas. ¿Deseas continuar?'))return;
+  if(!confirm('Se registrará la compra completa. Solo los durante esta fase las cantidades de las facturas no modificarán el inventario; la compra registrará costos y luego ajustarás el stock manualmente al finalizar. ¿Deseas continuar?'))return;
   const btn=$('purchaseSave');btn.disabled=true;$('purchaseCancel').disabled=true;$('purchaseAddLine').disabled=true;$('purchaseNotice').className='notice show';$('purchaseNotice').textContent='Registrando compra…';
   try{
     const body={action:'register_purchase',purchase_date:$('purchaseDate').value,notes:$('purchaseNotes').value.trim(),lines:lines.map(x=>({variant_id:x.variantId,quantity:x.quantity,pack_size:x.pack,presentation_content_ml:x.presentationContentMl,purchase_total_value:x.purchaseTotalValue}))};
