@@ -1433,11 +1433,12 @@ async function openInventoryEditor(variantId,itemId){
     $('inventoryEditSubtitle').textContent=inventoryEditState.isComposite?'Producto compuesto · costo unitario calculado por receta':'Variante '+variantId;
     $('editItemName').value=item.item_name||'';
     const isComposite=inventoryEditState.isComposite;
-    const isInsumos=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos';
+    const isInsumosCategory=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos';
+    const isInsumos=isInsumosCategory&&String(listRow?.purchaseCostBasis||'ml').trim().toLowerCase()!=='unit';
     $('editPurchaseSettingsFields').classList.toggle('hidden',isComposite);
     $('editPackField').classList.toggle('hidden',isInsumos||isComposite);
     $('editContentMlField').classList.toggle('hidden',!isInsumos||isComposite);
-    $('editPriceField').classList.toggle('hidden',isInsumos);
+    $('editPriceField').classList.toggle('hidden',isInsumosCategory);
     $('editPurchasePackSize').disabled=isComposite||isInsumos;
     $('editPresentationCost').disabled=isComposite;
     $('editContentMl').disabled=isComposite;
@@ -1487,11 +1488,13 @@ function closeInventoryEditor(){inventoryEditState=null;$('inventoryEditBackdrop
 function updateInventoryEditCategoryUI(){
   if(!inventoryEditState?.data)return;
   const categoryName=String($('editItemCategory')?.selectedOptions?.[0]?.textContent||'').trim().toLowerCase();
-  const isInsumos=categoryName==='insumos';
+  const isInsumosCategory=categoryName==='insumos';
+  const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState?.variantId));
+  const isInsumos=isInsumosCategory&&String(listRow?.purchaseCostBasis||'ml').trim().toLowerCase()!=='unit';
   const composite=Boolean(inventoryEditState.isComposite);
   const canTrackStock=!isInsumos&&!composite;
-  $('editAvailable').disabled=isInsumos;
-  if(isInsumos)$('editAvailable').checked=false;
+  $('editAvailable').disabled=isInsumosCategory;
+  if(isInsumosCategory)$('editAvailable').checked=false;
   if(!canTrackStock)setInventoryEditTrackStock(false);
   $('editTrackStock').style.pointerEvents=canTrackStock?'auto':'none';
   $('editTrackStock').style.opacity=canTrackStock?'1':'0.5';
@@ -1502,7 +1505,7 @@ function updateInventoryEditCategoryUI(){
       : 'Los productos de la categoría Insumos no controlan inventario.';
   $('editPackField').classList.toggle('hidden',isInsumos||composite);
   $('editContentMlField').classList.toggle('hidden',!isInsumos||composite);
-  $('editPriceField').classList.toggle('hidden',isInsumos);
+  $('editPriceField').classList.toggle('hidden',isInsumosCategory);
   $('editPurchasePackSize').disabled=isInsumos||composite;
   $('editContentMl').disabled=composite;
   $('editPurchaseSettingsFields').classList.toggle('hidden',composite);
@@ -1515,7 +1518,7 @@ function updateInventoryEditCategoryUI(){
 function updateInventoryEditUnitCost(){
   if(inventoryEditState?.isComposite)return updateInventoryEditComponents();
   const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState?.variantId));
-  const isInsumos=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos';
+  const isInsumos=String(listRow?.categoryName||'').trim().toLowerCase()==='insumos'&&String(listRow?.purchaseCostBasis||'ml').trim().toLowerCase()!=='unit';
   const presentationRaw=$('editPresentationCost').value.trim(),presentation=Number(presentationRaw);
   if(isInsumos){
     const content=Number($('editContentMl').value||0);
@@ -1536,7 +1539,8 @@ async function saveInventoryEditor(){
   const composite=Boolean(inventoryEditState.isComposite);
   const listRow=inventoryRows.find(r=>String(r.variantId)===String(inventoryEditState.variantId));
   const selectedCategoryName=String($('editItemCategory')?.selectedOptions?.[0]?.textContent||'').trim().toLowerCase();
-  const isInsumos=selectedCategoryName==='insumos';
+  const isInsumosCategory=selectedCategoryName==='insumos';
+  const isInsumos=isInsumosCategory&&String(listRow?.purchaseCostBasis||'ml').trim().toLowerCase()!=='unit';
   const stockValue=$('editStock').value.trim();
   let components=null;
   try{if(composite)components=readInventoryEditComponents()}catch(error){
@@ -1576,7 +1580,7 @@ async function saveInventoryEditor(){
       variant_id:inventoryEditState.variantId,
       item:{item_name:$('editItemName').value.trim(),category_id:$('editItemCategory').value||null,track_stock:!composite&&!isInsumos&&$('editTrackStock').dataset.active==='1'},
       variant:{default_price:$('editDefaultPrice').value},
-      store:{available_for_sale:isInsumos?false:$('editAvailable').checked,low_stock:$('editLowStock').value},
+      store:{available_for_sale:isInsumosCategory?false:$('editAvailable').checked,low_stock:$('editLowStock').value},
       inventory:composite?{}:{stock_after:stockValue},
       purchase:composite?{}:{pack_size:isInsumos?'1':packRaw,presentation_cost:presentationRaw,presentation_content_ml:isInsumos?Number(contentRaw):null}
     };
