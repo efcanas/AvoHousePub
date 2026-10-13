@@ -738,7 +738,7 @@ function editPurchaseLineOptions(selectedId=''){
 function addEditPurchaseLine(data={}){
   const row=document.createElement('div');row.className='purchase-edit-line';
   const p=inventoryRows.find(r=>r.variantId===data.variantId),
-    isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos',
+    isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos'&&String(p?.purchaseCostBasis||'ml').trim().toLowerCase()!=='unit',
     derivation=purchaseCostDerivationBySource.get(String(data.variantId||''))||null,
     isCostSource=Boolean(derivation),
     quantity=Number(data.quantity||1),
@@ -756,7 +756,7 @@ function addEditPurchaseLine(data={}){
 }
 function updateEditPurchaseLine(row){
   const p=inventoryRows.find(r=>r.variantId===row.querySelector('[data-edit-product]')?.value),
-    isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos',
+    isInsumo=String(p?.categoryName||'').trim().toLowerCase()==='insumos'&&String(p?.purchaseCostBasis||'ml').trim().toLowerCase()!=='unit',
     derivation=purchaseCostDerivationBySource.get(String(row.querySelector('[data-edit-product]')?.value||''))||null,
     isCostSource=Boolean(derivation),
     q=Number(row.querySelector('[data-edit-quantity]')?.value||0),
@@ -794,7 +794,7 @@ async function loadInventory(){
   ]=await Promise.all([
     db.from('loyverse_categories').select('id,name').is('deleted_at',null).order('name'),
     db.from('loyverse_items').select('id,item_name,category_id,track_stock,is_composite,components').is('deleted_at',null),
-    db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,cost,default_price,purchase_pack_size,purchase_presentation_content_ml,stores,option1_value,option2_value,option3_value').is('deleted_at',null),
+    db.from('loyverse_item_variants').select('variant_id,item_id,sku,barcode,cost,default_price,purchase_pack_size,purchase_presentation_content_ml,purchase_cost_basis,stores,option1_value,option2_value,option3_value').is('deleted_at',null),
     db.from('loyverse_inventory_levels').select('variant_id,store_id,in_stock'),
     db.from('loyverse_catalog_sync_state').select('last_success_at,last_error').eq('sync_key','catalog').maybeSingle(),
     db.functions.invoke('loyverse-catalog-admin',{body:{action:'get_cost_derivations'}}),
@@ -910,6 +910,7 @@ async function loadInventory(){
       price:store?.price??v.default_price,
       packSize:v.purchase_pack_size===null||v.purchase_pack_size===undefined?null:Number(v.purchase_pack_size),
       presentationContentMl:v.purchase_presentation_content_ml===null||v.purchase_presentation_content_ml===undefined?null:Number(v.purchase_presentation_content_ml),
+      purchaseCostBasis:String(v.purchase_cost_basis||'ml').trim().toLowerCase(),
       sku:String(v.sku||''),
       barcode:String(v.barcode||''),
       option1:String(v.option1_value||''),
@@ -1667,7 +1668,7 @@ function addPurchaseLine(selectedId=''){
 }
 function updatePurchaseLine(row){
   const variantId=row.querySelector('[data-purchase-product]')?.value||'',previousVariant=row.dataset.purchaseVariant||'',
-    product=inventoryRows.find(r=>r.variantId===variantId),isInsumo=String(product?.categoryName||'').trim().toLowerCase()==='insumos',
+    product=inventoryRows.find(r=>r.variantId===variantId),isInsumo=String(product?.categoryName||'').trim().toLowerCase()==='insumos'&&String(product?.purchaseCostBasis||'ml').trim().toLowerCase()!=='unit',
     derivation=purchaseCostDerivationBySource.get(String(variantId))||null,isCostSource=Boolean(derivation),
     quantityRaw=row.querySelector('[data-purchase-quantity]')?.value||'',packInput=row.querySelector('[data-purchase-pack]'),valueInput=row.querySelector('[data-purchase-value]'),
     labelPack=packInput.parentElement?.querySelector('.purchase-cell-label'),labelUnits=row.querySelector('[data-purchase-units]')?.parentElement?.querySelector('.purchase-cell-label'),
