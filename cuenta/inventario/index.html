@@ -359,9 +359,6 @@ button{font:inherit}.primary{border:0;background:#b8ff39;color:#111;border-radiu
       </select>
       <button id="inventoryCreateOpenBtn" class="primary" type="button">NUEVO PRODUCTO</button><button id="purchaseOpenBtn" class="ghost" type="button">NUEVA COMPRA</button><button id="inventorySyncBtn" class="primary" type="button">SINCRONIZAR DESDE LV</button>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:8px">
-      <button id="inventoryConfigureAmarilloTajinBtn" class="ghost hidden" type="button">CONFIGURAR TAJÍN + AMARILLO</button>
-    </div>
     <div class="stats-grid">
       <div class="stat"><div class="stat-label">Variantes</div><div id="inventoryStatVariants" class="stat-value">—</div></div>
       <div class="stat"><div class="stat-label">A la venta</div><div id="inventoryStatAvailable" class="stat-value">—</div></div>
@@ -789,45 +786,6 @@ function renderPurchaseEdit(p){const lines=purchaseHistoryAll.lines.filter(l=>St
 async function saveEditedPurchase(){const errorEl=$('purchaseDetailError'),lines=[...document.querySelectorAll('#editPurchaseLines .purchase-edit-line')].map(updateEditPurchaseLine).filter(l=>l.variantId);if(!lines.length){errorEl.textContent='Agrega al menos un producto.';errorEl.classList.remove('hidden');return}if(lines.some(l=>!Number.isInteger(l.quantity)||l.quantity<=0||!Number.isInteger(l.pack)||l.pack<=0||!Number.isFinite(l.purchaseTotalValue)||l.purchaseTotalValue<=0||((l.isInsumo)&&(!Number.isFinite(l.presentationContentMl)||l.presentationContentMl<=0)))){errorEl.textContent='Revisa cantidades, Presentación y Valor total.';errorEl.classList.remove('hidden');return}if(new Set(lines.map(l=>l.variantId)).size!==lines.length){errorEl.textContent='No repitas un mismo producto en la compra.';errorEl.classList.remove('hidden');return}if(!confirm('Se modificarán la compra y las existencias correspondientes en Loyverse. ¿Deseas continuar?'))return;const btn=$('purchaseDetailBody').querySelector('[data-purchase-edit-save]');btn.disabled=true;try{const body={action:'update_purchase',purchase_id:purchaseHistorySelected.id,purchase_date:$('editPurchaseDate').value,notes:$('editPurchaseNotes').value.trim(),lines:lines.map(l=>({variant_id:l.variantId,quantity:l.quantity,pack_size:l.pack,presentation_content_ml:l.presentationContentMl,purchase_total_value:l.purchaseTotalValue}))};const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo modificar la compra.');await Promise.all([loadInventory(),loadPurchaseHistory()]);purchaseHistorySelected=purchaseHistoryAll.purchases.find(p=>String(p.id)===String(data.purchase_id))||null;if(purchaseHistorySelected){renderPurchaseDetail(purchaseHistorySelected)}else{$('purchaseDetailBackdrop').classList.add('hidden')}showNotice('Compra modificada correctamente.',false)}catch(e){errorEl.textContent=e?.message||'No se pudo modificar la compra.';errorEl.classList.remove('hidden')}finally{btn.disabled=false}}
 async function deleteSelectedPurchase(){if(!purchaseHistorySelected)return;const p=purchaseHistorySelected;const lines=purchaseHistoryAll.lines.filter(l=>String(l.purchase_id)===String(p.id));const units=lines.reduce((s,l)=>s+Number(l.units_received||0),0);if(!confirm('Se eliminará la compra registrada de AvoHouse. Se revertirán los movimientos de inventario correspondientes y se restaurará el costo anterior de los insumos incluidos, cuando exista. ¿Deseas continuar?'))return;try{const{data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'delete_purchase',purchase_id:p.id}});if(error)throw error;if(!data?.ok)throw new Error(data?.error||'No se pudo eliminar la compra.');$('purchaseDetailBackdrop').classList.add('hidden');purchaseHistorySelected=null;await Promise.all([loadInventory(),loadPurchaseHistory()]);showNotice('Compra eliminada y existencias revertidas correctamente.',false)}catch(e){showNotice(e?.message||'No se pudo eliminar la compra.',true)}}
 
-function updateAmarilloTajinButton(items=[]){
-  const button=$('inventoryConfigureAmarilloTajinBtn');
-  if(!button)return;
-  const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
-  const tajin=inventoryRows.find(row=>normalize(row.name)==='tajin'&&normalize(row.categoryName)==='insumos'&&row.purchaseCostBasis==='unit'&&!row.trackStock);
-  const water=inventoryRows.find(row=>normalize(row.name)==='bagua'&&row.sku==='10010');
-  const fullSpirit=inventoryRows.find(row=>normalize(row.name)==='aguardiente amarillo'&&row.sku==='10013');
-  const halfSpirit=inventoryRows.find(row=>normalize(row.name)==='aguardiente amarillo 1/2'&&row.sku==='10015');
-  const lemon=inventoryRows.find(row=>normalize(row.name)==='limon'&&row.sku==='10039');
-  const byName=items.reduce((map,item)=>{map.set(String(item.item_name||''),item);return map},new Map());
-  const recipeCorrect=(name,spirit,tajinRow)=>{
-    const product=byName.get(name);
-    if(!product||!Array.isArray(product.components)||!water||!spirit||!lemon||!tajinRow)return false;
-    const expected=[water.variantId,spirit.variantId,lemon.variantId,tajinRow.variantId].sort();
-    const current=product.components.map(component=>String(component?.variant_id||'')).sort();
-    return current.length===4&&current.every((id,index)=>id===expected[index])&&product.components.every(component=>Number(component.quantity)===1);
-  };
-  const ready=Boolean(tajin&&recipeCorrect('CAmarillo botella',fullSpirit,tajin)&&recipeCorrect('CAmarillo 1/2',halfSpirit,tajin));
-  button.classList.toggle('hidden',ready);
-}
-async function configureAmarilloTajinFromUI(){
-  const button=$('inventoryConfigureAmarilloTajinBtn');
-  if(!confirm('Se creará o ajustará el insumo independiente Tajín con costo de compra de $1.000 por unidad, sin controlar inventario ni habilitarlo para la venta. También se actualizarán las recetas de botella completa y media botella de Aguardiente Amarillo. No se modificarán existencias. ¿Continuar?'))return;
-  button.disabled=true;
-  button.textContent='CONFIGURANDO…';
-  try{
-    const {data,error}=await db.functions.invoke('loyverse-catalog-admin',{body:{action:'configure_amarillo_tajin'}});
-    if(error)throw error;
-    if(!data?.ok)throw new Error(data?.error||'No se pudo configurar Tajín y las recetas de Aguardiente Amarillo.');
-    await loadInventory();
-    const updated=Array.isArray(data.recipes_updated)?data.recipes_updated:[];
-    showNotice('Tajín quedó configurado a $1.000 por unidad, sin control de inventario. Recetas verificadas: CAmarillo botella y CAmarillo 1/2. '+(updated.length?'Recetas modificadas: '+updated.join(', ')+'.':'Las recetas ya estaban actualizadas.')+' No se cambiaron existencias.',false);
-  }catch(error){
-    showNotice(error?.message||'No se pudo configurar Tajín y las recetas.',true);
-  }finally{
-    button.disabled=false;
-    button.textContent='CONFIGURAR TAJÍN + AMARILLO';
-  }
-}
 
 async function loadInventory(){
   $('inventoryStatus').textContent='Cargando…';
@@ -972,7 +930,6 @@ async function loadInventory(){
       option3:String(v.option3_value||'')
     };
   });
-  updateAmarilloTajinButton(items||[]);
   $('inventoryStatVariants').textContent=inventoryRows.length.toLocaleString('es-CO');
   $('inventoryStatAvailable').textContent=inventoryRows.filter(r=>r.available).length.toLocaleString('es-CO');
   $('inventoryStatTracked').textContent=inventoryRows.filter(r=>r.trackStock).length.toLocaleString('es-CO');
@@ -1822,7 +1779,6 @@ try{
   $('inventoryCategory').addEventListener('change',renderInventory);
   $('inventoryAvailability').addEventListener('change',renderInventory);
   $('inventoryCreateOpenBtn').addEventListener('click',openInventoryCreateModal);
-  $('inventoryConfigureAmarilloTajinBtn').addEventListener('click',configureAmarilloTajinFromUI);
   $('inventoryCreateCancel').addEventListener('click',closeInventoryCreateModal);
   $('inventoryCreateSave').addEventListener('click',saveInventoryCreate);
   $('inventoryCreateType').addEventListener('change',updateInventoryCreateType);
