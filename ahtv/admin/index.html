@@ -254,6 +254,9 @@
       margin-top: auto;
       margin-right: 0;
       width: 100%;
+      height: 37px;
+      min-height: 37px;
+      box-sizing: border-box;
     }
 
     .mode-label {
@@ -287,9 +290,11 @@
     .promo-interval-input {
       width: 100%;
       min-width: 0;
-      height: 42px;
-      padding: 10px 8px;
+      height: 37px;
+      min-height: 37px;
+      padding: 8px;
       margin: 0;
+      box-sizing: border-box;
       text-align: center;
       font-size: 16px;
       font-weight: 800;
@@ -301,17 +306,12 @@
     .promo-controls .primary {
       width: 100%;
       min-width: 0;
-      min-height: 42px;
-      padding: 10px 7px;
+      height: 37px;
+      min-height: 37px;
+      padding: 8px 7px;
       margin: 0;
+      box-sizing: border-box;
       overflow-wrap: anywhere;
-    }
-
-    .promo-save-status {
-      min-height: 20px;
-      margin-top: 5px;
-      font-size: 11px;
-      line-height: 1.35;
     }
 
     .admin-song-card {
@@ -639,7 +639,7 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-2" class="home-button active">AHtv</a>
+      <a href="../../ahtv/admin/?v=20261013-3" class="home-button active">AHtv</a>
       <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
       <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
       <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
@@ -688,8 +688,6 @@
         <div class="mode-setting">
           <div class="mode-label">PUBLICIDAD</div>
           <div id="promoEnabledValue" class="mode-value">Cargando…</div>
-          <div id="promoEnabledHelp" class="mode-help">Cargando configuración.</div>
-          <div id="promoSaveStatus" class="promo-save-status mode-help" aria-live="polite">El número de la izquierda cambia el intervalo.</div>
           <div class="promo-controls">
             <input id="promoIntervalInput" class="promo-interval-input" type="number" min="1" max="100" step="1" value="5" disabled aria-label="Canciones entre anuncios" title="Cantidad de canciones entre anuncios">
             <button id="promoEnabledBtn" class="primary" disabled>CAMBIAR</button>
@@ -790,10 +788,8 @@
   const requestsEnabledHelpEl = document.getElementById("requestsEnabledHelp");
   const requestsEnabledBtn = document.getElementById("requestsEnabledBtn");
   const promoEnabledValueEl = document.getElementById("promoEnabledValue");
-  const promoEnabledHelpEl = document.getElementById("promoEnabledHelp");
   const promoEnabledBtn = document.getElementById("promoEnabledBtn");
   const promoIntervalInputEl = document.getElementById("promoIntervalInput");
-  const promoSaveStatusEl = document.getElementById("promoSaveStatus");
 
   let currentRequestMode = "automatico";
   let requestsEnabled = true;
@@ -1110,10 +1106,8 @@
       requestsEnabledHelpEl.textContent = "";
       requestsEnabledBtn.disabled = true;
       promoEnabledValueEl.textContent = "No disponible";
-      promoEnabledHelpEl.textContent = `No se pudo cargar la configuración: ${error.message}`;
       promoEnabledBtn.disabled = true;
       promoIntervalInputEl.disabled = true;
-      promoSaveStatusEl.textContent = "";
       return;
     }
 
@@ -1130,15 +1124,25 @@
     renderPromoSettings();
   }
 
+  function promoIntervalHasChanges() {
+    const raw = promoIntervalInputEl.value.trim();
+    if (!raw) return true;
+    const value = Number(raw);
+    return !Number.isInteger(value) || value < 1 || value > 100 || value !== promoSongInterval;
+  }
+
+  function syncPromoButtonLabel() {
+    promoEnabledBtn.textContent = promoIntervalHasChanges()
+      ? "OK"
+      : (promoEnabled ? "DESACTIVAR" : "ACTIVAR");
+  }
+
   function renderPromoSettings() {
     promoEnabledValueEl.textContent = promoEnabled ? "ACTIVA" : "DESACTIVADA";
-    promoEnabledHelpEl.textContent = promoEnabled
-      ? `Publicidad cada ${promoSongInterval} canciones. Cambia el número de la izquierda para ajustar la frecuencia.`
-      : "Publicidad desactivada. El número de la izquierda permite cambiar la frecuencia.";
-    promoEnabledBtn.textContent = promoEnabled ? "DESACTIVAR" : "ACTIVAR";
     promoEnabledBtn.disabled = promoSaving;
     promoIntervalInputEl.value = String(promoSongInterval);
     promoIntervalInputEl.disabled = promoSaving;
+    syncPromoButtonLabel();
   }
 
   async function updatePromoSettings(args, successMessage) {
@@ -1147,19 +1151,17 @@
     promoSaving = true;
     promoEnabledBtn.disabled = true;
     promoIntervalInputEl.disabled = true;
-    promoSaveStatusEl.className = "promo-save-status mode-help";
-    promoSaveStatusEl.textContent = "Guardando configuración…";
 
     const { data, error } = await db.rpc("ahtv_actualizar_publicidad", args);
     promoSaving = false;
 
     if (error) {
       console.error(error);
-      promoSaveStatusEl.className = "promo-save-status mode-help error";
-      promoSaveStatusEl.textContent = `No se pudo guardar: ${error.message}`;
       adminStatus.className = "error";
       adminStatus.textContent = `No se pudo guardar la configuración de publicidad: ${error.message}`;
-      await loadRequestMode();
+      promoEnabledBtn.disabled = false;
+      promoIntervalInputEl.disabled = false;
+      syncPromoButtonLabel();
       return false;
     }
 
@@ -1175,43 +1177,44 @@
     }
 
     renderPromoSettings();
-    promoSaveStatusEl.className = "promo-save-status mode-help ok";
-    promoSaveStatusEl.textContent = successMessage;
     adminStatus.className = "ok";
     adminStatus.textContent = successMessage;
     return true;
   }
 
-  async function togglePromoEnabled() {
+  async function handlePromoButton() {
     if (promoSaving) return;
+
+    if (promoIntervalHasChanges()) {
+      const raw = promoIntervalInputEl.value.trim();
+      const value = Number(raw);
+
+      if (!raw || !Number.isInteger(value) || value < 1 || value > 100) {
+        promoIntervalInputEl.setCustomValidity("Introduce un número entero entre 1 y 100.");
+        promoIntervalInputEl.reportValidity();
+        adminStatus.className = "error";
+        adminStatus.textContent = "La frecuencia debe ser un número entero entre 1 y 100.";
+        return;
+      }
+
+      promoIntervalInputEl.setCustomValidity("");
+      if (value === promoSongInterval) {
+        syncPromoButtonLabel();
+        return;
+      }
+
+      await updatePromoSettings(
+        { p_canciones: value },
+        `Frecuencia guardada: cada ${value} canciones.`
+      );
+      return;
+    }
+
+    promoIntervalInputEl.setCustomValidity("");
     const nextValue = !promoEnabled;
     await updatePromoSettings(
       { p_habilitada: nextValue },
       nextValue ? "Publicidad activada." : "Publicidad desactivada."
-    );
-  }
-
-  async function savePromoInterval() {
-    if (promoSaving) return;
-
-    const raw = promoIntervalInputEl.value.trim();
-    const value = Number(raw);
-    if (!raw || !Number.isInteger(value) || value < 1 || value > 100) {
-      promoSaveStatusEl.className = "promo-save-status mode-help error";
-      promoSaveStatusEl.textContent = "Introduce un número entero entre 1 y 100.";
-      promoIntervalInputEl.value = String(promoSongInterval);
-      return;
-    }
-
-    if (value === promoSongInterval) {
-      promoSaveStatusEl.className = "promo-save-status mode-help";
-      promoSaveStatusEl.textContent = "La frecuencia no ha cambiado.";
-      return;
-    }
-
-    await updatePromoSettings(
-      { p_canciones: value },
-      `Frecuencia guardada: cada ${value} canciones.`
     );
   }
 
@@ -1846,13 +1849,14 @@ async function init() {
   logoutBtn.addEventListener("click", logout);
   requestModeBtn.addEventListener("click", toggleRequestMode);
   requestsEnabledBtn.addEventListener("click", toggleRequestsEnabled);
-  promoEnabledBtn.addEventListener("click", togglePromoEnabled);
-  promoIntervalInputEl.addEventListener("change", savePromoInterval);
+  promoEnabledBtn.addEventListener("click", handlePromoButton);
+  promoIntervalInputEl.addEventListener("input", syncPromoButtonLabel);
   promoIntervalInputEl.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
-      savePromoInterval();
-      promoIntervalInputEl.blur();
+      if (promoIntervalHasChanges()) {
+        handlePromoButton();
+      }
     }
   });
 
