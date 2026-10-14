@@ -639,7 +639,7 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-3" class="home-button active">AHtv</a>
+      <a href="../../ahtv/admin/?v=20261013-4" class="home-button active">AHtv</a>
       <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
       <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
       <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
@@ -674,14 +674,12 @@
         <div class="mode-setting">
           <div class="mode-label">MODO DE SOLICITUDES</div>
           <div id="requestModeValue" class="mode-value">Cargando…</div>
-          <div id="requestModeHelp" class="mode-help">Cargando configuración.</div>
           <button id="requestModeBtn" class="primary" disabled>CAMBIAR</button>
         </div>
 
         <div class="mode-setting">
           <div class="mode-label">RECEPCIÓN DE SOLICITUDES</div>
           <div id="requestsEnabledValue" class="mode-value">Cargando…</div>
-          <div id="requestsEnabledHelp" class="mode-help">Cargando configuración.</div>
           <button id="requestsEnabledBtn" class="primary" disabled>CAMBIAR</button>
         </div>
 
@@ -782,10 +780,8 @@
   const nowTitleEl = document.getElementById("nowTitle");
   const nowMetaEl = document.getElementById("nowMeta");
   const requestModeValueEl = document.getElementById("requestModeValue");
-  const requestModeHelpEl = document.getElementById("requestModeHelp");
   const requestModeBtn = document.getElementById("requestModeBtn");
   const requestsEnabledValueEl = document.getElementById("requestsEnabledValue");
-  const requestsEnabledHelpEl = document.getElementById("requestsEnabledHelp");
   const requestsEnabledBtn = document.getElementById("requestsEnabledBtn");
   const promoEnabledValueEl = document.getElementById("promoEnabledValue");
   const promoEnabledBtn = document.getElementById("promoEnabledBtn");
@@ -983,9 +979,6 @@
   function renderRequestMode() {
     const automatico = currentRequestMode === "automatico";
     requestModeValueEl.textContent = automatico ? "AUTOMÁTICO" : "MANUAL";
-    requestModeHelpEl.textContent = automatico
-      ? "Las nuevas solicitudes se aprueban automáticamente y entran directamente a la cola. Puedes rechazarlas desde En cola."
-      : "Las nuevas solicitudes quedan pendientes hasta que las apruebes o rechaces.";
     requestModeBtn.textContent = automatico ? "PASAR A MANUAL" : "PASAR A AUTOMÁTICO";
     requestModeBtn.disabled = false;
   }
@@ -1100,10 +1093,8 @@
     if (error) {
       console.error(error);
       requestModeValueEl.textContent = "No disponible";
-      requestModeHelpEl.textContent = `No se pudo cargar la configuración: ${error.message}`;
       requestModeBtn.disabled = true;
       requestsEnabledValueEl.textContent = "No disponible";
-      requestsEnabledHelpEl.textContent = "";
       requestsEnabledBtn.disabled = true;
       promoEnabledValueEl.textContent = "No disponible";
       promoEnabledBtn.disabled = true;
@@ -1220,9 +1211,6 @@
 
   function renderRequestsEnabled() {
     requestsEnabledValueEl.textContent = requestsEnabled ? "PERMITIDAS" : "BLOQUEADAS";
-    requestsEnabledHelpEl.textContent = requestsEnabled
-      ? "Los clientes pueden enviar nuevas solicitudes."
-      : "Los clientes no pueden enviar nuevas solicitudes. Las solicitudes ya existentes no se modifican.";
     requestsEnabledBtn.textContent = requestsEnabled ? "BLOQUEAR" : "PERMITIR";
     requestsEnabledBtn.disabled = false;
   }
