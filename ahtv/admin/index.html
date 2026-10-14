@@ -273,6 +273,14 @@
       font-weight: 800;
     }
 
+    .mode-value.mode-value-on {
+      color: #baff87;
+    }
+
+    .mode-value.mode-value-off {
+      color: var(--danger);
+    }
+
     .mode-help {
       margin-top: 7px;
       color: #8f96a3;
@@ -639,7 +647,7 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-7" class="home-button active">AHtv</a>
+      <a href="../../ahtv/admin/?v=20261013-8" class="home-button active">AHtv</a>
       <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
       <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
       <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
@@ -699,7 +707,6 @@
         <h3 style="margin:0;">Añadir canción</h3>
         <span class="muted">ADMINISTRADOR</span>
       </div>
-      <div class="meta">Sin límite de solicitudes, sin restricción de repetición y funciona aunque las solicitudes de clientes estén cerradas.</div>
       <div class="admin-song-search">
         <input id="adminSongSearch" type="search" placeholder="Escribe al menos 2 letras de artista o canción…" autocomplete="off" aria-label="Buscar canción o artista">
       </div>
@@ -977,6 +984,8 @@
   function renderRequestMode() {
     const automatico = currentRequestMode === "automatico";
     requestModeValueEl.textContent = automatico ? "AUTOMÁTICO" : "MANUAL";
+    requestModeValueEl.classList.toggle("mode-value-on", automatico);
+    requestModeValueEl.classList.toggle("mode-value-off", !automatico);
     requestModeBtn.textContent = automatico ? "PASAR A MANUAL" : "PASAR A AUTOMÁTICO";
     requestModeBtn.disabled = false;
   }
@@ -1128,6 +1137,8 @@
 
   function renderPromoSettings() {
     promoEnabledValueEl.textContent = promoEnabled ? "ACTIVA" : "DESACTIVADA";
+    promoEnabledValueEl.classList.toggle("mode-value-on", promoEnabled);
+    promoEnabledValueEl.classList.toggle("mode-value-off", !promoEnabled);
     promoEnabledBtn.disabled = promoSaving;
     promoIntervalInputEl.value = String(promoSongInterval);
     promoIntervalInputEl.disabled = promoSaving;
@@ -1201,6 +1212,8 @@
 
   function renderRequestsEnabled() {
     requestsEnabledValueEl.textContent = requestsEnabled ? "PERMITIDAS" : "BLOQUEADAS";
+    requestsEnabledValueEl.classList.toggle("mode-value-on", requestsEnabled);
+    requestsEnabledValueEl.classList.toggle("mode-value-off", !requestsEnabled);
     requestsEnabledBtn.textContent = requestsEnabled ? "BLOQUEAR" : "PERMITIR";
     requestsEnabledBtn.disabled = false;
   }
