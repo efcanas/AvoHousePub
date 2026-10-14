@@ -639,7 +639,7 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-6" class="home-button active">AHtv</a>
+      <a href="../../ahtv/admin/?v=20261013-7" class="home-button active">AHtv</a>
       <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
       <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
       <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
@@ -1134,7 +1134,7 @@
     syncPromoButtonLabel();
   }
 
-  async function updatePromoSettings(args, successMessage) {
+  async function updatePromoSettings(args) {
     if (promoSaving) return false;
 
     promoSaving = true;
@@ -1166,8 +1166,6 @@
     }
 
     renderPromoSettings();
-    adminStatus.className = "ok";
-    adminStatus.textContent = successMessage;
     return true;
   }
 
@@ -1192,19 +1190,13 @@
         return;
       }
 
-      await updatePromoSettings(
-        { p_canciones: value },
-        `Frecuencia guardada: cada ${value} canciones.`
-      );
+      await updatePromoSettings({ p_canciones: value });
       return;
     }
 
     promoIntervalInputEl.setCustomValidity("");
     const nextValue = !promoEnabled;
-    await updatePromoSettings(
-      { p_habilitada: nextValue },
-      nextValue ? "Publicidad activada." : "Publicidad desactivada."
-    );
+    await updatePromoSettings({ p_habilitada: nextValue });
   }
 
   function renderRequestsEnabled() {
