@@ -459,13 +459,31 @@
       overflow-wrap: anywhere;
     }
 
+    #history {
+      max-height: min(820px, 78vh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--line) transparent;
+    }
+
     .history-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 12px;
-      padding: 12px 0;
+      padding: 7px 0;
       border-top: 1px solid #292d35;
+    }
+
+    #history .song-title {
+      margin-top: 2px;
+    }
+
+    #history .badge {
+      margin-top: 4px;
+      padding: 3px 7px;
     }
 
     .history-row:first-child { border-top: 0; }
@@ -500,6 +518,10 @@
     }
 
     @media (max-width: 640px) {
+      #history {
+        max-height: 68vh;
+      }
+
       body {
         padding-top: 300px;
       }
@@ -647,7 +669,7 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-8" class="home-button active">AHtv</a>
+      <a href="../../ahtv/admin/?v=20261013-9" class="home-button active">AHtv</a>
       <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
       <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
       <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
