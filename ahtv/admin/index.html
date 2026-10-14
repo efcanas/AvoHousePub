@@ -236,7 +236,7 @@
 
     .mode-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -275,6 +275,29 @@
       color: #8f96a3;
       font-size: 12px;
       line-height: 1.45;
+    }
+
+    .promo-interval-label {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .promo-interval-input {
+      width: 100%;
+      padding: 10px 12px;
+      margin: 7px 0 2px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .promo-save-status {
+      min-height: 28px;
+      margin-top: 5px;
+      font-size: 11px;
+      line-height: 1.35;
     }
 
     .admin-song-card {
@@ -489,6 +512,10 @@
         grid-template-columns: 1fr;
       }
 
+      .mode-setting:last-child {
+        grid-column: auto;
+      }
+
       .topline {
         align-items: flex-start;
       }
@@ -643,6 +670,16 @@
           <div id="requestsEnabledHelp" class="mode-help">Cargando configuración.</div>
           <button id="requestsEnabledBtn" class="primary" disabled>CAMBIAR</button>
         </div>
+
+        <div class="mode-setting">
+          <div class="mode-label">PUBLICIDAD</div>
+          <div id="promoEnabledValue" class="mode-value">Cargando…</div>
+          <div id="promoEnabledHelp" class="mode-help">Cargando configuración.</div>
+          <label class="promo-interval-label" for="promoIntervalInput">CANCIONES ENTRE ANUNCIOS</label>
+          <input id="promoIntervalInput" class="promo-interval-input" type="number" min="1" max="100" step="1" value="5" disabled aria-label="Cantidad de canciones entre anuncios">
+          <div id="promoSaveStatus" class="promo-save-status mode-help" aria-live="polite">La frecuencia se guarda al salir del campo.</div>
+          <button id="promoEnabledBtn" class="primary" disabled>CAMBIAR</button>
+        </div>
       </div>
     </div>
 
@@ -737,9 +774,17 @@
   const requestsEnabledValueEl = document.getElementById("requestsEnabledValue");
   const requestsEnabledHelpEl = document.getElementById("requestsEnabledHelp");
   const requestsEnabledBtn = document.getElementById("requestsEnabledBtn");
+  const promoEnabledValueEl = document.getElementById("promoEnabledValue");
+  const promoEnabledHelpEl = document.getElementById("promoEnabledHelp");
+  const promoEnabledBtn = document.getElementById("promoEnabledBtn");
+  const promoIntervalInputEl = document.getElementById("promoIntervalInput");
+  const promoSaveStatusEl = document.getElementById("promoSaveStatus");
 
   let currentRequestMode = "automatico";
   let requestsEnabled = true;
+  let promoEnabled = true;
+  let promoSongInterval = 5;
+  let promoSaving = false;
   let requestsLoading = false;
   let queueActionBusy = false;
   let realtimeChannel = null;
@@ -1037,7 +1082,7 @@
   async function loadRequestMode() {
     const { data, error } = await db
       .from("ahtv_settings")
-      .select("request_mode,requests_enabled")
+      .select("request_mode,requests_enabled,promo_enabled,promo_song_interval")
       .eq("id", 1)
       .maybeSingle();
 
@@ -1049,13 +1094,110 @@
       requestsEnabledValueEl.textContent = "No disponible";
       requestsEnabledHelpEl.textContent = "";
       requestsEnabledBtn.disabled = true;
+      promoEnabledValueEl.textContent = "No disponible";
+      promoEnabledHelpEl.textContent = `No se pudo cargar la configuración: ${error.message}`;
+      promoEnabledBtn.disabled = true;
+      promoIntervalInputEl.disabled = true;
+      promoSaveStatusEl.textContent = "";
       return;
     }
 
     currentRequestMode = data?.request_mode === "manual" ? "manual" : "automatico";
     requestsEnabled = data?.requests_enabled !== false;
+    promoEnabled = data?.promo_enabled !== false;
+    const storedPromoInterval = Number(data?.promo_song_interval);
+    promoSongInterval = Number.isInteger(storedPromoInterval) &&
+      storedPromoInterval >= 1 && storedPromoInterval <= 100
+      ? storedPromoInterval
+      : 5;
     renderRequestMode();
     renderRequestsEnabled();
+    renderPromoSettings();
+  }
+
+  function renderPromoSettings() {
+    promoEnabledValueEl.textContent = promoEnabled ? "ACTIVA" : "DESACTIVADA";
+    promoEnabledHelpEl.textContent = promoEnabled
+      ? `Se reproducirá publicidad cada ${promoSongInterval} canciones reproducidas.`
+      : "La publicidad está desactivada. Al reactivarla, el contador comenzará desde cero.";
+    promoEnabledBtn.textContent = promoEnabled ? "DESACTIVAR" : "ACTIVAR";
+    promoEnabledBtn.disabled = promoSaving;
+    promoIntervalInputEl.value = String(promoSongInterval);
+    promoIntervalInputEl.disabled = promoSaving;
+  }
+
+  async function updatePromoSettings(args, successMessage) {
+    if (promoSaving) return false;
+
+    promoSaving = true;
+    promoEnabledBtn.disabled = true;
+    promoIntervalInputEl.disabled = true;
+    promoSaveStatusEl.className = "promo-save-status mode-help";
+    promoSaveStatusEl.textContent = "Guardando configuración…";
+
+    const { data, error } = await db.rpc("ahtv_actualizar_publicidad", args);
+    promoSaving = false;
+
+    if (error) {
+      console.error(error);
+      promoSaveStatusEl.className = "promo-save-status mode-help error";
+      promoSaveStatusEl.textContent = `No se pudo guardar: ${error.message}`;
+      adminStatus.className = "error";
+      adminStatus.textContent = `No se pudo guardar la configuración de publicidad: ${error.message}`;
+      await loadRequestMode();
+      return false;
+    }
+
+    if (data && typeof data === "object") {
+      if (typeof data.promo_enabled === "boolean") promoEnabled = data.promo_enabled;
+      const nextInterval = Number(data.promo_song_interval);
+      if (Number.isInteger(nextInterval) && nextInterval >= 1 && nextInterval <= 100) {
+        promoSongInterval = nextInterval;
+      }
+    } else {
+      if (typeof args.p_habilitada === "boolean") promoEnabled = args.p_habilitada;
+      if (Number.isInteger(args.p_canciones)) promoSongInterval = args.p_canciones;
+    }
+
+    renderPromoSettings();
+    promoSaveStatusEl.className = "promo-save-status mode-help ok";
+    promoSaveStatusEl.textContent = successMessage;
+    adminStatus.className = "ok";
+    adminStatus.textContent = successMessage;
+    return true;
+  }
+
+  async function togglePromoEnabled() {
+    if (promoSaving) return;
+    const nextValue = !promoEnabled;
+    await updatePromoSettings(
+      { p_habilitada: nextValue },
+      nextValue ? "Publicidad activada." : "Publicidad desactivada."
+    );
+  }
+
+  async function savePromoInterval() {
+    if (promoSaving) return;
+
+    const raw = promoIntervalInputEl.value.trim();
+    const value = Number(raw);
+    if (!raw || !Number.isInteger(value) || value < 1 || value > 100) {
+      promoSaveStatusEl.className = "promo-save-status mode-help error";
+      promoSaveStatusEl.textContent = "Introduce un número entero entre 1 y 100.";
+      promoIntervalInputEl.value = String(promoSongInterval);
+      return;
+    }
+
+    if (value === promoSongInterval) {
+      promoSaveStatusEl.className = "promo-save-status mode-help";
+      promoSaveStatusEl.textContent = "La frecuencia no ha cambiado.";
+      return;
+    }
+
+    await updatePromoSettings(
+      { p_canciones: value },
+      `Frecuencia guardada: cada ${value} canciones.`
+    );
   }
 
   function renderRequestsEnabled() {
@@ -1682,12 +1824,22 @@ async function init() {
   });
 
   refreshBtn.addEventListener("click", async () => {
+    await loadRequestMode();
     await loadNowPlaying();
     await loadRequests();
   });
   logoutBtn.addEventListener("click", logout);
   requestModeBtn.addEventListener("click", toggleRequestMode);
   requestsEnabledBtn.addEventListener("click", toggleRequestsEnabled);
+  promoEnabledBtn.addEventListener("click", togglePromoEnabled);
+  promoIntervalInputEl.addEventListener("change", savePromoInterval);
+  promoIntervalInputEl.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      savePromoInterval();
+      promoIntervalInputEl.blur();
+    }
+  });
 
   passwordEl.addEventListener("keydown", e => {
     if (e.key === "Enter") {
