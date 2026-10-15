@@ -757,7 +757,7 @@ function renderWhatsappVerification(data){
   }
 
   const code=String(data.code||'');
-  const whatsappUrl='https://wa.me/'+AVOHOUSE_WHATSAPP.replace(/\\D/g,'')+'?text='+encodeURIComponent('Hola AvoHouse, solicito la verificación de mi WhatsApp. Mi código es '+code+'.');
+  const whatsappUrl='https://wa.me/'+AVOHOUSE_WHATSAPP.replace(/\D/g,'')+'?text='+encodeURIComponent('Hola AvoHouse, solicito la verificación de mi WhatsApp. Mi código es '+code+'.');
   area.innerHTML='<div class="verification-line"><span class="verification-badge pending">⏳ Pendiente</span></div>'+
     (code
       ?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong><div class="verification-help">Envía este código a AvoHouse por WhatsApp para que el equipo valide tu número.</div></div>'+
