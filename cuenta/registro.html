@@ -194,6 +194,7 @@ const birthDateInput=document.getElementById('birthDate');
 const usernameStatus=document.getElementById('usernameStatus');
 let nicknameAvailable=false;
 let nicknameTimer=null;
+let temporaryBirthDateSeed='';
 
 function field(name){return registerForm.elements[name]}
 function waChoice(){
@@ -272,7 +273,8 @@ function getMissing(){
   else if(nick && !nicknameAvailable)missing.push('un nickname disponible');
   if(field('correo').value.trim()&&!field('correo').checkValidity())missing.push('un correo electrónico válido');
   const birthDate=field('fecha_nacimiento').value;
-  if(birthDate){
+  if(temporaryBirthDateSeed&&birthDate===temporaryBirthDateSeed)missing.push('seleccionar una fecha de nacimiento');
+  else if(birthDate){
     if(!isValidDateValue(birthDate))missing.push('una fecha de nacimiento válida');
     else if(!isAdultFromBirthDate(birthDate))missing.push('tener al menos 18 años');
   }
@@ -434,6 +436,37 @@ registerForm.addEventListener('submit',async e=>{
   }
 });
 birthDateInput.max=maxBirthDateIso();
+
+// En Chrome Android, un input date vacío con un máximo en el pasado puede abrir
+// el calendario en el año 1. Se usa una fecha provisional válida para abrir cerca
+// del último cumpleaños permitido; nunca se acepta esa fecha sin selección explícita.
+function clearTemporaryBirthDateSeed(){
+  if(!temporaryBirthDateSeed)return;
+  if(birthDateInput.value===temporaryBirthDateSeed)birthDateInput.value='';
+  temporaryBirthDateSeed='';
+  updateRegisterButton();
+}
+function confirmBirthDateSelection(){
+  if(temporaryBirthDateSeed&&birthDateInput.value!==temporaryBirthDateSeed){
+    temporaryBirthDateSeed='';
+    updateRegisterButton();
+  }
+}
+if(/Android/i.test(navigator.userAgent)){
+  birthDateInput.addEventListener('pointerdown',()=>{
+    if(birthDateInput.value||!birthDateInput.max)return;
+    const seedDate=new Date(birthDateInput.max+'T12:00:00');
+    seedDate.setDate(seedDate.getDate()-1);
+    temporaryBirthDateSeed=todayIsoFromDate(seedDate);
+    birthDateInput.value=temporaryBirthDateSeed;
+    updateRegisterButton();
+  });
+  birthDateInput.addEventListener('input',confirmBirthDateSelection);
+  birthDateInput.addEventListener('change',confirmBirthDateSelection);
+  document.addEventListener('pointerdown',event=>{
+    if(temporaryBirthDateSeed&&event.target!==birthDateInput)clearTemporaryBirthDateSeed();
+  },true);
+}
 updateRegisterButton();
 </script>
 <script>
