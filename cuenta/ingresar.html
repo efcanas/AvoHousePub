@@ -74,6 +74,7 @@ Recordar mi correo en este dispositivo
 </label>
 <button id="loginBtn" class="primary" type="submit">Ingresar</button>
 </form>
+<button id="resendConfirmationBtn" class="secondary hidden" type="button">Reenviar correo de confirmación</button>
 <div class="status" id="loginStatus">Conectando con AvoHouse…</div>
 <div class="divider">o</div>
 <div class="bottom">¿Aún no tienes una cuenta? <a href="registro.html">Regístrate</a></div>
@@ -134,6 +135,7 @@ const SUPABASE_URL='https://tjarildqqxtjmafpiyuz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
 const loginStatus=document.getElementById('loginStatus');
 const loginNotice=document.getElementById('loginNotice');
+const resendConfirmationBtn=document.getElementById('resendConfirmationBtn');
 const recoverNotice=document.getElementById('recoverNotice');
 const resetNotice=document.getElementById('resetNotice');
 let supabaseClient=null;
@@ -201,6 +203,7 @@ async function loginAccount(){
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
   const password=document.getElementById('loginPassword').value;
   clearNotice(loginNotice);
+  resendConfirmationBtn.classList.add('hidden');
   if(!email||!password){setNotice(loginNotice,'Introduce tu correo y contraseña.',true);return}
   if(!supabaseClient){setNotice(loginNotice,'No fue posible conectar con AvoHouse. Recarga la página e inténtalo nuevamente.',true);return}
   rememberLoginEmail();
@@ -211,8 +214,10 @@ async function loginAccount(){
     const error=result.error,data=result.data;
     if(error){
       const msg=(error.message||'').toLowerCase();
-      if(msg.includes('email not confirmed'))setNotice(loginNotice,'Tu correo todavía no ha sido confirmado. Revisa el correo de confirmación.',true);
-      else if(msg.includes('invalid login credentials'))setNotice(loginNotice,'El correo o la contraseña no son correctos.',true);
+      if(error.code==='email_not_confirmed'||msg.includes('email not confirmed')){
+        setNotice(loginNotice,'Tu correo todavía no ha sido confirmado. Puedes solicitar un nuevo correo de confirmación.',true);
+        resendConfirmationBtn.classList.remove('hidden');
+      }else if(msg.includes('invalid login credentials'))setNotice(loginNotice,'El correo o la contraseña no son correctos.',true);
       else setNotice(loginNotice,'No fue posible ingresar. '+(error.message||'Inténtalo nuevamente.'),true);
       return;
     }
@@ -235,6 +240,43 @@ async function loginAccount(){
     setNotice(loginNotice,'No fue posible completar el ingreso. '+(error?.message||'Verifica tu conexión.'),true);
   }finally{
     btn.disabled=false;btn.textContent='Ingresar';
+  }
+}
+
+async function resendConfirmationEmail(){
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  if(!email){
+    resendConfirmationBtn.classList.add('hidden');
+    setNotice(loginNotice,'Introduce el correo electrónico con el que creaste la cuenta.',true);
+    return;
+  }
+  if(!supabaseClient){setNotice(loginNotice,'No fue posible conectar con AvoHouse. Recarga la página e inténtalo nuevamente.',true);return;}
+
+  resendConfirmationBtn.disabled=true;
+  resendConfirmationBtn.textContent='Enviando…';
+  try{
+    const {error}=await supabaseClient.auth.resend({
+      type:'signup',
+      email,
+      options:{emailRedirectTo:new URL('../index.html',window.location.href).href}
+    });
+    if(error){
+      const message=String(error.message||'').toLowerCase();
+      if(message.includes('already confirmed')||message.includes('already been confirmed')){
+        resendConfirmationBtn.classList.add('hidden');
+        setNotice(loginNotice,'Esta cuenta ya aparece confirmada. Intenta ingresar de nuevo.');
+      }else{
+        setNotice(loginNotice,'No fue posible reenviar el correo de confirmación. '+(error.message||'Inténtalo nuevamente.'),true);
+      }
+    }else{
+      resendConfirmationBtn.classList.add('hidden');
+      setNotice(loginNotice,'Enviamos un nuevo correo de confirmación. Revisa tu bandeja de entrada y la carpeta de Spam / Correo no deseado.');
+    }
+  }catch(error){
+    setNotice(loginNotice,'No fue posible reenviar el correo de confirmación. '+(error?.message||'Verifica tu conexión e inténtalo nuevamente.'),true);
+  }finally{
+    resendConfirmationBtn.disabled=false;
+    resendConfirmationBtn.textContent='Reenviar correo de confirmación';
   }
 }
 
@@ -287,6 +329,7 @@ document.getElementById('loginForm').addEventListener('submit',e=>{
   e.preventDefault();
   loginAccount();
 });
+document.getElementById('resendConfirmationBtn').addEventListener('click',resendConfirmationEmail);
 document.getElementById('recoverBtn').addEventListener('click',recoverAccount);
 document.getElementById('resetBtn').addEventListener('click',resetPassword);
 document.getElementById('recoverLink').addEventListener('click',e=>{
