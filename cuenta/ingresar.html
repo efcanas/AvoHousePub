@@ -21,7 +21,9 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .view{display:block}
 .hidden{display:none!important}
 .field{display:block;font-size:14px;font-weight:600;margin:0 0 15px}
-.field input{width:100%;margin-top:7px;padding:12px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:inherit}
+.field input{width:100%;height:44px;min-height:44px;margin-top:7px;padding:12px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:inherit;line-height:normal}
+.remember-row{display:flex;align-items:center;gap:8px;margin:14px 0 22px;font-size:13px;color:#777;line-height:1.4}
+.remember-row input{width:auto;margin:0;flex:0 0 auto}
 .field input:focus{outline:2px solid rgba(255,255,255,.18);border-color:rgba(255,255,255,.65)}
 .password-row{position:relative}
 .password-row input{padding-right:78px}
@@ -68,9 +70,9 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <button class="toggle-password" type="button" data-target="loginPassword" onclick="togglePassword(this);return false;">Mostrar</button>
 </label>
 <div class="actions"><a id="recoverLink" class="link" href="#">¿Olvidaste tu contraseña?</a></div>
-<label style="display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:13px;color:#777">
-<input id="rememberLoginEmail" type="checkbox" style="width:auto;margin:0">
-Recordar mi correo en este dispositivo
+<label class="remember-row">
+<input id="rememberLoginEmail" type="checkbox">
+<span>Recordar mi correo en este dispositivo</span>
 </label>
 <button id="loginBtn" class="primary" type="submit">Ingresar</button>
 </form>
