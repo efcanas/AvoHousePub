@@ -83,7 +83,6 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <a class="back" href="ingresar.html">← Volver a ingresar</a>
 <div class="card">
 <img class="logo" src="../LogoPrincipal.png" alt="AvoHouse">
-<div id="registerKicker" class="kicker">Puntos AH</div>
 <h1 id="registerTitle">Crear cuenta</h1>
 <p id="registerSubtitle" class="subtitle">Completa tus datos para crear tu cuenta de AvoHouse.</p>
 <div id="registerNotice" class="notice"></div>
@@ -422,7 +421,6 @@ registerForm.addEventListener('submit',async e=>{
     return;
   }
 
-  document.getElementById('registerKicker').textContent='AVOHOUSE';
   document.getElementById('registerTitle').textContent='Verifica tu correo';
   document.getElementById('registerSubtitle').textContent='Un último paso antes de iniciar sesión.';
   document.getElementById('successEmail').textContent=email;
@@ -435,7 +433,17 @@ registerForm.addEventListener('submit',async e=>{
     registerBtn.disabled=false;
   }
 });
-birthDateInput.max=maxBirthDateIso();
+function updateBirthDateLimit(){
+  const maximum=maxBirthDateIso();
+  birthDateInput.setAttribute('max',maximum);
+  birthDateInput.max=maximum;
+}
+
+// El límite se configura en el control nativo en todos los navegadores,
+// y se actualiza al volver al campo para mantener la edad mínima de 18 años.
+updateBirthDateLimit();
+birthDateInput.addEventListener('focus',updateBirthDateLimit);
+birthDateInput.addEventListener('pointerdown',updateBirthDateLimit);
 
 // En Chrome Android, un input date vacío con un máximo en el pasado puede abrir
 // el calendario en el año 1. Se usa una fecha provisional válida para abrir cerca
