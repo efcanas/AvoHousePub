@@ -1523,7 +1523,6 @@ function renderWhatsappVerificationAdmin(data){
     '<div class="verification-admin-help">Comprueba manualmente que el número desde el que te escribió por WhatsApp coincide con el número registrado arriba y que el código coincide. Después valida.</div>'+
     '<button id="validateWhatsappBtn" class="verification-admin-btn" type="button">VALIDAR WHATSAPP</button>';
 
-  $('validateWhatsappBtn').addEventListener('click',verifySelectedWhatsapp);
   if(mode)mode.textContent='Pendiente';
 }
 async function loadWhatsappVerificationAdmin(){
@@ -1545,15 +1544,24 @@ async function loadWhatsappVerificationAdmin(){
 async function verifySelectedWhatsapp(){
   const btn=$('validateWhatsappBtn');
   const area=$('whatsappAdminStatus');
-  if(!btn||!area||!selectedProfile)return;
+  if(!btn||!area)return;
+  if(!selectedProfile){
+    showNotice('Selecciona un cliente antes de validar WhatsApp.',true);
+    return;
+  }
 
   const id=area.dataset.verificationId;
-  if(!id)return;
+  if(!id){
+    showNotice('No hay una solicitud pendiente de WhatsApp para este cliente.',true);
+    return;
+  }
 
+  const originalLabel=btn.textContent;
   btn.disabled=true;
-  hideNotice();
+  btn.textContent='VALIDANDO…';
 
   try{
+    hideNotice();
     const {data,error}=await db.rpc('avopuntos_admin_verify_whatsapp',{p_verification_id:id});
     if(error)throw error;
 
@@ -1569,8 +1577,14 @@ async function verifySelectedWhatsapp(){
     await refreshClientPointsAfterVerification();
   }catch(error){
     showNotice('No se pudo validar WhatsApp: '+(error?.message||'inténtalo nuevamente.'),true);
-    btn.disabled=false;
+  }finally{
+    if(btn.isConnected){
+      btn.disabled=false;
+      btn.textContent=originalLabel;
+    }
   }
+}
+
 }
 
 function renderInstagramVerificationAdmin(data){
@@ -1608,7 +1622,6 @@ function renderInstagramVerificationAdmin(data){
     '<div class="instagram-admin-help">Comprueba manualmente que la cuenta corresponde al usuario registrado y que el código coincide con el enviado por DM. Después valida.</div>'+
     '<button id="validateInstagramBtn" class="verification-admin-btn" type="button">VALIDAR INSTAGRAM</button>';
 
-  $('validateInstagramBtn').addEventListener('click',verifySelectedInstagram);
   if(mode)mode.textContent='Pendiente';
 }
 async function loadInstagramVerificationAdmin(){
@@ -1630,15 +1643,24 @@ async function loadInstagramVerificationAdmin(){
 async function verifySelectedInstagram(){
   const btn=$('validateInstagramBtn');
   const area=$('instagramAdminStatus');
-  if(!btn||!area||!selectedProfile)return;
+  if(!btn||!area)return;
+  if(!selectedProfile){
+    showNotice('Selecciona un cliente antes de validar Instagram.',true);
+    return;
+  }
 
   const id=area.dataset.verificationId;
-  if(!id)return;
+  if(!id){
+    showNotice('No hay una solicitud pendiente de Instagram para este cliente.',true);
+    return;
+  }
 
+  const originalLabel=btn.textContent;
   btn.disabled=true;
-  hideNotice();
+  btn.textContent='VALIDANDO…';
 
   try{
+    hideNotice();
     const {data,error}=await db.rpc('avopuntos_admin_verify_instagram',{p_verification_id:id});
     if(error)throw error;
 
@@ -1654,8 +1676,14 @@ async function verifySelectedInstagram(){
     await refreshClientPointsAfterVerification();
   }catch(error){
     showNotice('No se pudo validar Instagram: '+(error?.message||'inténtalo nuevamente.'),true);
-    btn.disabled=false;
+  }finally{
+    if(btn.isConnected){
+      btn.disabled=false;
+      btn.textContent=originalLabel;
+    }
   }
+}
+
 }
 
 function renderFacebookVerificationAdmin(data){
@@ -1693,7 +1721,6 @@ function renderFacebookVerificationAdmin(data){
     '<div class="instagram-admin-help">Comprueba manualmente que la cuenta/persona corresponde al cliente y que sigue a AvoHouse en Facebook. Confirma además que el código coincide con el recibido por mensaje directo.</div>'+
     '<button id="validateFacebookBtn" class="verification-admin-btn" type="button">VALIDAR FACEBOOK</button>';
 
-  $('validateFacebookBtn').addEventListener('click',verifySelectedFacebook);
   if(mode)mode.textContent='Pendiente';
 }
 async function loadFacebookVerificationAdmin(){
@@ -1715,15 +1742,24 @@ async function loadFacebookVerificationAdmin(){
 async function verifySelectedFacebook(){
   const btn=$('validateFacebookBtn');
   const area=$('facebookAdminStatus');
-  if(!btn||!area||!selectedProfile)return;
+  if(!btn||!area)return;
+  if(!selectedProfile){
+    showNotice('Selecciona un cliente antes de validar Facebook.',true);
+    return;
+  }
 
   const id=area.dataset.verificationId;
-  if(!id)return;
+  if(!id){
+    showNotice('No hay una solicitud pendiente de Facebook para este cliente.',true);
+    return;
+  }
 
+  const originalLabel=btn.textContent;
   btn.disabled=true;
-  hideNotice();
+  btn.textContent='VALIDANDO…';
 
   try{
+    hideNotice();
     const {data,error}=await db.rpc('avopuntos_admin_verify_facebook',{p_verification_id:id});
     if(error)throw error;
 
@@ -1739,8 +1775,14 @@ async function verifySelectedFacebook(){
     await refreshClientPointsAfterVerification();
   }catch(error){
     showNotice('No se pudo validar Facebook: '+(error?.message||'inténtalo nuevamente.'),true);
-    btn.disabled=false;
+  }finally{
+    if(btn.isConnected){
+      btn.disabled=false;
+      btn.textContent=originalLabel;
+    }
   }
+}
+
 }
 
 async function loadCustomerRewardsAdmin(){
@@ -2076,6 +2118,18 @@ $('searchInput').addEventListener('input',()=>{
 $('historyYear').addEventListener('change',populateHistoryMonths);
 $('editCustomerBtn').addEventListener('click',()=>customerEditing?saveCustomerData():enterCustomerEditMode());
 $('cancelEditCustomerBtn').addEventListener('click',cancelCustomerEditMode);
+$('deleteCustomerBtn').addEventListener('click',deleteSelectedCustomer);
+
+// Delegación estable: los botones de verificación se recrean al pintar cada solicitud.
+$('whatsappAdminStatus').addEventListener('click',event=>{
+  if(event.target.closest('#validateWhatsappBtn')) verifySelectedWhatsapp();
+});
+$('instagramAdminStatus').addEventListener('click',event=>{
+  if(event.target.closest('#validateInstagramBtn')) verifySelectedInstagram();
+});
+$('facebookAdminStatus').addEventListener('click',event=>{
+  if(event.target.closest('#validateFacebookBtn')) verifySelectedFacebook();
+});
 $('editWhatsappSame').addEventListener('change',()=>{
   const same=$('editWhatsappSame').checked;
   $('editWhatsapp').disabled=same;
