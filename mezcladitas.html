@@ -169,13 +169,6 @@ color:white;
   border-radius:12px;
   box-shadow:0 18px 60px rgba(0,0,0,.65);
 }
-.image-lightbox-caption{
-  max-width:92vw;
-  color:#fff;
-  text-align:center;
-  font-size:15px;
-  line-height:1.4;
-}
 @media(max-width:640px){
   .product-grid{
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -314,7 +307,6 @@ color:white;
 <div id="productImageLightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-label="Imagen ampliada" hidden>
   <div class="image-lightbox-content">
     <img id="productImageLightboxImage" class="image-lightbox-image" alt="">
-    <div id="productImageLightboxCaption" class="image-lightbox-caption"></div>
   </div>
 </div>
 
@@ -322,8 +314,7 @@ color:white;
 (function(){
   const lightbox = document.getElementById("productImageLightbox");
   const enlargedImage = document.getElementById("productImageLightboxImage");
-  const caption = document.getElementById("productImageLightboxCaption");
-  if (!lightbox || !enlargedImage || !caption) return;
+  if (!lightbox || !enlargedImage) return;
 
   let previousFocus = null;
   let previousOverflow = "";
@@ -344,8 +335,6 @@ color:white;
     const label = getLabel(img);
     enlargedImage.src = img.currentSrc || img.src;
     enlargedImage.alt = label;
-    caption.textContent = label;
-    caption.hidden = !label;
     lightbox.hidden = false;
     document.body.style.overflow = "hidden";
   }
@@ -354,7 +343,6 @@ color:white;
     lightbox.hidden = true;
     enlargedImage.removeAttribute("src");
     enlargedImage.alt = "";
-    caption.textContent = "";
     document.body.style.overflow = previousOverflow;
     if (previousFocus && document.contains(previousFocus)) {
       previousFocus.focus({preventScroll:true});
