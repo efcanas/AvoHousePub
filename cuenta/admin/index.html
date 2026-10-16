@@ -319,6 +319,33 @@ button:disabled{opacity:.45;cursor:default}
 .session-gate-card{width:min(460px,100%);padding:22px 24px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(21,23,28,.96);box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}
 .session-gate-title{font-size:17px;font-weight:800}.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
 
+
+/* En Safari para iOS, igualar la altura de año, mes y botones del historial de correos. */
+@media (hover: none) and (pointer: coarse) {
+  @supports (-webkit-touch-callout: none) {
+    .email-history-search select,
+    .email-history-search .primary,
+    .email-history-search .ghost {
+      height: 46px;
+      min-height: 46px;
+      box-sizing: border-box;
+      line-height: normal;
+    }
+    .email-history-search select {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+    .email-history-search .primary,
+    .email-history-search .ghost {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+  }
+}
+
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
