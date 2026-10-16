@@ -461,8 +461,10 @@ function clearTemporaryBirthDateSeed(){
   temporaryBirthDateSeed='';
   updateRegisterButton();
 }
-function confirmBirthDateSelection(){
-  if(temporaryBirthDateSeed&&birthDateInput.value!==temporaryBirthDateSeed){
+function confirmBirthDateSelection(event){
+  // Un evento real del selector confirma la fecha incluso si coincide con la
+  // fecha provisional usada solo para posicionar el calendario.
+  if(temporaryBirthDateSeed&&(birthDateInput.value!==temporaryBirthDateSeed||event?.isTrusted)){
     temporaryBirthDateSeed='';
     updateRegisterButton();
   }
