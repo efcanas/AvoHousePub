@@ -437,6 +437,13 @@ function updateBirthDateLimit(){
   const maximum=maxBirthDateIso();
   birthDateInput.setAttribute('max',maximum);
   birthDateInput.max=maximum;
+  // Safari puede conservar una fecha previamente seleccionada aunque ya sea
+  // posterior al máximo. Se limpia para que el selector vuelva a una fecha válida.
+  if(birthDateInput.value&&birthDateInput.value>maximum){
+    birthDateInput.value='';
+    if(temporaryBirthDateSeed)temporaryBirthDateSeed='';
+    updateRegisterButton();
+  }
 }
 
 // El límite se configura en el control nativo en todos los navegadores,
@@ -445,9 +452,9 @@ updateBirthDateLimit();
 birthDateInput.addEventListener('focus',updateBirthDateLimit);
 birthDateInput.addEventListener('pointerdown',updateBirthDateLimit);
 
-// En Chrome Android, un input date vacío con un máximo en el pasado puede abrir
-// el calendario en el año 1. Se usa una fecha provisional válida para abrir cerca
-// del último cumpleaños permitido; nunca se acepta esa fecha sin selección explícita.
+// En los selectores nativos de Android y iOS, un campo vacío con max en el pasado
+// puede abrir el calendario en la fecha actual (o en el año 1). Se usa una fecha
+// provisional válida cercana al límite; no cuenta como fecha elegida por el usuario.
 function clearTemporaryBirthDateSeed(){
   if(!temporaryBirthDateSeed)return;
   if(birthDateInput.value===temporaryBirthDateSeed)birthDateInput.value='';
@@ -460,8 +467,11 @@ function confirmBirthDateSelection(){
     updateRegisterButton();
   }
 }
-if(/Android/i.test(navigator.userAgent)){
+const needsBirthDatePickerSeed=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  ||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+if(needsBirthDatePickerSeed){
   birthDateInput.addEventListener('pointerdown',()=>{
+    updateBirthDateLimit();
     if(birthDateInput.value||!birthDateInput.max)return;
     const seedDate=new Date(birthDateInput.max+'T12:00:00');
     seedDate.setDate(seedDate.getDate()-1);
