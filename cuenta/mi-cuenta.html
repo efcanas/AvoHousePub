@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-achievement-v1">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-achievement-v2">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -966,7 +966,8 @@ function renderAchievementDetails(reward){
  const isWelcome=reward.code==='account_created'&&status==='claimed';
  const isWhatsappClaimed=reward.code==='whatsapp_verified'&&status==='claimed';
  const isInstagramClaimed=reward.code==='instagram_verified'&&status==='claimed';
- const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':catalog.requirement;
+ const isInstagramPending=reward.code==='instagram_verified'&&status==='pending';
+ const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':isInstagramPending?'':catalog.requirement;
  const granted=Number(reward.points_granted||0),configured=Number(reward.points||0);
  emblem.src=catalog.icon;
  emblem.alt=catalog.title;
@@ -1005,7 +1006,8 @@ function renderAchievementDetails(reward){
  const copyClass=successMessage?'achievement-detail-copy achievement-success-copy':'achievement-detail-copy';
  const hideStateLabel=successMessage||((reward.code==='whatsapp_verified'||reward.code==='instagram_verified')&&status==='available');
  const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
- details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title'+successTitle+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div><div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>'+extra+actions;
+ const requirementMarkup=displayedRequirement?'<div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>':'';
+ details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title'+successTitle+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div>'+requirementMarkup+extra+actions;
  modal.hidden=false;
  document.body.classList.add('achievement-modal-open');
  const instagramBtn=$('requestInstagramBtn');if(instagramBtn)instagramBtn.addEventListener('click',requestInstagramVerification);
