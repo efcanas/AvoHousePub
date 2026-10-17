@@ -877,12 +877,21 @@ function movementMeta(m){
   if(reason)meta+=(meta?' · ':'')+reason;
   return meta;
 }
-function detailsForMovement(m){
-  return m?.receipt_number||m?.related_receipt_number ? m : null;
+function receiptNumberForMovement(m){
+  return String(m?.receipt_number||m?.related_receipt_number||'').trim();
 }
 
 function renderHistory(movements){
   const history=$('pointsHistory');
+  // Delegación de eventos: los puntos de cada movimiento abren el mismo detalle de tiquete
+  // que el cliente ve desde Mi Cuenta, sin depender del índice de la fila renderizada.
+  history.onclick=event=>{
+    const button=event.target.closest('.history-points[data-receipt]');
+    if(!button||button.disabled)return;
+    const receiptNumber=button.getAttribute('data-receipt');
+    if(receiptNumber)openReceipt(receiptNumber);
+  };
+
   if(!movements.length){
     history.innerHTML='<div class="empty">'+(historyMode==='recent'?'Todavía no hay movimientos registrados.':'No hay movimientos registrados para el período seleccionado.')+'</div>';
     $('historySummary').textContent=historyMode==='recent'?'Últimos 50 movimientos':'Sin movimientos en el período';
@@ -904,7 +913,10 @@ function renderHistory(movements){
 
   history.innerHTML=rows.map(({m,positive,negative,sign,value,balanceAfterThis})=>{
     const neutral=!positive&&!negative;
-    const receipt=detailsForMovement(m);
+    const receiptNumber=receiptNumberForMovement(m);
+    const receiptAttribute=receiptNumber
+      ? 'data-receipt="'+escapeHtml(receiptNumber)+'" aria-label="Ver tiquete de la compra"'
+      : 'disabled aria-label="No hay un tiquete asociado a este movimiento"';
     return '<div class="history-item">'+
       '<div class="history-sign '+(positive?'positive':negative?'negative':'neutral')+'">'+(sign||'•')+'</div>'+
       '<div class="history-main">'+
@@ -912,21 +924,13 @@ function renderHistory(movements){
         '<div class="history-meta">'+escapeHtml(movementMeta(m))+'</div>'+
         '<div class="history-balance">Saldo después: <strong>'+Number(balanceAfterThis).toLocaleString('es-CO')+' AP</strong></div>'+
       '</div>'+
-      '<button class="history-points '+(positive?'positive':negative?'negative':'neutral')+(receipt?'':' no-detail')+'" type="button" '+(receipt?'':'disabled')+'>'+
+      '<button class="history-points '+(positive?'positive':negative?'negative':'neutral')+(receiptNumber?'':' no-detail')+'" type="button" '+receiptAttribute+'>'+
         (neutral?'0 AP':sign+Number(value).toLocaleString('es-CO')+' AP')+
       '</button>'+
     '</div>';
   }).join('');
 
-  history.querySelectorAll('.history-item').forEach((el,index)=>{
-    const row=rows[index];
-    const btn=el.querySelector('.history-points');
-    if(row.m.receipt_number||row.m.related_receipt_number){
-      btn.addEventListener('click',()=>openReceipt(row.m.receipt_number||row.m.related_receipt_number));
-    }
-  });
-
-  const ticketSet=new Set(movements.map(m=>m.receipt_number||m.related_receipt_number).filter(Boolean));
+  const ticketSet=new Set(movements.map(receiptNumberForMovement).filter(Boolean));
   $('historySummary').textContent=historyMode==='recent'
     ? 'Últimos '+movements.length+' movimientos · '+ticketSet.size+' tickets relacionados'
     : movements.length+' movimientos · '+ticketSet.size+' tickets relacionados';
@@ -2097,44 +2101,61 @@ async function searchClients(){
 }
 
 async function openReceipt(receiptNumber){
+  const number=String(receiptNumber||'').trim();
+  if(!number||!selectedProfile?.id)return;
   $('receiptModal').hidden=false;
-  $('receiptTitle').textContent='Ticket '+receiptNumber;
-  $('receiptBody').innerHTML='<div class="empty">Cargando ticket…</div>';
+  $('receiptTitle').textContent='Ticket '+number;
+  $('receiptBody').innerHTML='<div class="empty">Cargando tiquete…</div>';
 
-  const {data,error}=await db.from('loyverse_receipts')
-    .select('receipt_number,receipt_type,refund_for,receipt_date,created_at,cancelled_at,total_money,total_discount,total_tax,points_earned,points_deducted,points_balance,line_items,payments')
-    .eq('receipt_number',receiptNumber)
-    .maybeSingle();
+  try{
+    const {data,error}=await db.from('loyverse_receipts')
+      .select('receipt_number,receipt_type,refund_for,receipt_date,created_at,cancelled_at,total_money,total_discount,total_tax,points_earned,points_deducted,points_balance,line_items,payments')
+      .eq('profile_id',selectedProfile.id)
+      .eq('receipt_number',number)
+      .maybeSingle();
 
-  if(error){$('receiptBody').innerHTML='<div class="error" style="padding:24px 4px;text-align:center">No se pudo cargar el ticket: '+error.message+'</div>';return}
-  if(!data){$('receiptBody').innerHTML='<div class="empty">No se encontró el ticket.</div>';return}
+    if(error){
+      $('receiptBody').innerHTML='<div class="error" style="padding:24px 4px;text-align:center">No se pudo cargar el tiquete: '+escapeHtml(error.message||'error de consulta')+'</div>';
+      return;
+    }
+    if(!data){
+      $('receiptBody').innerHTML='<div class="empty">No se encontró el tiquete asociado a este cliente.</div>';
+      return;
+    }
 
-  const items=Array.isArray(data.line_items)?data.line_items:[];
-  const payments=Array.isArray(data.payments)?data.payments:[];
-  const paymentNames=[...new Set(payments.map(p=>String(p?.name||'').trim()).filter(Boolean))];
-  const htmlItems=items.map(item=>{
-    const qty=Number(item?.quantity)||1;
-    const name=String(item?.item_name||item?.variant_name||'Producto');
-    return '<div class="receipt-item"><div class="receipt-item-name">'+name+'</div><div class="receipt-item-qty">× '+qty+'</div><div class="receipt-item-price">'+formatMoney(item?.total_money)+'</div></div>';
-  }).join('');
+    const items=Array.isArray(data.line_items)?data.line_items:[];
+    const payments=Array.isArray(data.payments)?data.payments:[];
+    const paymentNames=[...new Set(payments.map(p=>String(p?.name||'').trim()).filter(Boolean))];
+    const htmlItems=items.map(item=>{
+      const qty=Number(item?.quantity)||1;
+      const name=escapeHtml(item?.item_name||item?.variant_name||'Producto');
+      const amount=item?.total_money!=null
+        ? Number(item.total_money)
+        : qty*(Number(item?.price)||0)-(Number(item?.total_discount)||0);
+      return '<div class="receipt-item"><div class="receipt-item-name">'+name+'</div><div class="receipt-item-qty">× '+qty+'</div><div class="receipt-item-price">'+formatMoney(amount)+'</div></div>';
+    }).join('');
 
-  const typeLabel=data.receipt_type==='REFUND'?'Reembolso':'Compra';
-  $('receiptBody').innerHTML=
-    '<div class="receipt-meta">'+
-      '<strong>'+typeLabel+'</strong><br>'+
-      'Fecha: '+formatDate(data.receipt_date||data.created_at,true)+
-      (data.refund_for?'<br>Ticket de origen: '+data.refund_for:'')+
-      (data.cancelled_at?'<br>Cancelado: '+formatDate(data.cancelled_at,true):'')+
-      (paymentNames.length?'<br>Pago: '+paymentNames.join(' + '):'')+
-    '</div>'+
-    '<div class="receipt-items">'+(htmlItems||'<div class="empty">Sin detalle de productos.</div>')+'</div>'+
-    '<div class="receipt-summary">'+
-      '<div class="receipt-row"><span>Descuentos</span><span>'+formatMoney(data.total_discount)+'</span></div>'+
-      '<div class="receipt-row"><span>Impuestos</span><span>'+formatMoney(data.total_tax)+'</span></div>'+
-      '<div class="receipt-row total"><span>Total</span><span>'+formatMoney(data.total_money)+'</span></div>'+
-      '<div class="receipt-row"><span>AP registrados en ticket</span><span>'+Number(data.points_earned||0).toLocaleString('es-CO')+' ganados · '+Number(data.points_deducted||0).toLocaleString('es-CO')+' utilizados</span></div>'+
-      '<div class="receipt-row"><span>Saldo almacenado en ticket</span><span>'+Number(data.points_balance||0).toLocaleString('es-CO')+' AP</span></div>'+
-    '</div>';
+    const typeLabel=data.receipt_type==='REFUND'?'Devolución':'Compra';
+    $('receiptBody').innerHTML=
+      '<div class="receipt-meta">'+
+        '<strong>'+typeLabel+'</strong><br>'+
+        'Fecha: '+escapeHtml(formatDate(data.receipt_date||data.created_at,true))+
+        (data.refund_for?'<br>Ticket de origen: '+escapeHtml(data.refund_for):'')+
+        (data.cancelled_at?'<br>Cancelado: '+escapeHtml(formatDate(data.cancelled_at,true)):'')+
+        (paymentNames.length?'<br>Pago: '+paymentNames.map(escapeHtml).join(' + '):'')+
+      '</div>'+
+      '<div class="receipt-items">'+(htmlItems||'<div class="empty">Sin detalle de productos.</div>')+'</div>'+
+      '<div class="receipt-summary">'+
+        '<div class="receipt-row"><span>Descuentos</span><span>'+formatMoney(data.total_discount)+'</span></div>'+
+        '<div class="receipt-row"><span>Impuestos</span><span>'+formatMoney(data.total_tax)+'</span></div>'+
+        '<div class="receipt-row total"><span>Total</span><span>'+formatMoney(data.total_money)+'</span></div>'+
+        '<div class="receipt-row"><span>AP registrados en tiquete</span><span>'+Number(data.points_earned||0).toLocaleString('es-CO')+' ganados · '+Number(data.points_deducted||0).toLocaleString('es-CO')+' utilizados</span></div>'+
+        '<div class="receipt-row"><span>Saldo almacenado en tiquete</span><span>'+Number(data.points_balance||0).toLocaleString('es-CO')+' AP</span></div>'+
+      '</div>'+
+      '<div class="receipt-footnote">Este detalle corresponde al tiquete registrado en AvoHouse.</div>';
+  }catch(error){
+    $('receiptBody').innerHTML='<div class="error" style="padding:24px 4px;text-align:center">No fue posible consultar este tiquete en este momento.</div>';
+  }
 }
 
 async function checkCurrentUserAdmin(){
