@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-new-achievements-v3">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-progress-counters-v1">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -147,6 +147,13 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
 .achievement-state{font-size:8px;line-height:1.25;letter-spacing:.55px;text-transform:uppercase;color:#888}
 .achievement-tile[data-status="claimed"] .achievement-state{color:#b8f5b8}
 .achievement-tile[data-status="pending"] .achievement-state{color:#e8d59a}
+.achievement-progress{display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;min-width:0;margin-top:2px}
+.achievement-progress-text{display:block;color:#c9c9c9;font-size:8px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center}
+.achievement-progress-track{display:block;width:100%;height:4px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.13)}
+.achievement-progress-fill{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#789b4a,#c6e46c 54%,#d4af37);transition:width .25s ease}
+.achievement-progress-detail{margin:12px 0 5px;gap:7px}
+.achievement-progress-detail .achievement-progress-text{font-size:12px}
+.achievement-progress-detail .achievement-progress-track{height:7px}
 .achievement-modal{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
 .achievement-modal[hidden]{display:none}
 .achievement-modal-card{position:relative;width:min(420px,100%);max-height:min(84dvh,720px);overflow:auto;border:1px solid rgba(255,255,255,.17);border-radius:20px;background:rgba(12,12,12,.97);padding:24px 22px 22px;box-shadow:0 22px 70px rgba(0,0,0,.55);text-align:center}
@@ -953,6 +960,22 @@ function closeAchievementModal(){
  document.querySelectorAll('.achievement-tile[aria-pressed="true"]').forEach(tile=>tile.setAttribute('aria-pressed','false'));
 }
 
+function renderAchievementProgress(reward,compact=false){
+ const targets={points_earned_2k:2000,points_earned_10k:10000,points_redeemed_20k:20000};
+ const code=reward?.code;
+ if(!Object.prototype.hasOwnProperty.call(targets,code))return '';
+ const target=Math.max(0,Number(reward.progress_target)||targets[code]);
+ if(!target)return '';
+ const raw=Number(reward.progress_current);
+ const current=Math.min(target,Math.max(0,Number.isFinite(raw)?raw:0));
+ const percent=Math.max(0,Math.min(100,Math.round(current/target*100)));
+ const currentText=current.toLocaleString('es-CO');
+ const targetText=target.toLocaleString('es-CO');
+ const label=achievementCatalog[code]?.title||reward.name||'logro';
+ const className=compact?'achievement-progress achievement-progress-compact':'achievement-progress achievement-progress-detail';
+ return '<span class="'+className+'"><span class="achievement-progress-text">'+currentText+' / '+targetText+' AP</span><span class="achievement-progress-track" role="progressbar" aria-label="Progreso de '+escapeHtml(label)+'" aria-valuemin="0" aria-valuemax="'+target+'" aria-valuenow="'+current+'"><span class="achievement-progress-fill" style="width:'+percent+'%"></span></span></span>';
+}
+
 function renderAchievementDetails(reward){
  const modal=$('achievementModal');
  const details=$('achievementDetails');
@@ -1019,7 +1042,8 @@ function renderAchievementDetails(reward){
  const hideStateLabel=successMessage||(['whatsapp_verified','instagram_verified','facebook_verified','points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k'].includes(reward.code)&&status==='available');
  const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
  const requirementMarkup=displayedRequirement?'<div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>':'';
- details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title'+successTitle+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div>'+requirementMarkup+extra+actions;
+ const progressMarkup=renderAchievementProgress(reward,false);
+ details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title'+successTitle+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div>'+requirementMarkup+progressMarkup+extra+actions;
  modal.hidden=false;
  document.body.classList.add('achievement-modal-open');
  const instagramBtn=$('requestInstagramBtn');if(instagramBtn)instagramBtn.addEventListener('click',requestInstagramVerification);
@@ -1044,7 +1068,7 @@ function renderRewards(rewards){
   const catalog=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',icon:'../assets/logros-ah/bienvenido.svg'};
   const selected=selectedAchievementCode===reward.code;
   const label={claimed:'Obtenido',pending:'En revisión',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
-  return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span></button>';
+  return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span>'+renderAchievementProgress(reward,true)+'</button>';
  }).join('');
  grid.onclick=event=>{
   const tile=event.target.closest('button[data-achievement]');if(!tile)return;
@@ -1063,7 +1087,7 @@ function renderRewards(rewards){
 async function loadRewards(){
   if(!session?.user?.id)return;
   try{
-    const rewards=await restRpc('avopuntos_get_my_rewards',{},session.access_token);
+    const rewards=await restRpc('avopuntos_get_my_rewards_with_progress',{},session.access_token);
     renderRewards(Array.isArray(rewards)?rewards:[]);
   }catch(error){
     $('achievementGrid').innerHTML='<div class="history-empty">No fue posible cargar los logros en este momento.</div>';
