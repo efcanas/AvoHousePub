@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-progress-counters-v2-annual-recurring-rewards-v1-birthday-date-fix-v1-approved-avocado-emblems-v1-activity-achievement-detail-v1">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-progress-counters-v2-annual-recurring-rewards-v1-birthday-date-fix-v1-approved-avocado-emblems-v1-activity-achievement-detail-v1-special-achievements-section-v1">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -292,7 +292,7 @@ body.achievement-modal-open{overflow:hidden}
 
 <section class="panel full" id="rewardsSection">
   <div class="panel-heading">
-    <div><h2 class="panel-title">Logros AH</h2><div class="history-summary">Desbloquea emblemas permanentes de tu cuenta AvoHouse</div></div>
+    <div><h2 class="panel-title">Logros AH</h2><div class="history-summary">Desbloquea emblemas y gana puntos.</div></div>
     <span id="rewardsMode" class="panel-tag">Cargando</span>
   </div>
   <div id="achievementGrid" class="achievement-grid" role="list" aria-label="Logros permanentes"><div class="history-loading">Cargando logros…</div></div>
@@ -301,11 +301,12 @@ body.achievement-modal-open{overflow:hidden}
 <section class="panel full" id="specialAchievementsSection">
   <div class="panel-heading">
     <div><h2 class="panel-title">Especiales AH</h2><div class="history-summary">Logros de temporada, celebraciones y campañas especiales</div></div>
-    <span class="panel-tag">Temporadas</span>
+    <span class="panel-tag">Especiales</span>
   </div>
-  <div class="special-achievements-empty">
+  <div id="specialAchievementsGrid" class="achievement-grid" role="list" aria-label="Logros especiales"></div>
+  <div id="specialAchievementsEmpty" class="special-achievements-empty" hidden>
     <div class="special-achievements-symbol" aria-hidden="true">✦</div>
-    <div><div class="special-achievements-title">Nuevos logros en próximas campañas</div><div class="special-achievements-copy">Aquí aparecerán los emblemas temporales cuando AvoHouse publique una campaña con logros. Por ahora no hay logros especiales activos.</div></div>
+    <div><div class="special-achievements-title">Nuevos logros en próximas campañas</div><div class="special-achievements-copy">Aquí aparecerán los emblemas temporales cuando AvoHouse publique una campaña con logros.</div></div>
   </div>
 </section>
 
@@ -481,8 +482,7 @@ function openAchievementFromHistory(code){
   const reward=Array.isArray(currentRewards)?currentRewards.find(item=>item.code===code):null;
   if(!reward)return;
   selectedAchievementCode=code;
-  const grid=$('achievementGrid');
-  if(grid)grid.querySelectorAll('button[data-achievement]').forEach(button=>
+  document.querySelectorAll('.achievement-grid button[data-achievement]').forEach(button=>
     button.setAttribute('aria-pressed',button.getAttribute('data-achievement')===code?'true':'false')
   );
   renderAchievementDetails(reward);
@@ -1096,7 +1096,9 @@ function renderAchievementDetails(reward){
  const whatsappBtn=$('requestWhatsappBtn');if(whatsappBtn)whatsappBtn.addEventListener('click',requestWhatsappVerification);
 }
 function renderRewards(rewards){
- const grid=$('achievementGrid');if(!grid)return;
+ const grid=$('achievementGrid');
+ const specialGrid=$('specialAchievementsGrid');
+ if(!grid||!specialGrid)return;
  currentRewards=Array.isArray(rewards)?rewards.slice():[];
  const newAchievementOrder={points_earned_2k:0,points_earned_10k:1,first_redemption:2,points_redeemed_20k:3,account_anniversary:4,birthday_celebration:5};
  currentRewards.sort((a,b)=>{
@@ -1107,28 +1109,54 @@ function renderRewards(rewards){
   if(bNew)return -1;
   return 0;
  });
- if(!currentRewards.length){grid.innerHTML='<div class="history-empty">No hay logros activos en este momento.</div>';$('rewardsMode').textContent='Sin logros';renderAchievementDetails(null);return;}
- grid.innerHTML=currentRewards.map(reward=>{
+
+ const specialCodes=new Set(['account_anniversary','birthday_celebration']);
+ const standardRewards=currentRewards.filter(reward=>!specialCodes.has(reward.code));
+ const specialRewards=currentRewards.filter(reward=>specialCodes.has(reward.code));
+
+ const renderTile=reward=>{
   const status=reward.status||'available';
   const catalogBase=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',icon:'../assets/logros-ah/bienvenido.svg'};
-  const catalog=['account_anniversary','birthday_celebration'].includes(reward.code)?{...catalogBase,title:reward.name||catalogBase.title}:catalogBase;
+  const catalog=specialCodes.has(reward.code)?{...catalogBase,title:reward.name||catalogBase.title}:catalogBase;
   const selected=selectedAchievementCode===reward.code;
   const label={claimed:'Obtenido',pending:'En revisión',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
   return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span>'+renderAchievementProgress(reward,true)+'</button>';
- }).join('');
- grid.onclick=event=>{
-  const tile=event.target.closest('button[data-achievement]');if(!tile)return;
-  const code=tile.getAttribute('data-achievement');
-  if(selectedAchievementCode===code){closeAchievementModal();return;}
-  selectedAchievementCode=code;
-  grid.querySelectorAll('button[data-achievement]').forEach(button=>button.setAttribute('aria-pressed',button===tile?'true':'false'));
-  renderAchievementDetails(currentRewards.find(reward=>reward.code===code)||null);
  };
- renderAchievementDetails(currentRewards.find(reward=>reward.code===selectedAchievementCode)||null);
- const obtained=currentRewards.filter(reward=>reward.status==='claimed').length;
- $('rewardsMode').textContent=obtained+' de '+currentRewards.length+' obtenidos';
-}
 
+ const bindGrid=targetGrid=>{
+  targetGrid.innerHTML='';
+  targetGrid.onclick=event=>{
+   const tile=event.target.closest('button[data-achievement]');if(!tile)return;
+   const code=tile.getAttribute('data-achievement');
+   if(selectedAchievementCode===code){closeAchievementModal();return;}
+   selectedAchievementCode=code;
+   document.querySelectorAll('.achievement-grid button[data-achievement]').forEach(button=>
+    button.setAttribute('aria-pressed',button.getAttribute('data-achievement')===code?'true':'false')
+   );
+   renderAchievementDetails(currentRewards.find(reward=>reward.code===code)||null);
+  };
+ };
+
+ bindGrid(grid);
+ bindGrid(specialGrid);
+ grid.innerHTML=standardRewards.map(renderTile).join('');
+ specialGrid.innerHTML=specialRewards.map(renderTile).join('');
+ grid.setAttribute('aria-label','Logros AH');
+ specialGrid.setAttribute('aria-label','Logros especiales');
+ const emptySpecials=$('specialAchievementsEmpty');
+ if(emptySpecials)emptySpecials.hidden=specialRewards.length>0;
+
+ if(!standardRewards.length){
+  grid.innerHTML='<div class="history-empty">No hay logros activos en este momento.</div>';
+ }
+ if(!specialRewards.length&&emptySpecials){
+  emptySpecials.hidden=false;
+ }
+
+ renderAchievementDetails(currentRewards.find(reward=>reward.code===selectedAchievementCode)||null);
+ const obtained=standardRewards.filter(reward=>reward.status==='claimed').length;
+ $('rewardsMode').textContent=obtained+' de '+standardRewards.length+' obtenidos';
+}
 
 async function loadRewards(){
   if(!session?.user?.id)return;
