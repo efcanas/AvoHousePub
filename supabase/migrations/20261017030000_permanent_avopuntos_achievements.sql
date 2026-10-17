@@ -9,8 +9,8 @@ ALTER TABLE public.avopuntos_rewards
 INSERT INTO public.avopuntos_rewards
   (code,name,description,points,reward_type,verification_channel,active)
 VALUES
-  ('points_earned_2k','2K AvoPuntos','Alcanza los 2.000 AvoPuntos.',1000,'achievement',NULL,true),
-  ('points_earned_10k','10K AvoPuntos','Alcanza los 10.000 AvoPuntos.',2000,'achievement',NULL,true),
+  ('points_earned_2k','2K AvoPuntos','Alcanza los 2.000 AvoPuntos en compras.',1000,'achievement',NULL,true),
+  ('points_earned_10k','10K AvoPuntos','Alcanza los 10.000 AvoPuntos en compras.',2000,'achievement',NULL,true),
   ('first_redemption','Primer movimiento','Realiza tu primer canje de AvoPuntos.',500,'achievement',NULL,true),
   ('points_redeemed_20k','AP en circulación','Haz circular 20.000 AvoPuntos.',1000,'achievement',NULL,true)
 ON CONFLICT (code) DO UPDATE
