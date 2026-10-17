@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+
+<defs>
+  <linearGradient id="gold" x1="80" y1="48" x2="421" y2="462" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#FFF0B8"/>
+    <stop offset=".35" stop-color="#D4AF37"/>
+    <stop offset=".68" stop-color="#9E7028"/>
+    <stop offset="1" stop-color="#F7DF8A"/>
+  </linearGradient>
+  <linearGradient id="inner" x1="150" y1="70" x2="356" y2="438" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#26382F"/>
+    <stop offset=".55" stop-color="#101A14"/>
+    <stop offset="1" stop-color="#080D0A"/>
+  </linearGradient>
+  <linearGradient id="lime" x1="184" y1="128" x2="332" y2="371" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#E2F4A2"/>
+    <stop offset=".52" stop-color="#B9D969"/>
+    <stop offset="1" stop-color="#719A3C"/>
+  </linearGradient>
+  <linearGradient id="coin" x1="200" y1="230" x2="320" y2="360" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#FFF0B8"/>
+    <stop offset=".45" stop-color="#D4AF37"/>
+    <stop offset="1" stop-color="#8D6221"/>
+  </linearGradient>
+</defs>
+
+<path d="M256 30 284 47 314 44 335 67 366 70 381 98 410 113 416 144 440 165 434 196 451 224 438 253 449 282 431 309 435 339 410 361 399 390 368 398 347 423 316 421 286 442 256 430 226 442 196 421 165 423 144 398 113 390 102 361 77 339 81 309 63 282 74 253 61 224 78 196 72 165 96 144 102 113 131 98 146 70 177 67 198 44 228 47Z" fill="url(#gold)"/>
+<path d="M256 47 280 62 309 59 328 80 357 83 371 108 396 122 402 150 424 169 419 198 433 224 421 251 432 279 415 303 419 331 396 351 385 377 356 384 337 406 308 404 281 424 256 413 231 424 204 404 175 406 156 384 127 377 116 351 93 331 97 303 80 279 91 251 79 224 93 198 88 169 110 150 116 122 141 108 155 83 184 80 203 59 232 62Z" fill="url(#inner)" stroke="#F1D98A" stroke-width="2.5"/>
+<circle cx="256" cy="240" r="151" stroke="#72914A" stroke-width="2" opacity=".7"/>
+<circle cx="256" cy="240" r="143" stroke="#D4AF37" stroke-opacity=".27" stroke-width="2"/>
+<path d="M171 228A93 93 0 0 1 328 173" stroke="url(#gold)" stroke-width="17" stroke-linecap="round"/>
+<path d="M315 145 351 174 311 188Z" fill="url(#gold)" stroke="#F8E5A0" stroke-width="2" stroke-linejoin="round"/>
+<path d="M341 266A93 93 0 0 1 184 320" stroke="url(#gold)" stroke-width="17" stroke-linecap="round"/>
+<path d="M197 347 161 319 201 305Z" fill="url(#gold)" stroke="#F8E5A0" stroke-width="2" stroke-linejoin="round"/>
+<g stroke="#684718" stroke-width="5">
+ <path d="M205 209V286C205 299 228 310 256 310C284 310 307 299 307 286V209"/>
+ <ellipse cx="256" cy="209" rx="51" ry="18" fill="url(#coin)"/>
+ <path d="M205 234C205 247 228 258 256 258C284 258 307 247 307 234" fill="none"/>
+ <path d="M205 260C205 273 228 284 256 284C284 284 307 273 307 260" fill="none"/>
+</g>
+<ellipse cx="256" cy="209" rx="39" ry="10" fill="#FBE7A0" opacity=".8"/>
+<path d="M256 192 261 202 272 204 264 212 266 223 256 218 246 223 248 212 240 204 251 202Z" fill="#6B4B1A" opacity=".8"/>
+<text x="256" y="363" text-anchor="middle" fill="url(#lime)" stroke="#0A100B" stroke-width="1.5" paint-order="stroke" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="38" letter-spacing="1">20K AP</text>
+</svg>
