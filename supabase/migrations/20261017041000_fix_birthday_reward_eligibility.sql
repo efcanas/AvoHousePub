@@ -213,7 +213,11 @@ BEGIN
     SELECT a.balance INTO v_balance
       FROM public.avopuntos_accounts a WHERE a.profile_id=v_candidate.profile_id FOR UPDATE;
 
-    SELECT c.*,p.birth_date,p.created_at INTO v_cycle
+    SELECT c.id,c.profile_id,c.reward_code,c.cycle_year,c.points_granted,c.granted_at,
+           c.expires_at,c.points_remaining,c.points_expired,c.points_shortfall,c.status,
+           c.expired_at,c.created_at AS cycle_created_at,c.updated_at,
+           p.birth_date,p.created_at AS profile_created_at
+      INTO v_cycle
     FROM public.avopuntos_annual_reward_cycles c
     JOIN public.profiles p ON p.id=c.profile_id
     WHERE c.id=v_candidate.id
@@ -227,7 +231,7 @@ BEGIN
     v_days_in_month := extract(day FROM (v_month_start+interval '1 month'-interval '1 day'))::integer;
     v_birthday_date := make_date(v_cycle.cycle_year,v_month,least(v_day,v_days_in_month));
 
-    IF (v_cycle.created_at AT TIME ZONE 'America/Bogota')::date < v_birthday_date
+    IF (v_cycle.profile_created_at AT TIME ZONE 'America/Bogota')::date < v_birthday_date
        AND (v_cycle.granted_at AT TIME ZONE 'America/Bogota')::date = v_birthday_date THEN
       CONTINUE;
     END IF;
