@@ -463,16 +463,35 @@ function renderHistory(movements){
   const originalMovements=Array.isArray(movements)?movements:[];
   movements=originalMovements.filter(m=>{
     const details=m?.details||{};
-    if(m?.movement_type!=='refund_cancelled'||details.event_only!==true||Number(m?.points_delta)!==0)return true;
+    if(details.event_only!==true||Number(m?.points_delta)!==0)return true;
+
     const receipt=String(m?.receipt_number||'');
     const related=String(m?.related_receipt_number||details.refund_for||'');
-    return !originalMovements.some(candidate=>{
-      const cd=candidate?.details||{};
-      if(!['earn','redeem'].includes(candidate?.movement_type)||cd.refund_cancellation!==true)return false;
-      const sameCancellation=receipt&&String(candidate?.receipt_number||'')===receipt;
-      const sameRefund=!related||String(candidate?.related_receipt_number||cd.refund_for||'')===related;
-      return sameCancellation&&sameRefund;
-    });
+
+    // Una cancelación completa de compra puede generar reversiones reales de puntos
+    // y, además, un evento informativo de 0 AP. Ocultamos solo el evento de auditoría.
+    if(m?.movement_type==='purchase_cancelled'){
+      return !originalMovements.some(candidate=>{
+        if(!['earn_reversal','redeem_reversal'].includes(candidate?.movement_type))return false;
+        return receipt
+          && String(candidate?.receipt_number||'')===receipt
+          && Number(candidate?.points_delta||0)!==0;
+      });
+    }
+
+    // Una cancelación de devolución genera una restitución real de puntos y un evento
+    // informativo de 0 AP. Se mantiene el registro en la base de datos, pero no se duplica en pantalla.
+    if(m?.movement_type==='refund_cancelled'){
+      return !originalMovements.some(candidate=>{
+        const cd=candidate?.details||{};
+        if(!['earn','redeem'].includes(candidate?.movement_type)||cd.refund_cancellation!==true)return false;
+        const sameCancellation=receipt&&String(candidate?.receipt_number||'')===receipt;
+        const sameRefund=!related||String(candidate?.related_receipt_number||cd.refund_for||'')===related;
+        return sameCancellation&&sameRefund&&Number(candidate?.points_delta||0)!==0;
+      });
+    }
+
+    return true;
   });
   if(historyMode==='recent')movements=movements.slice(0,10);
 
