@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-achievement-v2">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-achievement-v3">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -967,7 +967,8 @@ function renderAchievementDetails(reward){
  const isWhatsappClaimed=reward.code==='whatsapp_verified'&&status==='claimed';
  const isInstagramClaimed=reward.code==='instagram_verified'&&status==='claimed';
  const isInstagramPending=reward.code==='instagram_verified'&&status==='pending';
- const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':isInstagramPending?'':catalog.requirement;
+ const isWhatsappPending=reward.code==='whatsapp_verified'&&status==='pending';
+ const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':(isInstagramPending||isWhatsappPending)?'':catalog.requirement;
  const granted=Number(reward.points_granted||0),configured=Number(reward.points||0);
  emblem.src=catalog.icon;
  emblem.alt=catalog.title;
