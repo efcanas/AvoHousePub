@@ -127,6 +127,20 @@ button:disabled{opacity:.45;cursor:default}
 #pointsSettingsCard .promo-form{grid-template-columns:minmax(0,1.35fr) minmax(78px,.55fr) minmax(112px,.8fr) minmax(112px,.8fr) max-content;gap:8px;margin-top:8px}
 #pointsSettingsCard .promo-list{margin-top:9px}
 #pointsSettingsCard .promo-form input{min-width:0}
+@media(max-width:820px){
+  #pointsSettingsCard .promo-form{grid-template-columns:minmax(0,1fr) 100px minmax(0,1fr) minmax(0,1fr)}
+  #pointsSettingsCard .promo-form button{grid-column:1/-1;justify-self:center}
+  #pointsSettingsCard .payment-method-create-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}
+  #pointsSettingsCard .payment-method-create-grid #newPaymentType{grid-column:1/-1}
+}
+@media(max-width:620px){
+  #pointsSettingsCard .promo-form{grid-template-columns:1fr}
+  #pointsSettingsCard .promo-form button{grid-column:auto;width:max-content;justify-self:center}
+  #pointsSettingsCard .payment-method-row{grid-template-columns:minmax(0,1fr) auto}
+  #pointsSettingsCard .payment-method-delete{grid-column:1/-1;justify-self:end}
+  #pointsSettingsCard .payment-method-create-grid{grid-template-columns:1fr}
+  #pointsSettingsCard .payment-method-create-grid #newPaymentType{grid-column:auto}
+}
 .promo-form{display:grid;grid-template-columns:minmax(0,1.4fr) 120px 150px 150px 150px;gap:8px;align-items:end;margin-top:12px}
 .promo-form input{margin:0}
 .promo-list{display:flex;flex-direction:column;gap:7px;margin-top:14px}
