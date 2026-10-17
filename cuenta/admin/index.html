@@ -346,6 +346,24 @@ button:disabled{opacity:.45;cursor:default}
   }
 }
 
+/* Confirmación de eliminación: diálogo propio de CC, sin depender de window.confirm(). */
+.delete-confirm-modal{position:fixed;inset:0;z-index:4000;display:flex;align-items:center;justify-content:center;padding:18px}
+.delete-confirm-modal[hidden]{display:none!important}
+.delete-confirm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(6px)}
+.delete-confirm-card{position:relative;z-index:1;width:min(490px,100%);max-height:90vh;overflow:auto;padding:22px;border:1px solid rgba(255,93,93,.38);border-radius:18px;background:rgba(17,19,24,.99);box-shadow:0 25px 80px rgba(0,0,0,.6)}
+.delete-confirm-eyebrow{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af}
+.delete-confirm-title{margin:7px 0 0;font-size:21px;line-height:1.3}
+.delete-confirm-copy{margin:14px 0 7px;color:#cfd2d8;font-size:13px;line-height:1.5}
+.delete-confirm-target{padding:12px 13px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.04);font-weight:800;overflow-wrap:anywhere}
+.delete-confirm-warning{margin:12px 0 0;color:#ffb7b7;font-size:12px;line-height:1.55}
+.delete-confirm-status{min-height:19px;margin-top:12px;font-size:12px;line-height:1.5}
+.delete-confirm-status.error{color:#ffb7b7}
+.delete-confirm-status.ok{color:#b8f5b8}
+.delete-confirm-status.muted{color:#9ca3af}
+.delete-confirm-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:15px}
+.delete-confirm-actions button{min-height:40px}
+.delete-confirm-actions .danger-button{max-width:100%}
+@media(max-width:520px){.delete-confirm-card{padding:19px 16px}.delete-confirm-actions{display:grid;grid-template-columns:1fr}.delete-confirm-actions button{width:100%}}
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -660,6 +678,22 @@ button:disabled{opacity:.45;cursor:default}
     </div>
     <div id="emailModalFooter" class="email-modal-footer">La vista corresponde al contenido recuperado del mensaje enviado.</div>
   </div>
+</div>
+
+<div id="deleteCustomerModal" class="delete-confirm-modal" hidden>
+  <div class="delete-confirm-backdrop" data-close-delete-modal="true"></div>
+  <section class="delete-confirm-card" role="dialog" aria-modal="true" aria-labelledby="deleteCustomerModalTitle">
+    <div class="delete-confirm-eyebrow">Centro de Control · CC/AP</div>
+    <h2 id="deleteCustomerModalTitle" class="delete-confirm-title">Eliminar cuenta</h2>
+    <p class="delete-confirm-copy">Vas a eliminar permanentemente la cuenta AvoHouse de:</p>
+    <div id="deleteCustomerTarget" class="delete-confirm-target">—</div>
+    <p class="delete-confirm-warning">Se eliminarán el acceso, el perfil y los datos vinculados de AvoPuntos. Los tickets históricos pueden quedar sin vínculo con la cuenta. Esta acción no se puede deshacer.</p>
+    <div id="deleteCustomerStatus" class="delete-confirm-status" role="status" aria-live="polite"></div>
+    <div class="delete-confirm-actions">
+      <button id="cancelDeleteCustomerBtn" class="ghost" type="button">CANCELAR</button>
+      <button id="confirmDeleteCustomerBtn" class="danger-button" type="button">ELIMINAR DEFINITIVAMENTE</button>
+    </div>
+  </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1285,47 +1319,79 @@ async function saveCustomerData(){
   );
 }
 
-async function deleteSelectedCustomer(){
-  if(!selectedProfile?.id)return;
+function closeDeleteCustomerModal(){
+  $('deleteCustomerModal').hidden=true;
+  document.body.style.overflow='';
+}
 
-  const email=String(selectedProfile.email||'');
-  const username=String(selectedProfile.username||'');
-  const confirmed=window.confirm(
-    'Vas a eliminar permanentemente la cuenta AvoHouse de '+
-    (username||email)+
-    (email?' ('+email+')':'')+
-    '. Se eliminará su cuenta y sus datos de AvoPuntos en AvoHouse. '+
-    'Los registros históricos de tickets pueden quedar sin vínculo con la cuenta.  ¿Continuar?'
-  );
-  if(!confirmed)return;
+function deleteSelectedCustomer(){
+  hideNotice();
+  if(!selectedProfile?.id){
+    showNotice('Selecciona primero una cuenta de cliente para eliminar.',true);
+    return;
+  }
+  const email=String(selectedProfile.email||'').trim();
+  const username=String(selectedProfile.username||'').trim();
+  $('deleteCustomerTarget').textContent=(username||email||'Cuenta seleccionada')+
+    (email&&username?' ('+email+')':'');
+  $('deleteCustomerStatus').textContent='Revisa la cuenta antes de confirmar la eliminación.';
+  $('deleteCustomerStatus').className='delete-confirm-status muted';
+  $('confirmDeleteCustomerBtn').disabled=false;
+  $('confirmDeleteCustomerBtn').textContent='ELIMINAR DEFINITIVAMENTE';
+  $('cancelDeleteCustomerBtn').disabled=false;
+  $('deleteCustomerModal').hidden=false;
+  document.body.style.overflow='hidden';
+  $('confirmDeleteCustomerBtn').focus();
+}
 
-  const btn=$('deleteCustomerBtn');
-  if(btn)btn.disabled=true;
+async function confirmDeleteSelectedCustomer(){
+  if(!selectedProfile?.id){
+    $('deleteCustomerStatus').textContent='No hay una cuenta seleccionada. Cierra esta ventana y vuelve a buscar el cliente.';
+    $('deleteCustomerStatus').className='delete-confirm-status error';
+    return;
+  }
+  const profileId=selectedProfile.id;
+  const confirmBtn=$('confirmDeleteCustomerBtn');
+  const cancelBtn=$('cancelDeleteCustomerBtn');
+  confirmBtn.disabled=true;
+  cancelBtn.disabled=true;
+  $('deleteCustomerBtn').disabled=true;
+  confirmBtn.textContent='ELIMINANDO…';
+  $('deleteCustomerStatus').textContent='Eliminando la cuenta y esperando confirmación de Supabase…';
+  $('deleteCustomerStatus').className='delete-confirm-status muted';
   hideNotice();
 
   try{
-    const {data,error}=await db.rpc('avopuntos_admin_delete_customer',{
-      p_profile_id:selectedProfile.id
-    });
+    const {data,error}=await db.rpc('avopuntos_admin_delete_customer',{p_profile_id:profileId});
     if(error)throw error;
+    if(!data||data.deleted!==true)throw new Error('Supabase no confirmó la eliminación de la cuenta.');
 
-    selectedProfile=null;
-    pointsBalance=0;
-    $('clientArea').classList.add('hidden');
-    $('results').innerHTML='<div class="empty">Cuenta eliminada. Puedes buscar otro cliente.</div>';
+    if(selectedProfile?.id===profileId){
+      selectedProfile=null;
+      pointsBalance=0;
+      $('clientArea').classList.add('hidden');
+      $('results').innerHTML='<div class="empty">Cuenta eliminada. Puedes buscar otro cliente.</div>';
+      setText('infoUsername','—');
+      setText('infoFullName','—');
+      setText('infoEmail','—');
+      setText('infoPhone','—');
+      setText('infoWhatsapp','—');
+      setText('infoInstagram','—');
+      setText('infoDocument','—');
+      setText('infoBirth','—');
+      setText('infoCreated','—');
+      setText('balanceValue','—');
+      setText('accountMeta','—');
+    }
+    closeDeleteCustomerModal();
     showNotice('La cuenta fue eliminada correctamente.',false);
-    setText('infoUsername','—');
-    setText('infoFullName','—');
-    setText('infoEmail','—');
-    setText('infoPhone','—');
-    setText('infoWhatsapp','—');
-    setText('infoInstagram','—');
-    setText('infoDocument','—');
-    setText('infoBirth','—');
-    setText('infoCreated','—');
   }catch(error){
-    if(btn)btn.disabled=false;
-    showNotice('No se pudo eliminar la cuenta: '+(error?.message||'inténtalo nuevamente.'),true);
+    $('deleteCustomerStatus').textContent='No se pudo eliminar la cuenta: '+(error?.message||'Error desconocido.');
+    $('deleteCustomerStatus').className='delete-confirm-status error';
+    confirmBtn.disabled=false;
+    cancelBtn.disabled=false;
+    confirmBtn.textContent='REINTENTAR ELIMINACIÓN';
+    $('deleteCustomerBtn').disabled=false;
   }
 }
 
@@ -2140,6 +2206,11 @@ $('historyYear').addEventListener('change',populateHistoryMonths);
 $('editCustomerBtn').addEventListener('click',()=>customerEditing?saveCustomerData():enterCustomerEditMode());
 $('cancelEditCustomerBtn').addEventListener('click',cancelCustomerEditMode);
 $('deleteCustomerBtn').addEventListener('click',deleteSelectedCustomer);
+$('cancelDeleteCustomerBtn').addEventListener('click',closeDeleteCustomerModal);
+$('confirmDeleteCustomerBtn').addEventListener('click',confirmDeleteSelectedCustomer);
+$('deleteCustomerModal').addEventListener('click',event=>{
+  if(event.target?.dataset?.closeDeleteModal==='true')closeDeleteCustomerModal();
+});
 
 // Delegación estable: los botones de verificación se recrean al pintar cada solicitud.
 $('whatsappAdminStatus').addEventListener('click',event=>{
@@ -2179,6 +2250,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     $('receiptModal').hidden=true;
     $('emailModal').hidden=true;
+    if(!$('deleteCustomerModal').hidden)closeDeleteCustomerModal();
   }
 });
 
