@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-achievement">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-achievement-copy-v2">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -289,7 +289,6 @@ body.achievement-modal-open{overflow:hidden}
     <span id="rewardsMode" class="panel-tag">Cargando</span>
   </div>
   <div id="achievementGrid" class="achievement-grid" role="list" aria-label="Logros permanentes"><div class="history-loading">Cargando logros…</div></div>
-    <div class="rewards-note">Toca un emblema para consultar cómo se obtiene y el estado de tu logro. Los emblemas en silueta todavía no se han desbloqueado.</div>
 </section>
 
 <section class="panel full" id="specialAchievementsSection">
@@ -936,7 +935,7 @@ async function requestFacebookVerification(){
 
 const achievementCatalog={
  account_created:{title:'BIENVENIDO',icon:'../assets/logros-ah/bienvenido.svg',requirement:'Ahora haces parte del mundo AvoHouse'},
- whatsapp_verified:{title:'WhatsApp verificado',icon:'../assets/logros-ah/whatsapp.svg',requirement:'Solicita la verificación, envía el código generado al WhatsApp de AvoHouse y espera la validación manual del equipo.'},
+ whatsapp_verified:{title:'WhatsApp',icon:'../assets/logros-ah/whatsapp.svg',requirement:'Solicita la verificación, envía el código generado al WhatsApp de AvoHouse y espera la validación.'},
  instagram_verified:{title:'Instagram',icon:'../assets/logros-ah/instagram.svg',requirement:'Sigue a @avohouseguaviare, solicita el código desde aquí y envíalo por mensaje directo (DM). El equipo debe validar la solicitud.'},
  facebook_verified:{title:'Facebook',icon:'../assets/logros-ah/facebook.svg',requirement:'Sigue la página de AvoHouse, solicita el código desde aquí y envíalo por mensaje directo. El equipo debe validar la solicitud.'}
 };
@@ -990,17 +989,18 @@ function renderAchievementDetails(reward){
     const code=String(verification.code||reward.verification_code||'');
     const whatsappUrl='https://wa.me/'+AVOHOUSE_WHATSAPP.replace(/\D/g,'')+'?text='+encodeURIComponent('Hola AvoHouse, solicito la verificación de mi WhatsApp. Mi código es '+code+'.');
     actions='<div class="reward-social-text">Envía este código a AvoHouse por WhatsApp para que el equipo valide tu número.</div>'+
-      (code?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación manual.</div>')+
+      (code?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>')+
       (code?'<div class="reward-actions"><a class="reward-social-link" href="'+whatsappUrl+'" target="_blank" rel="noopener">ENVIAR CÓDIGO POR WHATSAPP</a></div>':'');
   }else if(verification?.status==='verified'){
     actions='<div class="reward-social-text">Tu número de WhatsApp ya aparece verificado.</div>';
   }else{
-    actions='<div class="reward-social-text">Solicita un código y envíalo por WhatsApp a AvoHouse. El equipo validará tu número.</div><div class="reward-actions"><button id="requestWhatsappBtn" type="button">SOLICITAR CÓDIGO</button></div>';
+    actions='<div class="reward-actions"><button id="requestWhatsappBtn" type="button">SOLICITAR CÓDIGO</button></div>';
   }
  }
  const welcomeHead=isWelcome?' achievement-welcome-title':'';
  const welcomeCopy=isWelcome?'achievement-detail-copy achievement-welcome-copy':'achievement-detail-copy';
- const stateMarkup=isWelcome?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
+ const hideStateLabel=isWelcome||(reward.code==='whatsapp_verified'&&status==='available');
+ const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
  details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title'+welcomeHead+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div><div class="'+welcomeCopy+'">'+escapeHtml(catalog.requirement)+'</div>'+extra+actions;
  modal.hidden=false;
  document.body.classList.add('achievement-modal-open');
