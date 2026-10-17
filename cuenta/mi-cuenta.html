@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-achievement">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -257,7 +257,6 @@ body.achievement-modal-open{overflow:hidden}
     <div class="info">
   <span class="info-label">WhatsApp</span>
   <span id="infoWhatsapp" class="info-value">—</span>
-  <div id="whatsappVerificationArea"></div>
 </div>
     <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
     <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
@@ -368,6 +367,7 @@ let historyMode='recent';
 let accountCreatedAt=null;
 let selectedAchievementCode=null;
 let currentRewards=[];
+let whatsappVerificationData=null;
 
 const $=id=>document.getElementById(id);
 
@@ -851,46 +851,14 @@ async function loadHistoryMonth(){
 
 const AVOHOUSE_WHATSAPP='+573026475174';
 
-function renderWhatsappVerification(data){
-  const area=$('whatsappVerificationArea');
-  if(!area)return;
-
-  if(!data){
-    area.innerHTML='<div class="verification-line"><span class="verification-badge">Sin verificar</span><button id="verifyWhatsappBtn" class="verification-action" type="button">SOLICITAR VERIFICACIÓN</button></div>'+
-      '<div class="verification-help">Solicita un código y envíalo por WhatsApp a AvoHouse. Cuando el equipo valide tu número, recibirás 1.000 AP si cumples las condiciones de la recompensa.</div>';
-    const button=$("verifyWhatsappBtn");
-    if(button)button.addEventListener('click',requestWhatsappVerification);
-    return;
-  }
-
-  if(data.status==='verified'){
-    const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    area.innerHTML='<div class="verification-line"><span class="verification-badge verified">✅ Verificado</span></div>'+
-      (bonus>0
-        ?'<div class="verification-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
-        :'<div class="verification-help">Verificado. Esta cuenta no recibió una nueva bonificación.</div>');
-    return;
-  }
-
-  const code=String(data.code||'');
-  const whatsappUrl='https://wa.me/'+AVOHOUSE_WHATSAPP.replace(/\D/g,'')+'?text='+encodeURIComponent('Hola AvoHouse, solicito la verificación de mi WhatsApp. Mi código es '+code+'.');
-  area.innerHTML='<div class="verification-line"><span class="verification-badge pending">⏳ Pendiente</span></div>'+
-    (code
-      ?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong><div class="verification-help">Envía este código a AvoHouse por WhatsApp para que el equipo valide tu número.</div></div>'+
-       '<div class="verification-line"><a class="verification-action" href="'+whatsappUrl+'" target="_blank" rel="noopener">ENVIAR CÓDIGO POR WHATSAPP</a></div>'
-      :'<div class="verification-help">Solicitud pendiente de validación manual.</div>');
-}
-
-
 async function loadWhatsappVerification(){
   if(!session?.user?.id)return;
 
   try{
     const response=await restRpc('avopuntos_get_my_whatsapp_verification',{},session.access_token);
-    const data=Array.isArray(response)?response[0]:response;
-    renderWhatsappVerification(data||null);
+    whatsappVerificationData=Array.isArray(response)?(response[0]||null):(response||null);
   }catch(_){
-    renderWhatsappVerification(null);
+    whatsappVerificationData=null;
   }
 }
 
@@ -1017,7 +985,18 @@ function renderAchievementDetails(reward){
   const code=String(reward.verification_code||'');
   actions='<div class="reward-social-text">Envía este código por mensaje directo a la página de AvoHouse. El equipo debe validar tu seguimiento.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener">ABRIR FACEBOOK</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación manual.</div>');
  }else if(reward.code==='whatsapp_verified'&&(status==='available'||status==='pending')){
-  actions='<div class="reward-social-text">'+(status==='pending'?'Envía el código del apartado WhatsApp de tu información personal al número oficial de AvoHouse.':'La verificación se solicita desde el apartado WhatsApp de tu información personal.')+'</div><div class="reward-actions"><a class="reward-social-link" href="#whatsappVerificationArea">'+(status==='pending'?'VER MI SOLICITUD':'IR A VERIFICACIÓN')+'</a></div>';
+  const verification=whatsappVerificationData;
+  if(verification?.status==='pending'){
+    const code=String(verification.code||reward.verification_code||'');
+    const whatsappUrl='https://wa.me/'+AVOHOUSE_WHATSAPP.replace(/\\D/g,'')+'?text='+encodeURIComponent('Hola AvoHouse, solicito la verificación de mi WhatsApp. Mi código es '+code+'.');
+    actions='<div class="reward-social-text">Envía este código a AvoHouse por WhatsApp para que el equipo valide tu número.</div>'+
+      (code?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación manual.</div>')+
+      (code?'<div class="reward-actions"><a class="reward-social-link" href="'+whatsappUrl+'" target="_blank" rel="noopener">ENVIAR CÓDIGO POR WHATSAPP</a></div>':'');
+  }else if(verification?.status==='verified'){
+    actions='<div class="reward-social-text">Tu número de WhatsApp ya aparece verificado.</div>';
+  }else{
+    actions='<div class="reward-social-text">Solicita un código y envíalo por WhatsApp a AvoHouse. El equipo validará tu número.</div><div class="reward-actions"><button id="requestWhatsappBtn" type="button">SOLICITAR CÓDIGO</button></div>';
+  }
  }
  const welcomeHead=isWelcome?' achievement-welcome-title':'';
  const welcomeCopy=isWelcome?'achievement-detail-copy achievement-welcome-copy':'achievement-detail-copy';
@@ -1027,6 +1006,7 @@ function renderAchievementDetails(reward){
  document.body.classList.add('achievement-modal-open');
  const instagramBtn=$('requestInstagramBtn');if(instagramBtn)instagramBtn.addEventListener('click',requestInstagramVerification);
  const facebookBtn=$('requestFacebookBtn');if(facebookBtn)facebookBtn.addEventListener('click',requestFacebookVerification);
+ const whatsappBtn=$('requestWhatsappBtn');if(whatsappBtn)whatsappBtn.addEventListener('click',requestWhatsappVerification);
 }
 function renderRewards(rewards){
  const grid=$('achievementGrid');if(!grid)return;
@@ -1065,20 +1045,24 @@ async function loadRewards(){
 }
 
 async function requestWhatsappVerification(){
-  const button=$('verifyWhatsappBtn');
+  const button=$('requestWhatsappBtn');
   if(button)button.disabled=true;
   hideNotice();
   try{
     const response=await restRpc('avopuntos_request_whatsapp_verification',{},session.access_token);
     const data=Array.isArray(response)?response[0]:response;
-    renderWhatsappVerification(data);
+    whatsappVerificationData=data||null;
+    await loadRewards();
     if(data?.status==='pending')setStatus('Código generado. Envíalo a AvoHouse por WhatsApp para validar tu número.');
     else if(data?.status==='verified')setStatus('Tu número de WhatsApp ya aparece verificado.');
   }catch(error){
     showNotice('No fue posible generar la verificación de WhatsApp: '+(error?.message||'inténtalo nuevamente.'),true);
     await loadWhatsappVerification();
+    if(selectedAchievementCode==='whatsapp_verified'){
+      renderAchievementDetails(currentRewards.find(reward=>reward.code==='whatsapp_verified')||null);
+    }
   }finally{
-    const current=$('verifyWhatsappBtn');
+    const current=$('requestWhatsappBtn');
     if(current)current.disabled=false;
   }
 }
