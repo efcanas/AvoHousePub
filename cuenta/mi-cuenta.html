@@ -948,7 +948,9 @@ const achievementCatalog={
  points_earned_2k:{title:'2K AvoPuntos',icon:'../assets/logros-ah/2k-avopuntos.svg',requirement:'Alcanza los 2.000 AvoPuntos en compras.'},
  points_earned_10k:{title:'10K AvoPuntos',icon:'../assets/logros-ah/10k-avopuntos.svg',requirement:'Alcanza los 10.000 AvoPuntos en compras.'},
  first_redemption:{title:'Primer movimiento',icon:'../assets/logros-ah/primer-movimiento.svg',requirement:'Realiza tu primer canje de AvoPuntos.'},
- points_redeemed_20k:{title:'AP en circulación',icon:'../assets/logros-ah/ap-en-circulacion.svg',requirement:'Haz circular 25.000 AvoPuntos.'}
+ points_redeemed_20k:{title:'AP en circulación',icon:'../assets/logros-ah/ap-en-circulacion.svg',requirement:'Haz circular 25.000 AvoPuntos.'},
+ account_anniversary:{title:'Aniversario AvoHouse',icon:'../assets/logros-ah/aniversario-avohouse.svg',requirement:'Cada año, en el aniversario de creación de tu cuenta, recibes +5.000 AvoPuntos.'},
+ birthday_celebration:{title:'Celebración AvoHouse',icon:'../assets/logros-ah/celebracion-avohouse.svg',requirement:'Recibes +10.000 AvoPuntos por tu cumpleaños. Tienes 15 días desde la acreditación para usarlos; los puntos que queden se revierten automáticamente.'}
 };
 
 function closeAchievementModal(){
@@ -987,7 +989,8 @@ function renderAchievementDetails(reward){
   document.body.classList.remove('achievement-modal-open');
   return;
  }
- const catalog=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',icon:'../assets/logros-ah/bienvenido.svg',requirement:reward.description||'Consulta las condiciones del logro.'};
+ const catalogBase=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',icon:'../assets/logros-ah/bienvenido.svg',requirement:reward.description||'Consulta las condiciones del logro.'};
+ const catalog=['account_anniversary','birthday_celebration'].includes(reward.code)?{...catalogBase,title:reward.name||catalogBase.title}:catalogBase;
  const status=reward.status||'available';
  const statusLabel={claimed:'Logro obtenido',pending:'Pendiente de validación',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
  const isWelcome=reward.code==='account_created'&&status==='claimed';
@@ -1039,7 +1042,7 @@ function renderAchievementDetails(reward){
  const successMessage=isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed||isPermanentAchievementClaimed;
  const successTitle=isWelcome?' achievement-welcome-title':'';
  const copyClass=successMessage?'achievement-detail-copy achievement-success-copy':'achievement-detail-copy';
- const hideStateLabel=successMessage||(['whatsapp_verified','instagram_verified','facebook_verified','points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k'].includes(reward.code)&&status==='available');
+ const hideStateLabel=successMessage||(['whatsapp_verified','instagram_verified','facebook_verified','points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k','account_anniversary','birthday_celebration'].includes(reward.code)&&status==='available');
  const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
  const requirementMarkup=displayedRequirement?'<div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>':'';
  const progressMarkup=renderAchievementProgress(reward,false);
@@ -1053,7 +1056,7 @@ function renderAchievementDetails(reward){
 function renderRewards(rewards){
  const grid=$('achievementGrid');if(!grid)return;
  currentRewards=Array.isArray(rewards)?rewards.slice():[];
- const newAchievementOrder={points_earned_2k:0,points_earned_10k:1,first_redemption:2,points_redeemed_20k:3};
+ const newAchievementOrder={points_earned_2k:0,points_earned_10k:1,first_redemption:2,points_redeemed_20k:3,account_anniversary:4,birthday_celebration:5};
  currentRewards.sort((a,b)=>{
   const aNew=Object.prototype.hasOwnProperty.call(newAchievementOrder,a.code);
   const bNew=Object.prototype.hasOwnProperty.call(newAchievementOrder,b.code);
@@ -1065,7 +1068,8 @@ function renderRewards(rewards){
  if(!currentRewards.length){grid.innerHTML='<div class="history-empty">No hay logros activos en este momento.</div>';$('rewardsMode').textContent='Sin logros';renderAchievementDetails(null);return;}
  grid.innerHTML=currentRewards.map(reward=>{
   const status=reward.status||'available';
-  const catalog=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',icon:'../assets/logros-ah/bienvenido.svg'};
+  const catalogBase=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',icon:'../assets/logros-ah/bienvenido.svg'};
+  const catalog=['account_anniversary','birthday_celebration'].includes(reward.code)?{...catalogBase,title:reward.name||catalogBase.title}:catalogBase;
   const selected=selectedAchievementCode===reward.code;
   const label={claimed:'Obtenido',pending:'En revisión',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
   return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span>'+renderAchievementProgress(reward,true)+'</button>';
