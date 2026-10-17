@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-achievement-v3">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-achievement-v1">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -966,15 +966,17 @@ function renderAchievementDetails(reward){
  const isWelcome=reward.code==='account_created'&&status==='claimed';
  const isWhatsappClaimed=reward.code==='whatsapp_verified'&&status==='claimed';
  const isInstagramClaimed=reward.code==='instagram_verified'&&status==='claimed';
+ const isFacebookClaimed=reward.code==='facebook_verified'&&status==='claimed';
  const isInstagramPending=reward.code==='instagram_verified'&&status==='pending';
  const isWhatsappPending=reward.code==='whatsapp_verified'&&status==='pending';
- const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':(isInstagramPending||isWhatsappPending)?'':catalog.requirement;
+ const isFacebookPending=reward.code==='facebook_verified'&&status==='pending';
+ const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':isFacebookClaimed?'Tu seguimiento de Facebook ya está verificado. Gracias por conectar con AvoHouse.':(isInstagramPending||isWhatsappPending||isFacebookPending)?'':catalog.requirement;
  const granted=Number(reward.points_granted||0),configured=Number(reward.points||0);
  emblem.src=catalog.icon;
  emblem.alt=catalog.title;
  emblem.classList.toggle('is-locked',status!=='claimed');
  let extra='';
- if(status==='claimed'&&granted>0)extra='<div class="achievement-detail-reward">+'+granted.toLocaleString('es-CO')+' AP'+((isWelcome||isWhatsappClaimed||isInstagramClaimed)?'':' acreditados')+'</div>';
+ if(status==='claimed'&&granted>0)extra='<div class="achievement-detail-reward">+'+granted.toLocaleString('es-CO')+' AP'+((isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed)?'':' acreditados')+'</div>';
  else if(status!=='claimed'&&configured>0)extra='<div class="achievement-detail-reward">Recompensa: +'+configured.toLocaleString('es-CO')+' AP</div>';
  if(status==='claimed'&&reward.claimed_at)extra+='<div class="achievement-detail-meta">Obtenido el '+escapeHtml(formatDate(reward.claimed_at))+'</div>';
  let actions='';
@@ -984,10 +986,10 @@ function renderAchievementDetails(reward){
   const code=String(reward.verification_code||'');
   actions='<div class="reward-social-text">Envía este código por mensaje directo (DM) a AvoHouse. El logro se desbloqueará cuando el equipo valide que sigues la cuenta.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.instagram.com/avohouseguaviare" target="_blank" rel="noopener">ABRIR INSTAGRAM</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
  }else if(reward.code==='facebook_verified'&&status==='available'){
-  actions='<div class="reward-social-text">Sigue a AvoHouse y solicita el código para completar la verificación.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener">IR A FACEBOOK</a></div><div class="reward-actions"><input id="facebookIdentityInput" type="text" maxlength="100" placeholder="Tu nombre o usuario de Facebook" autocomplete="off" aria-label="Nombre o usuario de Facebook"><button id="requestFacebookBtn" type="button">SOLICITAR CÓDIGO</button></div>';
+  actions='<div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener">IR A FACEBOOK</a></div><div class="reward-actions"><input id="facebookIdentityInput" type="text" maxlength="100" placeholder="Tu nombre o usuario de Facebook" autocomplete="off" aria-label="Nombre o usuario de Facebook"><button id="requestFacebookBtn" type="button">SOLICITAR CÓDIGO</button></div>';
  }else if(reward.code==='facebook_verified'&&status==='pending'){
   const code=String(reward.verification_code||'');
-  actions='<div class="reward-social-text">Envía este código por mensaje directo a la página de AvoHouse. El equipo debe validar tu seguimiento.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener">ABRIR FACEBOOK</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación manual.</div>');
+  actions='<div class="reward-social-text">Envía este código por mensaje directo a la página de AvoHouse. El equipo debe validar tu seguimiento.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener">ABRIR FACEBOOK</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
  }else if(reward.code==='whatsapp_verified'&&(status==='available'||status==='pending')){
   const verification=whatsappVerificationData;
   if(verification?.status==='pending'){
@@ -1002,10 +1004,10 @@ function renderAchievementDetails(reward){
     actions='<div class="reward-actions"><button id="requestWhatsappBtn" type="button">SOLICITAR CÓDIGO</button></div>';
   }
  }
- const successMessage=isWelcome||isWhatsappClaimed||isInstagramClaimed;
+ const successMessage=isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed;
  const successTitle=isWelcome?' achievement-welcome-title':'';
  const copyClass=successMessage?'achievement-detail-copy achievement-success-copy':'achievement-detail-copy';
- const hideStateLabel=successMessage||((reward.code==='whatsapp_verified'||reward.code==='instagram_verified')&&status==='available');
+ const hideStateLabel=successMessage||((reward.code==='whatsapp_verified'||reward.code==='instagram_verified'||reward.code==='facebook_verified')&&status==='available');
  const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
  const requirementMarkup=displayedRequirement?'<div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>':'';
  details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title'+successTitle+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div>'+requirementMarkup+extra+actions;
