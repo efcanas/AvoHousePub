@@ -117,14 +117,16 @@ button:disabled{opacity:.45;cursor:default}
 #pointsSettingsCard input[type="checkbox"].payment-method-checkbox{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0;accent-color:#b8ff39}
 #pointsSettingsCard .payment-method-delete{min-height:36px;padding:7px 10px;border:1px solid rgba(255,93,93,.55);border-radius:8px;background:rgba(255,93,93,.07);color:#ff9c9c;font-size:10px;font-weight:800;cursor:pointer}
 #pointsSettingsCard .payment-method-create{margin-top:10px;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.025)}
+#pointsSettingsCard .payment-method-detected-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #pointsSettingsCard .payment-method-create-title{margin-bottom:7px;color:#d6d9df;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+#pointsSettingsCard .payment-method-refresh{flex:0 0 auto;min-height:30px;padding:6px 9px;border:1px solid rgba(184,255,57,.35);border-radius:7px;background:rgba(184,255,57,.06);color:#c9f99b;font-size:9px;font-weight:800;cursor:pointer}
+#pointsSettingsCard .payment-method-refresh:disabled{opacity:.6;cursor:wait}
 #pointsSettingsCard .payment-method-detected-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 #pointsSettingsCard .payment-method-detected-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:8px 10px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.025)}
 #pointsSettingsCard .payment-method-detected-row .payment-method-info{min-width:0}
 #pointsSettingsCard .payment-method-detected-row .payment-method-info strong{display:block;font-size:13px;overflow-wrap:anywhere}
 #pointsSettingsCard .payment-method-detected-row .payment-method-info span{display:block;margin-top:3px;color:#8f96a3;font-size:10px;overflow-wrap:anywhere}
 #pointsSettingsCard .payment-method-detected-add{min-height:36px;padding:8px 11px;font-size:10px;font-weight:800}
-#pointsSettingsCard .payment-method-create-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px}
 #pointsSettingsCard #paymentMethodActionStatus{min-height:16px;margin-top:6px;color:#9ca3af;font-size:11px}
 #pointsSettingsCard .promo-form{grid-template-columns:minmax(0,1.35fr) minmax(78px,.55fr) minmax(112px,.8fr) minmax(112px,.8fr) max-content;gap:8px;margin-top:8px}
 #pointsSettingsCard .promo-list{margin-top:9px}
@@ -136,10 +138,20 @@ button:disabled{opacity:.45;cursor:default}
 @media(max-width:620px){
   #pointsSettingsCard .promo-form{grid-template-columns:1fr}
   #pointsSettingsCard .promo-form button{grid-column:auto;width:max-content;justify-self:center}
-  #pointsSettingsCard .payment-method-row{grid-template-columns:minmax(0,1fr) auto}
-  #pointsSettingsCard .payment-method-delete{grid-column:1/-1;justify-self:end}
-  #pointsSettingsCard .payment-method-detected-row{grid-template-columns:minmax(0,1fr) auto}
-  #pointsSettingsCard .payment-method-detected-add{grid-column:1/-1;justify-self:start}
+  #pointsSettingsCard .payment-methods-list,
+  #pointsSettingsCard .payment-method-detected-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  #pointsSettingsCard .payment-methods-list>.empty,
+  #pointsSettingsCard .payment-method-detected-list>.empty{grid-column:1/-1}
+  #pointsSettingsCard .payment-method-row,
+  #pointsSettingsCard .payment-method-detected-row{grid-template-columns:minmax(0,1fr) auto;align-content:start;gap:6px;padding:8px}
+  #pointsSettingsCard .payment-method-row .payment-method-info,
+  #pointsSettingsCard .payment-method-detected-row .payment-method-info{grid-column:1/-1}
+  #pointsSettingsCard .payment-method-eligible{grid-column:1;align-self:center;white-space:normal;font-size:10px;gap:5px}
+  #pointsSettingsCard .payment-method-delete{grid-column:2;justify-self:end;align-self:center;min-height:29px;padding:5px 7px;font-size:9px}
+  #pointsSettingsCard .payment-method-detected-add{grid-column:2;justify-self:end;align-self:center;min-height:29px;padding:5px 8px}
+  #pointsSettingsCard .payment-method-create{margin-top:8px;padding:8px}
+  #pointsSettingsCard .payment-method-create-title{margin-bottom:4px;font-size:10px}
+  #pointsSettingsCard .payment-method-help{font-size:10px;line-height:1.35}
 }
 .promo-form{display:grid;grid-template-columns:minmax(0,1.4fr) 120px 150px 150px 150px;gap:8px;align-items:end;margin-top:12px}
 .promo-form input{margin:0}
@@ -588,9 +600,12 @@ button.hidden{display:none!important}
         </div>
         <div id="paymentMethodList" class="payment-methods-list"><div class="empty">Cargando métodos de pago…</div></div>
         <div class="payment-method-create">
-          <div class="payment-method-create-title">Métodos detectados pendientes de configurar</div>
-          <div id="detectedPaymentMethodList" class="payment-method-detected-list"><div class="empty">Buscando métodos pendientes…</div></div>
-          <div class="helper payment-method-help">Aquí aparecen métodos encontrados en tiquetes de Loyverse que aún no están configurados en AvoPuntos.</div>
+          <div class="payment-method-detected-heading">
+            <div class="payment-method-create-title">Métodos de Loyverse pendientes de configurar</div>
+            <button id="refreshPaymentTypesBtn" class="payment-method-refresh" type="button">ACTUALIZAR</button>
+          </div>
+          <div id="detectedPaymentMethodList" class="payment-method-detected-list"><div class="empty">Consultando catálogo de Loyverse…</div></div>
+          <div class="helper payment-method-help">Puedes agregarlos a AvoPuntos aunque todavía no hayan aparecido en un tiquete.</div>
           <div id="paymentMethodActionStatus" aria-live="polite"></div>
         </div>
       </div>
@@ -1361,7 +1376,10 @@ async function loadPaymentMethods(){
   const status=$('paymentMethodsStatus');
   const list=$('paymentMethodList');
   const detectedList=$('detectedPaymentMethodList');
+  const refreshButton=$('refreshPaymentTypesBtn');
+  if(refreshButton)refreshButton.disabled=true;
   status.textContent='Cargando…';
+
   const {data:methods,error:methodsError}=await db.from('avopuntos_payment_methods')
     .select('payment_type_id,name,loyverse_type,eligible_for_avopuntos,active')
     .order('name',{ascending:true});
@@ -1370,44 +1388,81 @@ async function loadPaymentMethods(){
     list.innerHTML='<div class="empty">No se pudieron cargar los métodos de pago.</div>';
     detectedList.innerHTML='<div class="empty">No se pudieron consultar los métodos pendientes.</div>';
     $('paymentMethodActionStatus').textContent=methodsError.message;
+    if(refreshButton)refreshButton.disabled=false;
     return;
   }
   configuredPaymentMethodRows=Array.isArray(methods)?methods:[];
   renderPaymentMethods(configuredPaymentMethodRows);
-  const {data:receipts,error:receiptsError}=await db.from('loyverse_receipts')
-    .select('payments').order('receipt_date',{ascending:false}).limit(1000);
-  const observedById=new Map();
+
+  const [catalogResult,receiptResult]=await Promise.all([
+    db.functions.invoke('loyverse-payment-methods',{body:{}}),
+    db.from('loyverse_receipts').select('payments').order('receipt_date',{ascending:false}).limit(1000)
+  ]);
+  const catalogError=catalogResult.error||(!catalogResult.data?.ok?new Error(catalogResult.data?.error||'No se recibió respuesta válida del catálogo.'):null);
+  const catalogRows=Array.isArray(catalogResult.data?.payment_types)?catalogResult.data.payment_types:[];
+  const receipts=receiptResult.data;
+  const receiptsError=receiptResult.error;
+  const discoveredById=new Map();
+
+  if(!catalogError){
+    for(const method of catalogRows){
+      const id=String(method?.id||'').trim();
+      const name=String(method?.name||'').trim();
+      if(!id||!name)continue;
+      discoveredById.set(id,{
+        id,name,type:String(method?.type||'OTHER').trim().toUpperCase()||'OTHER',
+        source:'catalog'
+      });
+    }
+  }
   if(!receiptsError){
     for(const receipt of (receipts||[])){
       const payments=Array.isArray(receipt?.payments)?receipt.payments:[];
       for(const payment of payments){
         const id=String(payment?.payment_type_id||'').trim();
-        if(!id||observedById.has(id))continue;
-        observedById.set(id,{id,name:String(payment?.name||'').trim(),type:String(payment?.type||'OTHER').trim().toUpperCase()||'OTHER'});
+        const name=String(payment?.name||'').trim();
+        if(!id||!name||discoveredById.has(id))continue;
+        discoveredById.set(id,{
+          id,name,type:String(payment?.type||'OTHER').trim().toUpperCase()||'OTHER',
+          source:'receipt'
+        });
       }
     }
   }
+
   const configuredIds=new Set(configuredPaymentMethodRows.map(method=>String(method.payment_type_id)));
-  detectedPaymentMethodChoices=receiptsError?[]:[...observedById.values()].filter(method=>!configuredIds.has(method.id)&&method.name);
-  if(receiptsError){
-    detectedList.innerHTML='<div class="empty">No se pudieron consultar los tiquetes recientes de Loyverse.</div>';
-    $('paymentMethodActionStatus').textContent='No se pudieron detectar métodos pendientes: '+receiptsError.message;
-  }else{
+  detectedPaymentMethodChoices=[...discoveredById.values()]
+    .filter(method=>!configuredIds.has(method.id))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es'));
+
+  if(!catalogError){
     renderDetectedPaymentMethods(detectedPaymentMethodChoices);
+    $('paymentMethodActionStatus').textContent='';
+    status.textContent=configuredPaymentMethodRows.length+' configurados · catálogo actualizado';
+  }else{
+    if(!receiptsError){
+      renderDetectedPaymentMethods(detectedPaymentMethodChoices);
+      $('paymentMethodActionStatus').textContent='No se pudo consultar el catálogo de Loyverse; se muestran los métodos de los tiquetes recientes. '+catalogError.message;
+    }else{
+      detectedList.innerHTML='<div class="empty">No fue posible consultar el catálogo ni los tiquetes de Loyverse.</div>';
+      $('paymentMethodActionStatus').textContent='Catálogo: '+catalogError.message+' · Tiquetes: '+receiptsError.message;
+    }
+    status.textContent=configuredPaymentMethodRows.length+' configurados · catálogo no disponible';
   }
-  status.textContent=configuredPaymentMethodRows.length+' configurados';
+  if(refreshButton)refreshButton.disabled=false;
 }
 function renderDetectedPaymentMethods(methods){
   const list=$('detectedPaymentMethodList');
   if(!methods.length){
-    list.innerHTML='<div class="empty">No hay métodos pendientes detectados entre los tiquetes recientes consultados.</div>';
+    list.innerHTML='<div class="empty">No hay métodos pendientes en el catálogo de Loyverse.</div>';
     return;
   }
   list.innerHTML=methods.map(method=>{
     const id=escapeHtml(method.id);
+    const sourceLabel=method.source==='catalog'?'Catálogo de Loyverse':'Detectado en tiquetes';
     return '<div class="payment-method-detected-row" data-detected-payment="'+id+'">'+
-      '<div class="payment-method-info"><strong>'+escapeHtml(method.name)+'</strong><span>'+escapeHtml(method.type)+' · Detectado en tiquetes de Loyverse</span></div>'+
-      '<label class="payment-method-eligible"><input class="payment-method-checkbox" type="checkbox" data-detected-eligible="'+id+'"> Suma AvoPuntos</label>'+
+      '<div class="payment-method-info"><strong>'+escapeHtml(method.name)+'</strong><span>'+escapeHtml(method.type)+' · '+sourceLabel+'</span></div>'+
+      '<label class="payment-method-eligible"><input class="payment-method-checkbox" type="checkbox" data-detected-eligible="'+id+'"> Suma AP</label>'+
       '<button class="primary payment-method-detected-add" type="button" data-add-detected-method="'+id+'">AGREGAR</button>'+
     '</div>';
   }).join('');
@@ -2535,6 +2590,7 @@ $('editPhone').addEventListener('input',()=>{
   if($('editWhatsappSame').checked) $('editWhatsapp').value=$('editPhone').value;
 });
 $('saveBaseRateBtn').addEventListener('click',saveBaseRate);
+$('refreshPaymentTypesBtn').addEventListener('click',loadPaymentMethods);
 $('detectedPaymentMethodList').addEventListener('click',async event=>{
   const button=event.target.closest('button[data-add-detected-method]');
   if(!button)return;
