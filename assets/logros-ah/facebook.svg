@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+<defs><linearGradient id="fb" x1="110" y1="76" x2="410" y2="431" gradientUnits="userSpaceOnUse"><stop stop-color="#69B8FF"/><stop offset="1" stop-color="#1556B5"/></linearGradient></defs>
+<path d="M256 33 311 64 367 57 394 107 439 142 432 198 459 250 431 302 439 358 390 389 361 441 305 431 256 466 207 431 151 441 122 389 73 358 81 302 53 250 80 198 73 142 118 107 145 57 201 64Z" fill="url(#fb)"/>
+<path d="M256 60 307 87 358 80 381 125 421 157 414 207 439 250 414 295 421 346 377 375 350 422 300 413 256 443 212 413 162 422 135 375 91 346 98 295 73 250 98 207 91 157 131 125 154 80 205 87Z" stroke="#DCEBFF" stroke-width="4"/>
+<path d="M286 369V267H321L326 227H286V201C286 189 291 181 306 181H327V145C317 143 303 141 289 141 251 141 230 164 230 205V227H195V267H230V369Z" fill="#fff"/>
+<path d="M156 384H356" stroke="#DCEBFF" stroke-width="6" stroke-linecap="round"/>
+</svg>
