@@ -2446,7 +2446,84 @@ $('addPaymentMethodBtn').addEventListener('click',async()=>{
   const paymentTypeId=$('newPaymentId').value.trim();
   const loyverseType=($('newPaymentType').value.trim()||'OTHER').toUpperCase();
   const eligible=$('newPaymentEligible').checked;
-  const uuidPattern=new RegExp('^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$('createPromoBtn').addEventListener('click',createPromotion);
+  const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const status=$('paymentMethodActionStatus');
+  if(!name||!uuidPattern.test(paymentTypeId)||!loyverseType){
+    status.textContent='Completa el nombre, el ID de Loyverse válido y el tipo.';
+    return;
+  }
+  if(configuredPaymentMethodRows.some(method=>String(method.payment_type_id).toLowerCase()===paymentTypeId.toLowerCase())){
+    status.textContent='Ese ID ya está configurado.';
+    return;
+  }
+  const button=$('addPaymentMethodBtn');
+  button.disabled=true;
+  status.textContent='Guardando…';
+  const {error}=await db.from('avopuntos_payment_methods').insert({
+    payment_type_id:paymentTypeId,
+    name,
+    loyverse_type:loyverseType,
+    eligible_for_avopuntos:eligible,
+    active:true,
+    updated_at:new Date().toISOString()
+  });
+  button.disabled=false;
+  if(error){
+    status.textContent='No se pudo agregar el método: '+error.message;
+    return;
+  }
+  $('newPaymentDetected').value='';
+  $('newPaymentName').value='';
+  $('newPaymentId').value='';
+  $('newPaymentType').value='OTHER';
+  $('newPaymentEligible').checked=false;
+  status.textContent='Método agregado.';
+  await loadPaymentMethods();
+});
+$('newPaymentDetected').addEventListener('change',()=>{
+  const selected=detectedPaymentMethodChoices.find(method=>method.id===$('newPaymentDetected').value);
+  if(!selected)return;
+  $('newPaymentName').value=selected.name;
+  $('newPaymentId').value=selected.id;
+  $('newPaymentType').value=selected.type||'OTHER';
+});
+$('paymentMethodList').addEventListener('change',async event=>{
+  const checkbox=event.target.closest('input[data-method-eligible]');
+  if(!checkbox)return;
+  const original=!checkbox.checked;
+  checkbox.disabled=true;
+  $('paymentMethodsStatus').textContent='Guardando…';
+  const {error}=await db.from('avopuntos_payment_methods')
+    .update({eligible_for_avopuntos:checkbox.checked,updated_at:new Date().toISOString()})
+    .eq('payment_type_id',checkbox.dataset.methodEligible);
+  checkbox.disabled=false;
+  if(error){
+    checkbox.checked=original;
+    $('paymentMethodsStatus').textContent='Error';
+    showNotice('No se pudo actualizar el método de pago: '+error.message,true);
+    return;
+  }
+  $('paymentMethodsStatus').textContent='Guardado';
+});
+$('paymentMethodList').addEventListener('click',async event=>{
+  const button=event.target.closest('button[data-delete-method]');
+  if(!button)return;
+  const method=configuredPaymentMethodRows.find(item=>String(item.payment_type_id)===button.dataset.deleteMethod);
+  const methodName=method?.name||button.dataset.methodName||'este método';
+  if(!window.confirm('¿Eliminar "'+methodName+'" de la configuración de AvoPuntos?'))return;
+  button.disabled=true;
+  $('paymentMethodsStatus').textContent='Eliminando…';
+  const {error}=await db.from('avopuntos_payment_methods').delete().eq('payment_type_id',button.dataset.deleteMethod);
+  if(error){
+    button.disabled=false;
+    $('paymentMethodsStatus').textContent='Error';
+    showNotice('No se pudo eliminar el método de pago: '+error.message,true);
+    return;
+  }
+  $('paymentMethodActionStatus').textContent='Método eliminado.';
+  await loadPaymentMethods();
+});
+$('createPromoBtn').addEventListener('click',createPromotion);
 $('saveCustomerRuleBtn').addEventListener('click',saveCustomerRule);
 $('disableCustomerRuleBtn').addEventListener('click',disableCustomerRule);
 $('addPointsBtn').addEventListener('click',()=>adjustSelectedPoints(1));
