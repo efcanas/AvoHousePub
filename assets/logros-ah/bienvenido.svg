@@ -1,13 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
-<defs><linearGradient id="gold" x1="105" y1="92" x2="397" y2="420" gradientUnits="userSpaceOnUse"><stop stop-color="#F9E7A2"/><stop offset=".48" stop-color="#D4AF37"/><stop offset="1" stop-color="#8A6420"/></linearGradient><linearGradient id="dark" x1="144" y1="106" x2="372" y2="410" gradientUnits="userSpaceOnUse"><stop stop-color="#26362F"/><stop offset="1" stop-color="#101512"/></linearGradient></defs>
-<path d="M256 40 302 63 352 61 379 105 421 132 422 183 449 224 431 271 439 320 401 352 381 398 332 407 291 438 244 425 196 439 160 404 111 390 96 343 59 311 70 263 51 218 80 175 87 126 132 102 162 64 211 67Z" fill="url(#gold)"/>
-<path d="M256 63 296 83 341 81 364 120 402 144 402 187 425 224 409 266 416 309 382 337 367 378 323 386 286 412 245 400 204 412 173 382 130 369 117 328 85 301 95 261 78 222 103 185 110 143 149 122 175 89 218 91Z" fill="url(#dark)" stroke="#E7CE78" stroke-width="3"/>
-<circle cx="256" cy="228" r="106" stroke="url(#gold)" stroke-width="9"/>
-<path d="M181 230 256 166 331 230" stroke="#F5E5A7" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M198 220V291H314V220" stroke="#F5E5A7" stroke-width="11" stroke-linejoin="round"/>
-<path d="M239 291V248C239 238 247 230 257 230C267 230 275 238 275 248V291" fill="#D4AF37" stroke="#F5E5A7" stroke-width="7"/>
-<path d="M256 108 266 128 288 131 272 147 276 169 256 158 236 169 240 147 224 131 246 128Z" fill="#F9E7A2"/>
-<path d="M146 328 177 350 166 385 132 363Z" fill="#D4AF37"/><path d="M366 328 335 350 346 385 380 363Z" fill="#D4AF37"/>
-<path d="M190 352H322" stroke="#F9E7A2" stroke-width="5" stroke-linecap="round"/>
-<path d="M209 374H303" stroke="#D4AF37" stroke-width="4" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="gold" x1="95" y1="70" x2="416" y2="438" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF0B8"/>
+      <stop offset=".42" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#86601D"/>
+    </linearGradient>
+    <linearGradient id="badge" x1="145" y1="95" x2="360" y2="416" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#26382F"/>
+      <stop offset="1" stop-color="#0D120F"/>
+    </linearGradient>
+    <linearGradient id="avocadoSkin" x1="218" y1="210" x2="296" y2="361" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#89C94A"/>
+      <stop offset=".55" stop-color="#377B37"/>
+      <stop offset="1" stop-color="#17452B"/>
+    </linearGradient>
+    <linearGradient id="avocadoFlesh" x1="232" y1="234" x2="279" y2="342" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F7A2"/>
+      <stop offset=".62" stop-color="#B7D65A"/>
+      <stop offset="1" stop-color="#76A83F"/>
+    </linearGradient>
+    <radialGradient id="pit" cx="0" cy="0" r="1" gradientTransform="matrix(27 35 -32 25 246 280)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B9823C"/>
+      <stop offset=".7" stop-color="#765024"/>
+      <stop offset="1" stop-color="#432B17"/>
+    </radialGradient>
+  </defs>
+  <path d="M256 35 301 58 350 56 378 98 420 125 422 174 450 216 433 263 440 311 403 345 383 392 335 402 293 434 246 421 199 435 162 401 114 387 98 341 61 309 72 261 53 216 81 173 88 125 132 99 163 61 211 64Z" fill="url(#gold)"/>
+  <path d="M256 57 295 77 339 75 363 113 401 138 401 179 425 216 409 258 416 300 383 330 366 371 323 380 285 406 245 394 204 406 173 376 132 364 118 325 86 298 96 260 79 221 103 185 110 143 149 120 176 87 218 89Z" fill="url(#badge)" stroke="#F4DEA0" stroke-width="3"/>
+  <circle cx="256" cy="245" r="151" stroke="url(#gold)" stroke-width="8"/>
+  <circle cx="256" cy="245" r="136" stroke="#5E783B" stroke-width="2" opacity=".8"/>
+  <!-- Casa, detrás del aguacate -->
+  <path d="M151 235 256 151 361 235" stroke="#090D0B" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M151 235 256 151 361 235" stroke="url(#gold)" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M159 234 256 157 353 234" stroke="#FFF0B8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+  <path d="M184 222V322Q184 336 198 336H314Q328 336 328 322V222" fill="#111B15" stroke="url(#gold)" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M299 180V154H324V201" stroke="url(#gold)" stroke-width="9" stroke-linejoin="round"/>
+  <rect x="290" y="249" width="21" height="21" rx="3" fill="#F9D76B" stroke="#8C672B" stroke-width="3"/>
+  <rect x="317" y="249" width="21" height="21" rx="3" fill="#F9D76B" stroke="#8C672B" stroke-width="3"/>
+  <rect x="290" y="276" width="21" height="21" rx="3" fill="#F9D76B" stroke="#8C672B" stroke-width="3"/>
+  <rect x="317" y="276" width="21" height="21" rx="3" fill="#F9D76B" stroke="#8C672B" stroke-width="3"/>
+  <!-- Silueta del aguacate -->
+  <path d="M250 195C214 197 195 235 197 276C199 319 222 354 256 370C290 354 313 319 315 276C317 235 298 197 262 195Z" fill="#07100A" stroke="#0A100C" stroke-width="15"/>
+  <path d="M250 195C214 197 195 235 197 276C199 319 222 354 256 370C290 354 313 319 315 276C317 235 298 197 262 195Z" fill="url(#avocadoSkin)" stroke="#8EBE53" stroke-width="5"/>
+  <path d="M254 220C228 222 213 251 215 282C217 313 234 338 256 350C278 338 295 313 297 282C299 251 284 222 258 220Z" fill="url(#avocadoFlesh)" stroke="#F0EFA0" stroke-width="3"/>
+  <ellipse cx="256" cy="292" rx="29" ry="36" transform="rotate(8 256 292)" fill="url(#pit)" stroke="#4A2C18" stroke-width="4"/>
+  <ellipse cx="246" cy="278" rx="7" ry="11" transform="rotate(24 246 278)" fill="#E9C28A" opacity=".6"/>
+  <!-- Hojas que conectan la casa y el aguacate -->
+  <path d="M208 143C174 141 155 119 154 89C184 93 207 110 218 133Z" fill="url(#avocadoSkin)" stroke="#D4AF37" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M163 98 207 135" stroke="#D4E89A" stroke-width="3" stroke-linecap="round" opacity=".75"/>
+  <path d="M305 374C335 351 358 353 379 371C357 394 331 397 305 374Z" fill="#377B37" stroke="#D4AF37" stroke-width="4"/>
+  <path d="M316 376 368 371" stroke="#B8D76B" stroke-width="3" stroke-linecap="round"/>
+  <path d="M143 370C169 349 192 352 210 370C188 390 164 392 143 370Z" fill="#377B37" stroke="#D4AF37" stroke-width="4"/>
+  <path d="M154 372 199 368" stroke="#B8D76B" stroke-width="3" stroke-linecap="round"/>
+  <path d="M205 392H307" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"/>
 </svg>
