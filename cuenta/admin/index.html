@@ -1394,7 +1394,6 @@ async function loadPaymentMethods(){
     $('paymentMethodActionStatus').textContent='No se pudieron detectar métodos pendientes: '+receiptsError.message;
   }else{
     renderDetectedPaymentMethods(detectedPaymentMethodChoices);
-    $('paymentMethodActionStatus').textContent='';
   }
   status.textContent=configuredPaymentMethodRows.length+' configurados';
 }
