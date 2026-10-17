@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+
+<defs>
+  <linearGradient id="gold" x1="80" y1="48" x2="421" y2="462" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#FFF0B8"/>
+    <stop offset=".35" stop-color="#D4AF37"/>
+    <stop offset=".68" stop-color="#9E7028"/>
+    <stop offset="1" stop-color="#F7DF8A"/>
+  </linearGradient>
+  <linearGradient id="inner" x1="150" y1="70" x2="356" y2="438" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#26382F"/>
+    <stop offset=".55" stop-color="#101A14"/>
+    <stop offset="1" stop-color="#080D0A"/>
+  </linearGradient>
+  <linearGradient id="lime" x1="184" y1="128" x2="332" y2="371" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#E2F4A2"/>
+    <stop offset=".52" stop-color="#B9D969"/>
+    <stop offset="1" stop-color="#719A3C"/>
+  </linearGradient>
+  <linearGradient id="coin" x1="200" y1="230" x2="320" y2="360" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#FFF0B8"/>
+    <stop offset=".45" stop-color="#D4AF37"/>
+    <stop offset="1" stop-color="#8D6221"/>
+  </linearGradient>
+</defs>
+
+<path d="M256 30 284 47 314 44 335 67 366 70 381 98 410 113 416 144 440 165 434 196 451 224 438 253 449 282 431 309 435 339 410 361 399 390 368 398 347 423 316 421 286 442 256 430 226 442 196 421 165 423 144 398 113 390 102 361 77 339 81 309 63 282 74 253 61 224 78 196 72 165 96 144 102 113 131 98 146 70 177 67 198 44 228 47Z" fill="url(#gold)"/>
+<path d="M256 47 280 62 309 59 328 80 357 83 371 108 396 122 402 150 424 169 419 198 433 224 421 251 432 279 415 303 419 331 396 351 385 377 356 384 337 406 308 404 281 424 256 413 231 424 204 404 175 406 156 384 127 377 116 351 93 331 97 303 80 279 91 251 79 224 93 198 88 169 110 150 116 122 141 108 155 83 184 80 203 59 232 62Z" fill="url(#inner)" stroke="#F1D98A" stroke-width="2.5"/>
+<circle cx="256" cy="240" r="151" stroke="#72914A" stroke-width="2" opacity=".7"/>
+<circle cx="256" cy="240" r="143" stroke="#D4AF37" stroke-opacity=".27" stroke-width="2"/>
+<circle cx="256" cy="240" r="156" stroke="url(#gold)" stroke-width="5" opacity=".85"/>
+
+<g fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round">
+ <path d="M149 331C127 301 119 269 123 230"/>
+ <path d="M363 331C385 301 393 269 389 230"/>
+</g>
+<g fill="#799B4A" stroke="#D4AF37" stroke-width="2">
+ <path d="M128 288C105 279 100 264 103 247C122 252 132 265 128 288Z"/>
+ <path d="M122 255C99 244 96 228 102 211C120 219 128 235 122 255Z"/>
+ <path d="M124 221C106 206 107 190 117 177C132 190 135 205 124 221Z"/>
+ <path d="M141 315C120 313 110 301 109 284C129 286 141 298 141 315Z"/>
+ <path d="M384 288C407 279 412 264 409 247C390 252 380 265 384 288Z"/>
+ <path d="M390 255C413 244 416 228 410 211C392 219 384 235 390 255Z"/>
+ <path d="M388 221C406 206 405 190 395 177C380 190 377 205 388 221Z"/>
+ <path d="M371 315C392 313 402 301 403 284C383 286 371 298 371 315Z"/>
+</g>
+<path d="M256 88 264 104 282 107 269 120 272 138 256 129 240 138 243 120 230 107 248 104Z" fill="url(#gold)"/>
+<text x="256" y="230" text-anchor="middle" fill="url(#lime)" stroke="#0A100B" stroke-width="2" paint-order="stroke" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="91" letter-spacing="-3">10K</text>
+<path d="M190 251H322" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" opacity=".65"/>
+<text x="256" y="309" text-anchor="middle" fill="url(#gold)" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="49" letter-spacing="2">AP</text>
+<path d="M232 365C242 357 252 354 256 354C260 354 270 357 280 365" stroke="#789B4A" stroke-width="4" stroke-linecap="round"/>
+<path d="M249 364C235 355 234 342 239 331C252 338 257 351 249 364Z" fill="#A5C95C" stroke="#D4AF37" stroke-width="1.5"/>
+<path d="M263 364C276 352 278 340 272 330C260 339 257 352 263 364Z" fill="#A5C95C" stroke="#D4AF37" stroke-width="1.5"/>
+</svg>
