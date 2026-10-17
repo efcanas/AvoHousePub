@@ -442,6 +442,98 @@ button.hidden{display:none!important}
   .info-label{font-size:10px;letter-spacing:.04em}
   .info .helper{font-size:10px;line-height:1.35}
 }
+
+/* Ajustes visuales exclusivos de Configuración general de AvoPuntos */
+#pointsSettingsCard .settings-grid{
+  width:max-content;
+  max-width:100%;
+  grid-template-columns:minmax(220px,300px) max-content;
+  gap:10px;
+  align-items:end;
+  margin-top:8px!important;
+}
+#pointsSettingsCard .settings-grid>div{width:300px;max-width:100%}
+#pointsSettingsCard input:not([type="checkbox"]),
+#pointsSettingsCard select{
+  height:44px;
+  min-height:44px;
+  margin:0;
+  padding:0 12px;
+  font-family:inherit;
+  font-size:14px;
+  line-height:1.2;
+}
+#pointsSettingsCard .settings-grid #saveBaseRateBtn,
+#pointsSettingsCard #addPaymentMethodBtn,
+#pointsSettingsCard .promo-form #createPromoBtn{
+  height:44px;
+  min-height:44px;
+  padding:0 14px;
+  font-family:inherit;
+  font-size:13px;
+  line-height:1.2;
+  white-space:nowrap;
+}
+#pointsSettingsCard .settings-grid #saveBaseRateBtn{justify-self:start;align-self:end}
+#pointsSettingsCard .payment-methods-block{margin-top:12px;padding-top:10px}
+#pointsSettingsCard .payment-methods-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+#pointsSettingsCard .payment-method-row{
+  min-width:0;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  gap:8px;
+  padding:8px 9px;
+}
+#pointsSettingsCard .payment-method-info strong,
+#pointsSettingsCard .payment-method-info span,
+#pointsSettingsCard .payment-method-eligible,
+#pointsSettingsCard .payment-method-create-eligible{font-size:13px;line-height:1.25}
+#pointsSettingsCard .payment-method-info span{margin-top:3px;color:#9ca3af}
+#pointsSettingsCard .payment-method-delete{
+  height:44px;
+  min-height:44px;
+  padding:0 9px;
+  font-size:12px;
+}
+#pointsSettingsCard .payment-method-create{margin-top:9px;padding:10px}
+#pointsSettingsCard .payment-method-create-title{font-size:13px;line-height:1.25}
+#pointsSettingsCard .payment-method-help{margin:6px 0;color:#9ca3af;font-size:13px;line-height:1.35}
+#pointsSettingsCard .payment-method-create-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+#pointsSettingsCard .payment-method-create-footer{margin-top:8px}
+#pointsSettingsCard .promo-form{
+  grid-template-columns:minmax(230px,1.4fr) minmax(112px,.65fr) minmax(135px,.8fr) minmax(135px,.8fr) max-content;
+  gap:8px;
+  align-items:end;
+  margin-top:8px;
+}
+#pointsSettingsCard .promotion-field{display:flex;min-width:0;flex-direction:column;gap:6px}
+#pointsSettingsCard .promotion-field .info-label{margin:0;font-size:13px;line-height:16px;letter-spacing:0}
+#pointsSettingsCard .promo-form input{width:100%;min-width:0}
+#pointsSettingsCard .promo-list{margin-top:9px}
+@media(max-width:900px){
+  #pointsSettingsCard .promo-form{grid-template-columns:minmax(0,1.5fr) minmax(110px,.7fr) repeat(2,minmax(120px,.8fr))}
+  #pointsSettingsCard .promo-form #createPromoBtn{grid-column:1/-1;justify-self:start}
+  #pointsSettingsCard .payment-method-create-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #pointsSettingsCard .payment-method-create-grid #newPaymentType{grid-column:1/-1}
+}
+@media(max-width:620px){
+  #pointsSettingsCard .settings-grid{width:100%;grid-template-columns:minmax(0,1fr);gap:8px}
+  #pointsSettingsCard .settings-grid>div{width:100%}
+  #pointsSettingsCard .settings-grid #saveBaseRateBtn{justify-self:start}
+  #pointsSettingsCard .payment-methods-list{grid-template-columns:minmax(0,1fr)}
+  #pointsSettingsCard .payment-method-row{grid-template-columns:minmax(0,1fr) auto auto}
+  #pointsSettingsCard .payment-method-create-grid{grid-template-columns:minmax(0,1fr)}
+  #pointsSettingsCard .payment-method-create-grid #newPaymentType{grid-column:auto}
+  #pointsSettingsCard .promo-form{grid-template-columns:minmax(0,1fr)}
+  #pointsSettingsCard .promo-form #createPromoBtn{grid-column:auto;justify-self:start}
+}
+
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -485,7 +577,6 @@ button.hidden{display:none!important}
       <h2 class="panel-title">Configuración general de AvoPuntos</h2>
       <span id="pointsSettingsStatus" class="panel-tag">Admin</span>
     </div>
-      <div class="helper">La tasa base aplica a nuevas compras. Las promociones respetan sus fechas y el beneficio individual de un cliente tiene prioridad sobre una promoción general.</div>
       <div class="settings-grid">
         <div>
           <span class="info-label">Tasa base · AP por $1.000</span>
@@ -502,20 +593,21 @@ button.hidden{display:none!important}
         <div id="paymentMethodList" class="payment-methods-list"><div class="empty">Cargando métodos de pago…</div></div>
         <div class="payment-method-create">
           <div class="payment-method-create-title">Agregar método de pago</div>
-          <select id="newPaymentDetected" aria-label="Métodos detectados en tiquetes">
-            <option value="">Seleccionar un método detectado…</option>
+          <select id="newPaymentDetected" aria-label="Métodos de pago usados en tiquetes recientes">
+            <option value="">Completar desde un tiquete reciente…</option>
           </select>
+          <div class="helper payment-method-help">Al elegir uno, se rellenan el nombre, el ID único del medio de pago en Loyverse y su tipo.</div>
           <div class="payment-method-create-grid">
             <input id="newPaymentName" type="text" maxlength="120" placeholder="Nombre del método" aria-label="Nombre del método">
-            <input id="newPaymentId" type="text" maxlength="36" placeholder="ID de Loyverse (UUID)" aria-label="ID de Loyverse">
-            <input id="newPaymentType" type="text" maxlength="60" list="paymentMethodTypes" placeholder="Tipo" value="OTHER" aria-label="Tipo de método en Loyverse">
-            <datalist id="paymentMethodTypes">
-              <option value="CASH"></option>
-              <option value="CARD"></option>
-              <option value="NONINTEGRATEDCARD"></option>
-              <option value="OTHER"></option>
-            </datalist>
+            <input id="newPaymentId" type="text" maxlength="36" placeholder="ID único de Loyverse" aria-label="ID único del medio de pago en Loyverse">
+            <select id="newPaymentType" aria-label="Tipo del medio de pago en Loyverse">
+              <option value="CASH">Efectivo (CASH)</option>
+              <option value="CARD">Tarjeta integrada (CARD)</option>
+              <option value="NONINTEGRATEDCARD">Pago no integrado (NONINTEGRATEDCARD)</option>
+              <option value="OTHER">Otro tipo (OTHER)</option>
+            </select>
           </div>
+          <div class="helper payment-method-help">OTHER es la categoría genérica de Loyverse para un medio que no corresponde a efectivo o tarjeta. Si eliges un método de los tiquetes, su tipo se completa automáticamente.</div>
           <div class="payment-method-create-footer">
             <label class="payment-method-create-eligible"><input id="newPaymentEligible" class="payment-method-checkbox" type="checkbox"> Suma AvoPuntos</label>
             <button id="addPaymentMethodBtn" class="primary" type="button">AGREGAR MÉTODO</button>
@@ -523,14 +615,14 @@ button.hidden{display:none!important}
           <div id="paymentMethodActionStatus" aria-live="polite"></div>
         </div>
       </div>
-      <div class="panel-heading" style="margin-top:15px;padding-top:10px">
+      <div class="panel-heading promotion-heading" style="margin-top:15px;padding-top:10px">
         <h3 class="panel-title" style="font-size:15px">Nueva promoción</h3>
       </div>
       <div class="promo-form">
-        <input id="promoName" type="text" maxlength="120" placeholder="Nombre de la promoción">
-        <input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Valor" aria-label="Valor de la promoción">
-        <div><span class="info-label">Desde</span><input id="promoStart" type="date"></div>
-        <div><span class="info-label">Hasta</span><input id="promoEnd" type="date"></div>
+        <div class="promotion-field"><span class="info-label">Nombre</span><input id="promoName" type="text" maxlength="120" placeholder="Nombre de la promoción"></div>
+        <div class="promotion-field"><span class="info-label">Multiplicador</span><input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Valor" aria-label="Valor de la promoción"></div>
+        <div class="promotion-field"><span class="info-label">Desde</span><input id="promoStart" type="date"></div>
+        <div class="promotion-field"><span class="info-label">Hasta</span><input id="promoEnd" type="date"></div>
         <button id="createPromoBtn" class="primary" type="button">CREAR PROMOCIÓN</button>
       </div>
       <div id="promotionList" class="promo-list"><div class="empty">Cargando promociones…</div></div>
@@ -2499,7 +2591,15 @@ $('newPaymentDetected').addEventListener('change',()=>{
   if(!selected)return;
   $('newPaymentName').value=selected.name;
   $('newPaymentId').value=selected.id;
-  $('newPaymentType').value=selected.type||'OTHER';
+  const typeSelect=$('newPaymentType');
+  const detectedType=selected.type||'OTHER';
+  if(![...typeSelect.options].some(option=>option.value===detectedType)){
+    const option=document.createElement('option');
+    option.value=detectedType;
+    option.textContent=detectedType+' (tipo de Loyverse detectado)';
+    typeSelect.appendChild(option);
+  }
+  typeSelect.value=detectedType;
 });
 $('paymentMethodList').addEventListener('change',async event=>{
   const checkbox=event.target.closest('input[data-method-eligible]');
