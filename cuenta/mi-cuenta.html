@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-achievement-v1">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -986,10 +986,10 @@ function renderAchievementDetails(reward){
   const code=String(reward.verification_code||'');
   actions='<div class="reward-social-text">Envía este código por mensaje directo (DM) a AvoHouse. El logro se desbloqueará cuando el equipo valide que sigues la cuenta.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.instagram.com/avohouseguaviare" target="_blank" rel="noopener">ABRIR INSTAGRAM</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
  }else if(reward.code==='facebook_verified'&&status==='available'){
-  actions='<div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener">IR A FACEBOOK</a></div><div class="reward-actions"><input id="facebookIdentityInput" type="text" maxlength="100" placeholder="Tu nombre o usuario de Facebook" autocomplete="off" aria-label="Nombre o usuario de Facebook"><button id="requestFacebookBtn" type="button">SOLICITAR CÓDIGO</button></div>';
+  actions='<div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/share/1HULpaCs6G/?mibextid=wwXIfr" target="_blank" rel="noopener">IR A FACEBOOK</a></div><div class="reward-actions"><input id="facebookIdentityInput" type="text" maxlength="100" placeholder="Tu nombre o usuario de Facebook" autocomplete="off" aria-label="Nombre o usuario de Facebook"><button id="requestFacebookBtn" type="button">SOLICITAR CÓDIGO</button></div>';
  }else if(reward.code==='facebook_verified'&&status==='pending'){
   const code=String(reward.verification_code||'');
-  actions='<div class="reward-social-text">Envía este código por mensaje directo a la página de AvoHouse. El equipo debe validar tu seguimiento.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/people/Avohouse-Guaviare/" target="_blank" rel="noopener">ABRIR FACEBOOK</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
+  actions='<div class="reward-social-text">Envía este código por mensaje directo a la página de AvoHouse. El equipo debe validar tu seguimiento.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/share/1HULpaCs6G/?mibextid=wwXIfr" target="_blank" rel="noopener">ABRIR FACEBOOK</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
  }else if(reward.code==='whatsapp_verified'&&(status==='available'||status==='pending')){
   const verification=whatsappVerificationData;
   if(verification?.status==='pending'){
