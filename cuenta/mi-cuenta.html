@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-new-achievements-v1">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -937,7 +937,11 @@ const achievementCatalog={
  account_created:{title:'BIENVENIDO',icon:'../assets/logros-ah/bienvenido.svg',requirement:'Ahora haces parte del mundo AvoHouse'},
  whatsapp_verified:{title:'WhatsApp',icon:'../assets/logros-ah/whatsapp.svg',requirement:'Solicita la verificación, envía el código generado al WhatsApp de AvoHouse y espera la validación.'},
  instagram_verified:{title:'Instagram',icon:'../assets/logros-ah/instagram.svg',requirement:'Sigue a @avohouseguaviare, solicita el código desde aquí y envíalo por mensaje directo (DM). El equipo debe validar la solicitud.'},
- facebook_verified:{title:'Facebook',icon:'../assets/logros-ah/facebook.svg',requirement:'Sigue la página de AvoHouse, solicita el código desde aquí y envíalo por mensaje directo. El equipo debe validar la solicitud.'}
+ facebook_verified:{title:'Facebook',icon:'../assets/logros-ah/facebook.svg',requirement:'Sigue la página de AvoHouse, solicita el código desde aquí y envíalo por mensaje directo. El equipo debe validar la solicitud.'},
+ points_earned_2k:{title:'2K AvoPuntos',icon:'../assets/logros-ah/2k-avopuntos.svg',requirement:'Alcanza los 2.000 AvoPuntos.'},
+ points_earned_10k:{title:'10K AvoPuntos',icon:'../assets/logros-ah/10k-avopuntos.svg',requirement:'Alcanza los 10.000 AvoPuntos.'},
+ first_redemption:{title:'Primer movimiento',icon:'../assets/logros-ah/primer-movimiento.svg',requirement:'Realiza tu primer canje de AvoPuntos.'},
+ points_redeemed_20k:{title:'AP en circulación',icon:'../assets/logros-ah/ap-en-circulacion.svg',requirement:'Haz circular 20.000 AvoPuntos.'}
 };
 
 function closeAchievementModal(){
@@ -967,16 +971,21 @@ function renderAchievementDetails(reward){
  const isWhatsappClaimed=reward.code==='whatsapp_verified'&&status==='claimed';
  const isInstagramClaimed=reward.code==='instagram_verified'&&status==='claimed';
  const isFacebookClaimed=reward.code==='facebook_verified'&&status==='claimed';
+ const isEarned2kClaimed=reward.code==='points_earned_2k'&&status==='claimed';
+ const isEarned10kClaimed=reward.code==='points_earned_10k'&&status==='claimed';
+ const isFirstRedemptionClaimed=reward.code==='first_redemption'&&status==='claimed';
+ const isRedeemed20kClaimed=reward.code==='points_redeemed_20k'&&status==='claimed';
+ const isPermanentAchievementClaimed=isEarned2kClaimed||isEarned10kClaimed||isFirstRedemptionClaimed||isRedeemed20kClaimed;
  const isInstagramPending=reward.code==='instagram_verified'&&status==='pending';
  const isWhatsappPending=reward.code==='whatsapp_verified'&&status==='pending';
  const isFacebookPending=reward.code==='facebook_verified'&&status==='pending';
- const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':isFacebookClaimed?'Tu seguimiento de Facebook ya está verificado. Gracias por conectar con AvoHouse.':(isInstagramPending||isWhatsappPending||isFacebookPending)?'':catalog.requirement;
+ const displayedRequirement=isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':isFacebookClaimed?'Tu seguimiento de Facebook ya está verificado. Gracias por conectar con AvoHouse.':isEarned2kClaimed||isEarned10kClaimed?'Has alcanzado un nuevo hito. Gracias por conectar con AvoHouse.':isFirstRedemptionClaimed?'Tu primer movimiento de AvoPuntos ya forma parte de tu historia AvoHouse.':isRedeemed20kClaimed?'Has puesto 20.000 AvoPuntos en circulación. Gracias por conectar con AvoHouse.':(isInstagramPending||isWhatsappPending||isFacebookPending)?'':catalog.requirement;
  const granted=Number(reward.points_granted||0),configured=Number(reward.points||0);
  emblem.src=catalog.icon;
  emblem.alt=catalog.title;
  emblem.classList.toggle('is-locked',status!=='claimed');
  let extra='';
- if(status==='claimed'&&granted>0)extra='<div class="achievement-detail-reward">+'+granted.toLocaleString('es-CO')+' AP'+((isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed)?'':' acreditados')+'</div>';
+ if(status==='claimed'&&granted>0)extra='<div class="achievement-detail-reward">+'+granted.toLocaleString('es-CO')+' AP'+((isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed||isPermanentAchievementClaimed)?'':' acreditados')+'</div>';
  else if(status!=='claimed'&&configured>0)extra='<div class="achievement-detail-reward">Recompensa: +'+configured.toLocaleString('es-CO')+' AP</div>';
  if(status==='claimed'&&reward.claimed_at)extra+='<div class="achievement-detail-meta">Obtenido el '+escapeHtml(formatDate(reward.claimed_at))+'</div>';
  let actions='';
@@ -1004,10 +1013,10 @@ function renderAchievementDetails(reward){
     actions='<div class="reward-actions"><button id="requestWhatsappBtn" type="button">SOLICITAR CÓDIGO</button></div>';
   }
  }
- const successMessage=isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed;
+ const successMessage=isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed||isPermanentAchievementClaimed;
  const successTitle=isWelcome?' achievement-welcome-title':'';
  const copyClass=successMessage?'achievement-detail-copy achievement-success-copy':'achievement-detail-copy';
- const hideStateLabel=successMessage||((reward.code==='whatsapp_verified'||reward.code==='instagram_verified'||reward.code==='facebook_verified')&&status==='available');
+ const hideStateLabel=successMessage||(['whatsapp_verified','instagram_verified','facebook_verified','points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k'].includes(reward.code)&&status==='available');
  const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
  const requirementMarkup=displayedRequirement?'<div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>':'';
  details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title'+successTitle+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div>'+requirementMarkup+extra+actions;
