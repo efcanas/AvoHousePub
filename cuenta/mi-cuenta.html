@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-progress-counters-v2-annual-recurring-rewards-v1-birthday-date-fix-v1-approved-avocado-emblems-v1">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-progress-counters-v2-annual-recurring-rewards-v1-birthday-date-fix-v1-approved-avocado-emblems-v1-activity-achievement-detail-v1">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -457,18 +457,52 @@ async function loadAccountSummary(){
   }
 }
 
-function movementLabel(type,details={}){
-  if(details?.bonus_type==='account_created' && type==='earn'){
-    return 'Bonificación de bienvenida';
-  }
-  if(details?.bonus_type==='whatsapp_verification' && type==='earn'){
-    return 'Bonificación por verificación de WhatsApp';
-  }
+function achievementCodeForMovement(m){
+  if(m?.movement_type!=='earn')return null;
+  const details=m.details||{};
+  const code=String(details.reward_code||'');
+  if(code&&achievementCatalog[code])return code;
+  const bonusCode={
+    account_created:'account_created',
+    whatsapp_verification:'whatsapp_verified',
+    instagram_verification:'instagram_verified',
+    facebook_verification:'facebook_verified'
+  };
+  return bonusCode[String(details.bonus_type||'')]||null;
+}
+function achievementTitleForMovement(m){
+  const code=achievementCodeForMovement(m);
+  if(!code)return '';
+  const reward=Array.isArray(currentRewards)?currentRewards.find(item=>item.code===code):null;
+  if(['account_anniversary','birthday_celebration'].includes(code)&&reward?.name)return reward.name;
+  return achievementCatalog[code]?.title||reward?.name||code;
+}
+function openAchievementFromHistory(code){
+  const reward=Array.isArray(currentRewards)?currentRewards.find(item=>item.code===code):null;
+  if(!reward)return;
+  selectedAchievementCode=code;
+  const grid=$('achievementGrid');
+  if(grid)grid.querySelectorAll('button[data-achievement]').forEach(button=>
+    button.setAttribute('aria-pressed',button.getAttribute('data-achievement')===code?'true':'false')
+  );
+  renderAchievementDetails(reward);
+}
+function movementLabel(type,details={},movement=null){
   if(details?.refund_cancellation===true && type==='earn'){
     return 'Puntos restituidos por cancelación de devolución';
   }
   if(details?.refund_cancellation===true && type==='redeem'){
     return 'Canje revertido por cancelación de devolución';
+  }
+  if(type==='earn'&&movement){
+    const achievementTitle=achievementTitleForMovement(movement);
+    if(achievementTitle)return 'Logro: '+achievementTitle;
+  }
+  if(details?.bonus_type==='account_created' && type==='earn'){
+    return 'Bonificación de bienvenida';
+  }
+  if(details?.bonus_type==='whatsapp_verification' && type==='earn'){
+    return 'Bonificación por verificación de WhatsApp';
   }
   return ({
     opening_balance:'Saldo inicial',
@@ -568,14 +602,22 @@ function renderHistory(movements){
     const balanceAfterThis=balanceAfter;
     balanceAfter-=delta;
     const receipt=m.receipt_number||m.related_receipt_number;
+    const achievementCode=achievementCodeForMovement(m);
+    const achievementTitle=achievementCode?achievementTitleForMovement(m):'';
+    const hasDetail=Boolean(achievementCode||receipt);
+    const detailAttributes=achievementCode
+      ? 'data-achievement-code="'+escapeHtml(achievementCode)+'" aria-label="Ver detalle del logro '+escapeHtml(achievementTitle)+'"'
+      : receipt
+        ? 'data-receipt="'+escapeHtml(receipt)+'" aria-label="Ver detalle de la compra"'
+        : 'disabled aria-label="Sin detalle disponible"';
     return '<div class="history-item">'+
       '<div class="history-sign '+(positive?'positive':(negative?'negative':'neutral'))+'">'+(sign||'•')+'</div>'+
       '<div class="history-main">'+
-        '<div class="history-type">'+escapeHtml(movementLabel(m.movement_type,m.details||{}))+'</div>'+
+        '<div class="history-type">'+escapeHtml(movementLabel(m.movement_type,m.details||{},m))+'</div>'+
         '<div class="history-meta">'+movementMeta(m)+'</div>'+
         '<div class="history-balance">Saldo después: <strong>'+balanceAfterThis+' AP</strong></div>'+
       '</div>'+
-      '<button type="button" class="history-points '+(positive?'positive':(negative?'negative':'neutral'))+(receipt?'':' no-detail')+'" '+(receipt?'data-receipt="'+escapeHtml(receipt)+'" aria-label="Ver detalle de la compra"':'disabled')+'>'+(sign||'')+value+' AP</button>'+
+      '<button type="button" class="history-points '+(positive?'positive':(negative?'negative':'neutral'))+(hasDetail?'':' no-detail')+'" '+detailAttributes+'>'+(sign||'')+value+' AP</button>'+
     '</div>';
   }).join('');
 
@@ -1183,8 +1225,15 @@ $('historySearchBtn').addEventListener('click',loadHistoryMonth);
 $('historyRecentBtn').addEventListener('click',loadHistoryRecent);
 
 $('pointsHistory').addEventListener('click',event=>{
-  const button=event.target.closest('.history-points[data-receipt]');
-  if(button)showReceipt(button.getAttribute('data-receipt'));
+  const button=event.target.closest('.history-points[data-achievement-code], .history-points[data-receipt]');
+  if(!button)return;
+  const achievementCode=button.getAttribute('data-achievement-code');
+  if(achievementCode){
+    openAchievementFromHistory(achievementCode);
+    return;
+  }
+  const receipt=button.getAttribute('data-receipt');
+  if(receipt)showReceipt(receipt);
 });
 $('receiptClose').addEventListener('click',closeReceiptModal);
 $('achievementModalClose').addEventListener('click',closeAchievementModal);
