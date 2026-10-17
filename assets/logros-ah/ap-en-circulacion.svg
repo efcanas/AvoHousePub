@@ -40,5 +40,5 @@
 </g>
 <ellipse cx="256" cy="209" rx="39" ry="10" fill="#FBE7A0" opacity=".8"/>
 <path d="M256 192 261 202 272 204 264 212 266 223 256 218 246 223 248 212 240 204 251 202Z" fill="#6B4B1A" opacity=".8"/>
-<text x="256" y="363" text-anchor="middle" fill="url(#lime)" stroke="#0A100B" stroke-width="1.5" paint-order="stroke" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="38" letter-spacing="1">20K AP</text>
+<text x="256" y="363" text-anchor="middle" fill="url(#lime)" stroke="#0A100B" stroke-width="1.5" paint-order="stroke" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="38" letter-spacing="1">25K AP</text>
 </svg>
