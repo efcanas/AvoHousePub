@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="recompensas-ap-whatsapp-verification-v3">
+<meta name="ah-version" content="logros-ah-modal-compact-v1">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -136,39 +136,57 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
   .receipt-item-qty{grid-column:1;grid-row:2}.receipt-card{padding:19px 16px}
 }
 
-.achievement-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.achievement-tile{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:9px;padding:15px 8px 13px;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(255,255,255,.025);color:#fff;font:inherit;text-align:center;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
-.achievement-tile:hover{background:rgba(255,255,255,.07);border-color:rgba(212,175,55,.45);transform:translateY(-2px)}
-.achievement-tile:focus-visible{outline:2px solid #d4af37;outline-offset:3px}
-.achievement-tile[aria-pressed="true"]{border-color:rgba(212,175,55,.68);background:rgba(212,175,55,.08)}
-.achievement-emblem{display:block;width:88px;height:88px;object-fit:contain;flex:0 0 auto}
-.achievement-emblem.is-locked{filter:grayscale(1) brightness(.4);opacity:.58}
-.achievement-title{font-size:12px;font-weight:800;line-height:1.3;overflow-wrap:anywhere}
-.achievement-state{font-size:9px;line-height:1.3;letter-spacing:.8px;text-transform:uppercase;color:#aaa}
+.achievement-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.achievement-tile{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:5px 2px;border:1px solid transparent;border-radius:11px;background:transparent;color:#fff;font:inherit;text-align:center;cursor:pointer;transition:background .18s,border-color .18s}
+.achievement-tile:hover{background:rgba(255,255,255,.055);border-color:rgba(212,175,55,.3)}
+.achievement-tile:focus-visible{outline:2px solid #d4af37;outline-offset:2px}
+.achievement-tile[aria-pressed="true"]{border-color:rgba(212,175,55,.65);background:rgba(212,175,55,.08)}
+.achievement-emblem{display:block;width:54px;height:54px;object-fit:contain;flex:0 0 auto}
+.achievement-emblem.is-locked{filter:grayscale(1) brightness(.38);opacity:.58}
+.achievement-title{font-size:10px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+.achievement-state{font-size:8px;line-height:1.25;letter-spacing:.55px;text-transform:uppercase;color:#888}
 .achievement-tile[data-status="claimed"] .achievement-state{color:#b8f5b8}
 .achievement-tile[data-status="pending"] .achievement-state{color:#e8d59a}
-.achievement-details{margin-top:15px;padding:17px;border:1px solid rgba(212,175,55,.25);border-radius:14px;background:rgba(0,0,0,.22)}
+.achievement-modal{position:fixed;inset:0;z-index:2500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+.achievement-modal[hidden]{display:none}
+.achievement-modal-card{position:relative;width:min(420px,100%);max-height:min(84dvh,720px);overflow:auto;border:1px solid rgba(255,255,255,.17);border-radius:20px;background:rgba(12,12,12,.97);padding:24px 22px 22px;box-shadow:0 22px 70px rgba(0,0,0,.55);text-align:center}
+.achievement-modal-close{position:absolute;top:10px;right:10px;width:34px;height:34px;border:1px solid rgba(255,255,255,.22);border-radius:50%;background:rgba(255,255,255,.04);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.achievement-modal-emblem{display:block;width:124px;height:124px;object-fit:contain;margin:2px auto 14px}
+.achievement-modal-emblem.is-locked{filter:grayscale(1) brightness(.42);opacity:.65}
+.achievement-details{margin-top:0;padding:0;border:0;background:transparent;text-align:left}
 .achievement-details[hidden]{display:none}
-.achievement-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.achievement-detail-title{margin:0;font-size:15px;font-weight:800}
-.achievement-detail-state{flex:0 0 auto;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#aaa}
-.achievement-detail-copy{margin:9px 0 0;color:#bdbdbd;font-size:12px;line-height:1.6}
-.achievement-detail-reward{margin-top:10px;color:#d4af37;font-weight:800;font-size:13px}
-.achievement-detail-meta{margin-top:6px;color:#777;font-size:10px}
-.reward-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.reward-social-text{margin-top:10px;color:#aaa;font-size:11px;line-height:1.55}
+.achievement-detail-head{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px}
+.achievement-detail-title{margin:0;font-size:17px;font-weight:800;text-align:center}
+.achievement-detail-state{flex:0 0 auto;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:#aaa}
+.achievement-detail-copy{margin:12px 0 0;color:#bdbdbd;font-size:12px;line-height:1.65;text-align:left}
+.achievement-detail-reward{margin-top:12px;color:#d4af37;font-weight:800;font-size:13px;text-align:center}
+.achievement-detail-meta{margin-top:7px;color:#777;font-size:10px;text-align:center}
+.reward-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px}
+.reward-social-text{margin-top:12px;color:#aaa;font-size:11px;line-height:1.55;text-align:left}
 .reward-social-link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border-radius:9px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:#fff;text-decoration:none;padding:0 12px;font-size:11px;font-weight:800;letter-spacing:.5px}
 .reward-social-link:hover{background:rgba(255,255,255,.10)}
 .reward-actions input{min-width:0;flex:1 1 180px;min-height:36px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;padding:0 11px;font:inherit;font-size:12px}
 .reward-actions button{min-height:36px;border-radius:9px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:#fff;padding:0 12px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
 .reward-actions button:hover{background:rgba(255,255,255,.10)}
 .reward-actions button:disabled{opacity:.5;cursor:default}
-.rewards-note{margin-top:11px;color:#777;font-size:10px;line-height:1.5}
+.rewards-note{margin-top:10px;color:#777;font-size:10px;line-height:1.5}
 .special-achievements-empty{display:flex;align-items:center;gap:14px;padding:17px;border:1px dashed rgba(255,255,255,.17);border-radius:14px;background:rgba(255,255,255,.02)}
 .special-achievements-symbol{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border-radius:14px;border:1px solid rgba(212,175,55,.28);color:#d4af37;font-size:27px}
 .special-achievements-title{font-size:13px;font-weight:800}
 .special-achievements-copy{margin-top:4px;color:#999;font-size:11px;line-height:1.55}
-@media(max-width:560px){.achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.achievement-emblem{width:76px;height:76px}.achievement-tile{padding:12px 7px}.achievement-details{padding:14px}}
+body.achievement-modal-open{overflow:hidden}
+@media(max-width:560px){
+  .achievement-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .achievement-emblem{width:46px;height:46px}
+  .achievement-tile{padding:4px 1px;gap:4px;border-radius:8px}
+  .achievement-title{font-size:9px}
+  .achievement-state{font-size:7px;letter-spacing:.3px}
+  .achievement-modal{padding:12px}
+  .achievement-modal-card{max-height:86dvh;padding:22px 17px 18px;border-radius:17px}
+  .achievement-modal-emblem{width:108px;height:108px;margin-bottom:10px}
+  .achievement-detail-title{font-size:16px}
+  .achievement-detail-copy{font-size:12px}
+}
 /* Safari en iOS: igualar visualmente los selectores de período con sus botones. */
 @media (hover: none) and (pointer: coarse) {
   @supports (-webkit-touch-callout: none) {
@@ -270,7 +288,13 @@ body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.76);z-inde
     <span id="rewardsMode" class="panel-tag">Cargando</span>
   </div>
   <div id="achievementGrid" class="achievement-grid" role="list" aria-label="Logros permanentes"><div class="history-loading">Cargando logros…</div></div>
-  <div id="achievementDetails" class="achievement-details" hidden aria-live="polite"></div>
+  <div id="achievementModal" class="achievement-modal" hidden role="dialog" aria-modal="true" aria-labelledby="achievementModalTitle">
+  <div class="achievement-modal-card">
+    <button id="achievementModalClose" class="achievement-modal-close" type="button" aria-label="Cerrar detalle del logro">×</button>
+    <img id="achievementModalEmblem" class="achievement-modal-emblem" src="../assets/logros-ah/bienvenido.svg" alt="" width="512" height="512">
+    <div id="achievementDetails" class="achievement-details" aria-live="polite"></div>
+  </div>
+</div>
   <div class="rewards-note">Toca un emblema para consultar cómo se obtiene y el estado de tu logro. Los emblemas en silueta todavía no se han desbloqueado.</div>
 </section>
 
@@ -946,13 +970,33 @@ const achievementCatalog={
  facebook_verified:{title:'Facebook',icon:'../assets/logros-ah/facebook.svg',requirement:'Sigue la página de AvoHouse, solicita el código desde aquí y envíalo por mensaje directo. El equipo debe validar la solicitud.'}
 };
 
+function closeAchievementModal(){
+ const modal=$('achievementModal');
+ if(!modal)return;
+ modal.hidden=true;
+ document.body.classList.remove('achievement-modal-open');
+ selectedAchievementCode=null;
+ document.querySelectorAll('.achievement-tile[aria-pressed="true"]').forEach(tile=>tile.setAttribute('aria-pressed','false'));
+}
+
 function renderAchievementDetails(reward){
- const details=$('achievementDetails');if(!details)return;
- if(!reward){details.hidden=true;details.innerHTML='';return;}
- const catalog=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',requirement:reward.description||'Consulta las condiciones del logro.'};
+ const modal=$('achievementModal');
+ const details=$('achievementDetails');
+ const emblem=$('achievementModalEmblem');
+ if(!modal||!details||!emblem)return;
+ if(!reward){
+  modal.hidden=true;
+  details.innerHTML='';
+  document.body.classList.remove('achievement-modal-open');
+  return;
+ }
+ const catalog=achievementCatalog[reward.code]||{title:reward.name||'Logro AH',icon:'../assets/logros-ah/bienvenido.svg',requirement:reward.description||'Consulta las condiciones del logro.'};
  const status=reward.status||'available';
  const statusLabel={claimed:'Logro obtenido',pending:'Pendiente de validación',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
  const granted=Number(reward.points_granted||0),configured=Number(reward.points||0);
+ emblem.src=catalog.icon;
+ emblem.alt=catalog.title;
+ emblem.classList.toggle('is-locked',status!=='claimed');
  let extra='';
  if(status==='claimed'&&granted>0)extra='<div class="achievement-detail-reward">+'+granted.toLocaleString('es-CO')+' AP acreditados</div>';
  else if(status!=='claimed'&&configured>0)extra='<div class="achievement-detail-reward">Recompensa: +'+configured.toLocaleString('es-CO')+' AP</div>';
@@ -971,12 +1015,12 @@ function renderAchievementDetails(reward){
  }else if(reward.code==='whatsapp_verified'&&(status==='available'||status==='pending')){
   actions='<div class="reward-social-text">'+(status==='pending'?'Envía el código del apartado WhatsApp de tu información personal al número oficial de AvoHouse.':'La verificación se solicita desde el apartado WhatsApp de tu información personal.')+'</div><div class="reward-actions"><a class="reward-social-link" href="#whatsappVerificationArea">'+(status==='pending'?'VER MI SOLICITUD':'IR A VERIFICACIÓN')+'</a></div>';
  }
- details.innerHTML='<div class="achievement-detail-head"><h3 class="achievement-detail-title">'+escapeHtml(catalog.title)+'</h3><span class="achievement-detail-state">'+statusLabel+'</span></div><div class="achievement-detail-copy">'+escapeHtml(catalog.requirement)+'</div>'+extra+actions;
- details.hidden=false;
+ details.innerHTML='<div class="achievement-detail-head"><h3 id="achievementModalTitle" class="achievement-detail-title">'+escapeHtml(catalog.title)+'</h3><span class="achievement-detail-state">'+statusLabel+'</span></div><div class="achievement-detail-copy">'+escapeHtml(catalog.requirement)+'</div>'+extra+actions;
+ modal.hidden=false;
+ document.body.classList.add('achievement-modal-open');
  const instagramBtn=$('requestInstagramBtn');if(instagramBtn)instagramBtn.addEventListener('click',requestInstagramVerification);
  const facebookBtn=$('requestFacebookBtn');if(facebookBtn)facebookBtn.addEventListener('click',requestFacebookVerification);
 }
-
 function renderRewards(rewards){
  const grid=$('achievementGrid');if(!grid)return;
  currentRewards=Array.isArray(rewards)?rewards:[];
@@ -991,8 +1035,10 @@ function renderRewards(rewards){
  grid.onclick=event=>{
   const tile=event.target.closest('button[data-achievement]');if(!tile)return;
   const code=tile.getAttribute('data-achievement');
-  selectedAchievementCode=selectedAchievementCode===code?null:code;
-  renderRewards(currentRewards);
+  if(selectedAchievementCode===code){closeAchievementModal();return;}
+  selectedAchievementCode=code;
+  grid.querySelectorAll('button[data-achievement]').forEach(button=>button.setAttribute('aria-pressed',button===tile?'true':'false'));
+  renderAchievementDetails(currentRewards.find(reward=>reward.code===code)||null);
  };
  renderAchievementDetails(currentRewards.find(reward=>reward.code===selectedAchievementCode)||null);
  const obtained=currentRewards.filter(reward=>reward.status==='claimed').length;
@@ -1095,11 +1141,16 @@ $('pointsHistory').addEventListener('click',event=>{
   if(button)showReceipt(button.getAttribute('data-receipt'));
 });
 $('receiptClose').addEventListener('click',closeReceiptModal);
+$('achievementModalClose').addEventListener('click',closeAchievementModal);
+$('achievementModal').addEventListener('click',event=>{
+  if(event.target===$('achievementModal'))closeAchievementModal();
+});
 $('receiptModal').addEventListener('click',event=>{
   if(event.target===$('receiptModal'))closeReceiptModal();
 });
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&!$('receiptModal').hidden)closeReceiptModal();
+  if(event.key==='Escape'&&!$('achievementModal').hidden)closeAchievementModal();
 });
 
 async function logout(){
