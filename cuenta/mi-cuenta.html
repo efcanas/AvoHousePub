@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AvoHouse · Mi cuenta</title>
-<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-new-achievements-v1">
+<meta name="ah-version" content="logros-ah-modal-close-v2-welcome-v1-wa-ig-fb-link-v2-new-achievements-v2">
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -1028,7 +1028,16 @@ function renderAchievementDetails(reward){
 }
 function renderRewards(rewards){
  const grid=$('achievementGrid');if(!grid)return;
- currentRewards=Array.isArray(rewards)?rewards:[];
+ currentRewards=Array.isArray(rewards)?rewards.slice():[];
+ const newAchievementOrder={points_earned_2k:0,points_earned_10k:1,first_redemption:2,points_redeemed_20k:3};
+ currentRewards.sort((a,b)=>{
+  const aNew=Object.prototype.hasOwnProperty.call(newAchievementOrder,a.code);
+  const bNew=Object.prototype.hasOwnProperty.call(newAchievementOrder,b.code);
+  if(aNew&&bNew)return newAchievementOrder[a.code]-newAchievementOrder[b.code];
+  if(aNew)return 1;
+  if(bNew)return -1;
+  return 0;
+ });
  if(!currentRewards.length){grid.innerHTML='<div class="history-empty">No hay logros activos en este momento.</div>';$('rewardsMode').textContent='Sin logros';renderAchievementDetails(null);return;}
  grid.innerHTML=currentRewards.map(reward=>{
   const status=reward.status||'available';
