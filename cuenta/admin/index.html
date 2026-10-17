@@ -364,6 +364,41 @@ button:disabled{opacity:.45;cursor:default}
 .delete-confirm-actions button{min-height:40px}
 .delete-confirm-actions .danger-button{max-width:100%}
 @media(max-width:520px){.delete-confirm-card{padding:19px 16px}.delete-confirm-actions{display:grid;grid-template-columns:1fr}.delete-confirm-actions button{width:100%}}
+
+
+/* Ajustes de compactación del cliente y altura uniforme de botones en CC */
+button:not(.history-points){
+  height:44px;
+  min-height:44px;
+  box-sizing:border-box;
+  padding:0 14px;
+  line-height:1.2;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+button.history-points{
+  height:44px;
+  min-height:44px;
+  padding:0;
+  line-height:1.2;
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+button.receipt-close,button.email-modal-close{
+  width:44px;
+  min-width:44px;
+  flex:0 0 44px;
+}
+button.hidden{display:none!important}
+@media(max-width:620px){
+  .info-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}
+  .info{padding:9px 0}
+  .info-value{font-size:14px;line-height:1.35}
+  .info-label{font-size:10px;letter-spacing:.04em}
+  .info .helper{font-size:10px;line-height:1.35}
+}
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -769,14 +804,35 @@ function formatDateInput(value){
   return new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(d);
 }
 function movementLabel(type,details={}){
-  if(details?.bonus_type==='whatsapp_verification' && type==='earn'){
-    return 'Bonificación por verificación de WhatsApp';
-  }
   if(details?.refund_cancellation===true && type==='earn'){
     return 'Puntos restituidos por cancelación de devolución';
   }
   if(details?.refund_cancellation===true && type==='redeem'){
     return 'Canje revertido por cancelación de devolución';
+  }
+  if(type==='earn' && ['points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k','account_anniversary','birthday_celebration'].includes(details?.reward_code)){
+    const title=String(details?.title||'').trim();
+    const names={
+      points_earned_2k:'2K AvoPuntos',
+      points_earned_10k:'10K AvoPuntos',
+      first_redemption:'Primer movimiento',
+      points_redeemed_20k:'AP en circulación',
+      account_anniversary:'Aniversario AvoHouse',
+      birthday_celebration:'Celebración AvoHouse'
+    };
+    return 'Logro: '+(title||names[details.reward_code]);
+  }
+  if(type==='earn'){
+    const bonusLabels={
+      account_created:'Bonificación de bienvenida',
+      whatsapp_verification:'Bonificación por verificación de WhatsApp',
+      instagram_verification:'Bonificación por verificación de Instagram',
+      facebook_verification:'Bonificación por verificación de Facebook'
+    };
+    if(bonusLabels[details?.bonus_type])return bonusLabels[details.bonus_type];
+  }
+  if(type==='earn_reversal'&&details?.bonus_type==='birthday_celebration_correction'){
+    return 'Corrección del bono de cumpleaños';
   }
   return ({
     opening_balance:'Saldo inicial',
@@ -785,7 +841,7 @@ function movementLabel(type,details={}){
     earn_reversal:'Puntos retirados por cancelación',
     redeem_reversal:'Puntos devueltos por cancelación',
     expiration:'Puntos vencidos',
-    adjustment:'Ajuste de puntos',
+    adjustment:'Ajuste manual de AvoPuntos',
     purchase:'Compra registrada',
     purchase_cancelled:'Compra cancelada',
     refund:'Reembolso registrado',
@@ -813,6 +869,12 @@ function movementMeta(m){
     const amount=Number(m.eligible_amount);
     if(Number.isFinite(amount))meta+=(meta?' · ':'')+'Compra elegible '+formatMoney(amount);
   }
+  const reason=type==='adjustment'
+    ? String(details.reason||'').trim()
+    : (!receipt && ['earn','earn_reversal','redeem_reversal','expiration'].includes(type)
+      ? String(details.description||'').trim()
+      : '');
+  if(reason)meta+=(meta?' · ':'')+reason;
   return meta;
 }
 function detailsForMovement(m){
@@ -846,8 +908,8 @@ function renderHistory(movements){
     return '<div class="history-item">'+
       '<div class="history-sign '+(positive?'positive':negative?'negative':'neutral')+'">'+(sign||'•')+'</div>'+
       '<div class="history-main">'+
-        '<div class="history-type">'+movementLabel(m.movement_type,m.details||{})+'</div>'+
-        '<div class="history-meta">'+movementMeta(m)+'</div>'+
+        '<div class="history-type">'+escapeHtml(movementLabel(m.movement_type,m.details||{}))+'</div>'+
+        '<div class="history-meta">'+escapeHtml(movementMeta(m))+'</div>'+
         '<div class="history-balance">Saldo después: <strong>'+Number(balanceAfterThis).toLocaleString('es-CO')+' AP</strong></div>'+
       '</div>'+
       '<button class="history-points '+(positive?'positive':negative?'negative':'neutral')+(receipt?'':' no-detail')+'" type="button" '+(receipt?'':'disabled')+'>'+
