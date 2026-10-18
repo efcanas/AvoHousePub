@@ -641,8 +641,6 @@ button.hidden{display:none!important}
   box-sizing:border-box;
 }
 #pointsSettingsCard .promo-form input[type="date"]{
-  display:-webkit-inline-flex;
-  align-items:center;
   height:44px;
   min-height:44px;
   width:100%;
@@ -651,6 +649,12 @@ button.hidden{display:none!important}
   padding:0 8px;
   text-align:center;
   box-sizing:border-box;
+}
+@media(min-width:621px){
+  #pointsSettingsCard .promo-form input[type="date"]{
+    display:-webkit-inline-flex;
+    align-items:center;
+  }
 }
 #pointsSettingsCard .promo-item{align-items:center}
 #pointsSettingsCard .promo-main{
