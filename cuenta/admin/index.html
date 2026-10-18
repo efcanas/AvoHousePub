@@ -115,18 +115,10 @@ button:disabled{opacity:.45;cursor:default}
 #pointsSettingsCard .payment-method-info span{display:block;margin-top:3px;color:#8f96a3;font-size:10px;overflow-wrap:anywhere}
 #pointsSettingsCard .payment-method-eligible,#pointsSettingsCard .payment-method-create-eligible{display:flex;align-items:center;gap:7px;font-size:12px;color:#d6d9df;white-space:nowrap}
 #pointsSettingsCard input[type="checkbox"].payment-method-checkbox{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0;accent-color:#b8ff39}
-#pointsSettingsCard .payment-method-delete{min-height:36px;padding:7px 10px;border:1px solid rgba(255,93,93,.55);border-radius:8px;background:rgba(255,93,93,.07);color:#ff9c9c;font-size:10px;font-weight:800;cursor:pointer}
 #pointsSettingsCard .payment-method-create{margin-top:10px;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.025)}
 #pointsSettingsCard .payment-method-detected-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
-#pointsSettingsCard .payment-method-create-title{margin-bottom:7px;color:#d6d9df;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
 #pointsSettingsCard .payment-method-refresh{flex:0 0 auto;min-height:30px;padding:6px 9px;border:1px solid rgba(184,255,57,.35);border-radius:7px;background:rgba(184,255,57,.06);color:#c9f99b;font-size:9px;font-weight:800;cursor:pointer}
 #pointsSettingsCard .payment-method-refresh:disabled{opacity:.6;cursor:wait}
-#pointsSettingsCard .payment-method-detected-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-#pointsSettingsCard .payment-method-detected-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:8px 10px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.025)}
-#pointsSettingsCard .payment-method-detected-row .payment-method-info{min-width:0}
-#pointsSettingsCard .payment-method-detected-row .payment-method-info strong{display:block;font-size:13px;overflow-wrap:anywhere}
-#pointsSettingsCard .payment-method-detected-row .payment-method-info span{display:block;margin-top:3px;color:#8f96a3;font-size:10px;overflow-wrap:anywhere}
-#pointsSettingsCard .payment-method-detected-add{min-height:36px;padding:8px 11px;font-size:10px;font-weight:800}
 #pointsSettingsCard #paymentMethodActionStatus{min-height:16px;margin-top:6px;color:#9ca3af;font-size:11px}
 #pointsSettingsCard .promo-form{grid-template-columns:minmax(0,1.35fr) minmax(78px,.55fr) minmax(112px,.8fr) minmax(112px,.8fr) max-content;gap:8px;margin-top:8px}
 #pointsSettingsCard .promo-list{margin-top:9px}
@@ -139,18 +131,11 @@ button:disabled{opacity:.45;cursor:default}
   #pointsSettingsCard .promo-form{grid-template-columns:1fr}
   #pointsSettingsCard .promo-form button{grid-column:auto;width:max-content;justify-self:center}
   #pointsSettingsCard .payment-methods-list,
-  #pointsSettingsCard .payment-method-detected-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
   #pointsSettingsCard .payment-methods-list>.empty,
-  #pointsSettingsCard .payment-method-detected-list>.empty{grid-column:1/-1}
   #pointsSettingsCard .payment-method-row,
-  #pointsSettingsCard .payment-method-detected-row{grid-template-columns:minmax(0,1fr) auto;align-content:start;gap:6px;padding:8px}
   #pointsSettingsCard .payment-method-row .payment-method-info,
-  #pointsSettingsCard .payment-method-detected-row .payment-method-info{grid-column:1/-1}
   #pointsSettingsCard .payment-method-eligible{grid-column:1;align-self:center;white-space:normal;font-size:10px;gap:5px}
-  #pointsSettingsCard .payment-method-delete{grid-column:2;justify-self:end;align-self:center;min-height:29px;padding:5px 7px;font-size:9px}
-  #pointsSettingsCard .payment-method-detected-add{grid-column:2;justify-self:end;align-self:center;min-height:29px;padding:5px 8px}
   #pointsSettingsCard .payment-method-create{margin-top:8px;padding:8px}
-  #pointsSettingsCard .payment-method-create-title{margin-bottom:4px;font-size:10px}
   #pointsSettingsCard .payment-method-help{font-size:10px;line-height:1.35}
 }
 .promo-form{display:grid;grid-template-columns:minmax(0,1.4fr) 120px 150px 150px 150px;gap:8px;align-items:end;margin-top:12px}
@@ -503,20 +488,17 @@ button.hidden{display:none!important}
 #pointsSettingsCard .payment-method-eligible,
 #pointsSettingsCard .payment-method-create-eligible{font-size:13px;line-height:1.25}
 #pointsSettingsCard .payment-method-info span{margin-top:3px;color:#9ca3af}
-#pointsSettingsCard .payment-method-delete{
   height:44px;
   min-height:44px;
   padding:0 9px;
   font-size:12px;
 }
 #pointsSettingsCard .payment-method-create{margin-top:9px;padding:10px}
-#pointsSettingsCard .payment-method-create-title{font-size:13px;line-height:1.25}
 #pointsSettingsCard .payment-method-help{margin:6px 0;color:#9ca3af;font-size:13px;line-height:1.35}
 #pointsSettingsCard .payment-method-create-grid{
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:8px;
 }
-#pointsSettingsCard .payment-method-create-footer{margin-top:8px}
 #pointsSettingsCard .promo-form{
   grid-template-columns:minmax(230px,1.4fr) minmax(112px,.65fr) minmax(135px,.8fr) minmax(135px,.8fr) max-content;
   gap:8px;
@@ -543,6 +525,45 @@ button.hidden{display:none!important}
   #pointsSettingsCard .promo-form #createPromoBtn{grid-column:auto;justify-self:start}
 }
 
+/* Ajustes finales solicitados: sincronización automática y compactación móvil */
+#pointsSettingsCard .payment-methods-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;margin-bottom:8px;padding-bottom:7px}
+#pointsSettingsCard .payment-methods-tools{display:flex;align-items:center;gap:7px;min-width:0}
+#pointsSettingsCard .payment-method-refresh{height:30px;min-height:30px;padding:0 9px;font-size:9px;line-height:1;white-space:nowrap}
+#pointsSettingsCard .payment-method-refresh:disabled{opacity:.6;cursor:wait}
+#pointsSettingsCard #paymentMethodActionStatus{min-height:0;margin-top:5px;font-size:10px;line-height:1.35;overflow-wrap:anywhere}
+#pointsSettingsCard .settings-grid{width:100%;max-width:100%;grid-template-columns:minmax(0,1fr) max-content;gap:7px;align-items:center}
+#pointsSettingsCard .settings-grid>div{display:grid;grid-template-columns:max-content minmax(64px,78px);align-items:center;gap:6px;width:auto;max-width:100%;min-width:0}
+#pointsSettingsCard .settings-grid .info-label{margin:0;font-size:11px;line-height:1.15;white-space:nowrap;letter-spacing:0}
+#pointsSettingsCard #basePointsRate{width:100%;min-width:0;height:38px;min-height:38px;padding:0 7px;box-sizing:border-box}
+#pointsSettingsCard .settings-grid #saveBaseRateBtn{height:38px;min-height:38px;padding:0 9px;font-size:10px}
+#pointsSettingsCard .payment-methods-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#pointsSettingsCard .payment-method-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:start;align-items:center;gap:8px;min-width:0;padding:8px 9px}
+#pointsSettingsCard .payment-method-info{min-width:0}
+#pointsSettingsCard .payment-method-info strong{font-size:12px;line-height:1.25;overflow-wrap:anywhere}
+#pointsSettingsCard .payment-method-info span{font-size:10px;line-height:1.25;overflow-wrap:anywhere}
+#pointsSettingsCard .payment-method-eligible{font-size:11px;line-height:1.2;white-space:nowrap;gap:5px}
+#pointsSettingsCard .payment-method-eligible input{flex:0 0 15px}
+#pointsSettingsCard .promo-form{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+#pointsSettingsCard .promo-form>*,
+#pointsSettingsCard .promotion-field{min-width:0;max-width:100%;box-sizing:border-box}
+#pointsSettingsCard .promotion-field{width:100%}
+#pointsSettingsCard .promo-form input[type="date"]{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding-left:8px;padding-right:8px}
+@media(max-width:620px){
+  #pointsSettingsCard .settings-grid{width:100%;grid-template-columns:minmax(0,1fr) max-content;gap:6px}
+  #pointsSettingsCard .settings-grid>div{grid-template-columns:max-content minmax(60px,72px);gap:5px}
+  #pointsSettingsCard .settings-grid .info-label{font-size:10px}
+  #pointsSettingsCard .settings-grid #saveBaseRateBtn{height:36px;min-height:36px;padding:0 8px;font-size:9px}
+  #pointsSettingsCard #basePointsRate{height:36px;min-height:36px}
+  #pointsSettingsCard .payment-methods-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  #pointsSettingsCard .payment-method-row{grid-template-columns:minmax(0,1fr);gap:6px;padding:8px}
+  #pointsSettingsCard .payment-method-eligible{white-space:normal;font-size:10px}
+  #pointsSettingsCard .payment-methods-heading .panel-title{font-size:14px}
+  #pointsSettingsCard .payment-methods-tools{gap:5px}
+  #pointsSettingsCard .payment-methods-tools .panel-tag{font-size:9px;padding:4px 6px}
+  #pointsSettingsCard .payment-method-refresh{padding:0 7px;font-size:8px}
+  #pointsSettingsCard .promo-form{grid-template-columns:minmax(0,1fr)}
+  #pointsSettingsCard .promo-form #createPromoBtn{grid-column:auto;justify-self:start}
+}
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -588,7 +609,7 @@ button.hidden{display:none!important}
     </div>
       <div class="settings-grid">
         <div>
-          <span class="info-label">Tasa base · AP por $1.000</span>
+          <span class="info-label">AP por $1.000</span>
           <input id="basePointsRate" type="number" min="0" max="100000" step="1" inputmode="numeric" aria-label="Tasa base de AvoPuntos">
         </div>
         <button id="saveBaseRateBtn" class="primary" type="button">GUARDAR TASA</button>
@@ -596,18 +617,14 @@ button.hidden{display:none!important}
       <div class="payment-methods-block">
         <div class="panel-heading payment-methods-heading">
           <h3 class="panel-title">Métodos de pago</h3>
-          <span id="paymentMethodsStatus" class="panel-tag">Admin</span>
-        </div>
-        <div id="paymentMethodList" class="payment-methods-list"><div class="empty">Cargando métodos de pago…</div></div>
-        <div class="payment-method-create">
-          <div class="payment-method-detected-heading">
-            <div class="payment-method-create-title">Métodos de Loyverse pendientes de configurar</div>
+          <div class="payment-methods-tools">
+            <span id="paymentMethodsStatus" class="panel-tag">Admin</span>
             <button id="refreshPaymentTypesBtn" class="payment-method-refresh" type="button">ACTUALIZAR</button>
           </div>
-          <div id="detectedPaymentMethodList" class="payment-method-detected-list"><div class="empty">Consultando catálogo de Loyverse…</div></div>
-          <div class="helper payment-method-help">Puedes agregarlos a AvoPuntos aunque todavía no hayan aparecido en un tiquete.</div>
-          <div id="paymentMethodActionStatus" aria-live="polite"></div>
         </div>
+        <div class="helper payment-method-help">Los métodos creados en Loyverse se incorporan aquí automáticamente. Activa «Suma AP» solo en los métodos que acumulan AvoPuntos.</div>
+        <div id="paymentMethodList" class="payment-methods-list"><div class="empty">Cargando métodos de pago…</div></div>
+        <div id="paymentMethodActionStatus" aria-live="polite"></div>
       </div>
       <div class="panel-heading promotion-heading" style="margin-top:15px;padding-top:10px">
         <h3 class="panel-title" style="font-size:15px">Nueva promoción</h3>
@@ -1375,103 +1392,83 @@ let configuredPaymentMethodRows=[];
 async function loadPaymentMethods(){
   const status=$('paymentMethodsStatus');
   const list=$('paymentMethodList');
-  const detectedList=$('detectedPaymentMethodList');
   const refreshButton=$('refreshPaymentTypesBtn');
+  const actionStatus=$('paymentMethodActionStatus');
   if(refreshButton)refreshButton.disabled=true;
-  status.textContent='Cargando…';
+  status.textContent='Sincronizando…';
+  actionStatus.textContent='Consultando métodos de Loyverse…';
 
-  const {data:methods,error:methodsError}=await db.from('avopuntos_payment_methods')
+  const {data:initialMethods,error:methodsError}=await db.from('avopuntos_payment_methods')
     .select('payment_type_id,name,loyverse_type,eligible_for_avopuntos,active')
     .order('name',{ascending:true});
   if(methodsError){
     status.textContent='Error';
     list.innerHTML='<div class="empty">No se pudieron cargar los métodos de pago.</div>';
-    detectedList.innerHTML='<div class="empty">No se pudieron consultar los métodos pendientes.</div>';
-    $('paymentMethodActionStatus').textContent=methodsError.message;
+    actionStatus.textContent=methodsError.message;
     if(refreshButton)refreshButton.disabled=false;
     return;
   }
-  configuredPaymentMethodRows=Array.isArray(methods)?methods:[];
+  configuredPaymentMethodRows=Array.isArray(initialMethods)?initialMethods:[];
   renderPaymentMethods(configuredPaymentMethodRows);
 
-  const [catalogResult,receiptResult]=await Promise.all([
-    db.functions.invoke('loyverse-payment-methods',{body:{}}),
-    db.from('loyverse_receipts').select('payments').order('receipt_date',{ascending:false}).limit(1000)
-  ]);
-  const catalogError=catalogResult.error||(!catalogResult.data?.ok?new Error(catalogResult.data?.error||'No se recibió respuesta válida del catálogo.'):null);
-  const catalogRows=Array.isArray(catalogResult.data?.payment_types)?catalogResult.data.payment_types:[];
-  const receipts=receiptResult.data;
-  const receiptsError=receiptResult.error;
-  const discoveredById=new Map();
-
-  if(!catalogError){
-    for(const method of catalogRows){
-      const id=String(method?.id||'').trim();
-      const name=String(method?.name||'').trim();
-      if(!id||!name)continue;
-      discoveredById.set(id,{
-        id,name,type:String(method?.type||'OTHER').trim().toUpperCase()||'OTHER',
-        source:'catalog'
-      });
-    }
-  }
-  if(!receiptsError){
-    for(const receipt of (receipts||[])){
-      const payments=Array.isArray(receipt?.payments)?receipt.payments:[];
-      for(const payment of payments){
-        const id=String(payment?.payment_type_id||'').trim();
-        const name=String(payment?.name||'').trim();
-        if(!id||!name||discoveredById.has(id))continue;
-        discoveredById.set(id,{
-          id,name,type:String(payment?.type||'OTHER').trim().toUpperCase()||'OTHER',
-          source:'receipt'
-        });
-      }
-    }
-  }
-
-  const configuredIds=new Set(configuredPaymentMethodRows.map(method=>String(method.payment_type_id)));
-  detectedPaymentMethodChoices=[...discoveredById.values()]
-    .filter(method=>!configuredIds.has(method.id))
-    .sort((a,b)=>a.name.localeCompare(b.name,'es'));
-
-  if(!catalogError){
-    renderDetectedPaymentMethods(detectedPaymentMethodChoices);
-    $('paymentMethodActionStatus').textContent='';
-    status.textContent=configuredPaymentMethodRows.length+' configurados · catálogo actualizado';
-  }else{
-    if(!receiptsError){
-      renderDetectedPaymentMethods(detectedPaymentMethodChoices);
-      $('paymentMethodActionStatus').textContent='No se pudo consultar el catálogo de Loyverse; se muestran los métodos de los tiquetes recientes. '+catalogError.message;
-    }else{
-      detectedList.innerHTML='<div class="empty">No fue posible consultar el catálogo ni los tiquetes de Loyverse.</div>';
-      $('paymentMethodActionStatus').textContent='Catálogo: '+catalogError.message+' · Tiquetes: '+receiptsError.message;
-    }
-    status.textContent=configuredPaymentMethodRows.length+' configurados · catálogo no disponible';
-  }
-  if(refreshButton)refreshButton.disabled=false;
-}
-function renderDetectedPaymentMethods(methods){
-  const list=$('detectedPaymentMethodList');
-  if(!methods.length){
-    list.innerHTML='<div class="empty">No hay métodos pendientes en el catálogo de Loyverse.</div>';
+  const {data:catalog,error:catalogInvokeError}=await db.functions.invoke('loyverse-payment-methods',{body:{}});
+  const catalogError=catalogInvokeError||(!catalog?.ok?new Error(catalog?.error||'No se recibió un catálogo válido de Loyverse.'):null);
+  if(catalogError){
+    status.textContent=configuredPaymentMethodRows.length+' configurados';
+    actionStatus.textContent='No se pudo actualizar desde Loyverse. Los métodos ya configurados siguen disponibles. '+catalogError.message;
+    if(refreshButton)refreshButton.disabled=false;
     return;
   }
-  list.innerHTML=methods.map(method=>{
-    const id=escapeHtml(method.id);
-    const sourceLabel=method.source==='catalog'?'Catálogo de Loyverse':'Detectado en tiquetes';
-    return '<div class="payment-method-detected-row" data-detected-payment="'+id+'">'+
-      '<div class="payment-method-info"><strong>'+escapeHtml(method.name)+'</strong><span>'+escapeHtml(method.type)+' · '+sourceLabel+'</span></div>'+
-      '<label class="payment-method-eligible"><input class="payment-method-checkbox" type="checkbox" data-detected-eligible="'+id+'"> Suma AP</label>'+
-      '<button class="primary payment-method-detected-add" type="button" data-add-detected-method="'+id+'">AGREGAR</button>'+
-    '</div>';
-  }).join('');
+
+  const idPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const configuredIds=new Set(configuredPaymentMethodRows.map(method=>String(method.payment_type_id).toLowerCase()));
+  const catalogById=new Map();
+  for(const item of (Array.isArray(catalog.payment_types)?catalog.payment_types:[])){
+    const id=String(item?.id||'').trim();
+    const name=String(item?.name||'').trim();
+    if(!idPattern.test(id)||!name)continue;
+    catalogById.set(id.toLowerCase(),{
+      payment_type_id:id,
+      name,
+      loyverse_type:String(item?.type||'OTHER').trim().toUpperCase()||'OTHER',
+      eligible_for_avopuntos:false,
+      active:true,
+      updated_at:new Date().toISOString()
+    });
+  }
+
+  const missingMethods=[...catalogById.values()].filter(method=>!configuredIds.has(method.payment_type_id.toLowerCase()));
+  let insertError=null;
+  if(missingMethods.length){
+    const result=await db.from('avopuntos_payment_methods').insert(missingMethods);
+    insertError=result.error;
+  }
+
+  const {data:latestMethods,error:reloadError}=await db.from('avopuntos_payment_methods')
+    .select('payment_type_id,name,loyverse_type,eligible_for_avopuntos,active')
+    .order('name',{ascending:true});
+  if(!reloadError){
+    configuredPaymentMethodRows=Array.isArray(latestMethods)?latestMethods:[];
+    renderPaymentMethods(configuredPaymentMethodRows);
+  }
+
+  status.textContent=configuredPaymentMethodRows.length+' configurados';
+  if(insertError){
+    actionStatus.textContent='No se pudieron incorporar todos los métodos detectados: '+insertError.message;
+  }else if(reloadError){
+    actionStatus.textContent='Catálogo consultado, pero no se pudo recargar la lista: '+reloadError.message;
+  }else if(missingMethods.length){
+    actionStatus.textContent='Se incorporaron '+missingMethods.length+' método(s) nuevo(s). Revisa «Suma AP» en cada uno.';
+  }else{
+    actionStatus.textContent='Métodos sincronizados con Loyverse.';
+  }
+  if(refreshButton)refreshButton.disabled=false;
 }
 
 function renderPaymentMethods(methods){
   const list=$('paymentMethodList');
   if(!methods.length){
-    list.innerHTML='<div class="empty">No hay métodos configurados.</div>';
+    list.innerHTML='<div class="empty">No se encontraron métodos de pago configurados.</div>';
     return;
   }
   list.innerHTML=methods.map(method=>{
@@ -1479,1138 +1476,10 @@ function renderPaymentMethods(methods){
     return '<div class="payment-method-row">'+
       '<div class="payment-method-info"><strong>'+escapeHtml(method.name)+'</strong><span>'+escapeHtml(method.loyverse_type||'Tipo no definido')+(active?'':' · Inactivo')+'</span></div>'+
       '<label class="payment-method-eligible"><input class="payment-method-checkbox" type="checkbox" data-method-eligible="'+escapeHtml(method.payment_type_id)+'" '+(method.eligible_for_avopuntos?'checked':'')+(!active?' disabled':'')+'>Suma AP</label>'+
-      '<button class="payment-method-delete" type="button" data-delete-method="'+escapeHtml(method.payment_type_id)+'" data-method-name="'+escapeHtml(method.name)+'">ELIMINAR</button>'+
       '</div>';
   }).join('');
 }
 
-async function loadPointsSettings(){
-  const {data,error}=await db.rpc('avopuntos_admin_get_settings');
-  if(error){
-    $('pointsSettingsStatus').textContent='Error';
-    showNotice('No se pudo cargar la configuración de AvoPuntos: '+error.message,true);
-    return;
-  }
-  $('basePointsRate').value=Number(data?.points_per_thousand??0);
-  renderPromotions(Array.isArray(data?.promotions)?data.promotions:[]);
-  $('pointsSettingsStatus').textContent='Admin';
-  await loadPaymentMethods();
-}
-
-async function saveBaseRate(){
-  const value=Number($('basePointsRate').value);
-  const status=$('pointsSettingsStatus');
-  if(!Number.isInteger(value)||value<0||value>100000){
-    status.textContent='Tasa inválida';
-    showNotice('La tasa base debe ser un entero entre 0 y 100000 AP por cada $1.000.',true);
-    return;
-  }
-  $('saveBaseRateBtn').disabled=true;
-  status.textContent='Guardando…';
-  const {data,error}=await db.rpc('avopuntos_admin_update_base_rate',{p_points_per_thousand:value});
-  $('saveBaseRateBtn').disabled=false;
-  if(error){
-    status.textContent='Error';
-    showNotice('No se pudo guardar la tasa base: '+error.message,true);
-    return;
-  }
-  status.textContent='Guardado';
-  $('basePointsRate').value=Number(data?.points_per_thousand??value);
-}
-async function createPromotion(){
-  const name=$('promoName').value.trim();
-  const multiplier=Number($('promoMultiplier').value);
-  const start=$('promoStart').value;
-  const end=$('promoEnd').value||null;
-  const status=$('pointsSettingsStatus');
-  if(!name||!Number.isFinite(multiplier)||multiplier<=0||multiplier>100||!start||(end&&end<start)){
-    status.textContent='Datos inválidos';
-    showNotice('Revisa nombre, valor y fechas de la promoción.',true);
-    return;
-  }
-  $('createPromoBtn').disabled=true;
-  status.textContent='Creando…';
-  const {error}=await db.rpc('avopuntos_admin_create_promotion',{
-    p_name:name,p_multiplier:multiplier,p_start_date:start,p_end_date:end
-  });
-  $('createPromoBtn').disabled=false;
-  if(error){
-    status.textContent='Error';
-    showNotice('No se pudo crear la promoción: '+error.message,true);
-    return;
-  }
-  $('promoName').value='';
-  $('promoMultiplier').value='';
-  $('promoStart').value='';
-  $('promoEnd').value='';
-  await loadPointsSettings();
-}
-async function togglePromotion(id,currentActive){
-  const {error}=await db.rpc('avopuntos_admin_set_promotion_active',{
-    p_promotion_id:id,p_active:!currentActive
-  });
-  if(error){
-    showNotice('No se pudo cambiar el estado de la promoción: '+error.message,true);
-    return;
-  }
-  await loadPointsSettings();
-}
-function populateCustomerEditFields(profile){
-  if(!profile)return;
-  $('editFullName').value=profile.full_name||'';
-  $('editEmail').value=profile.email||'';
-  $('editPhone').value=profile.phone||'';
-  $('editWhatsappSame').checked=Boolean(profile.whatsapp_same);
-  $('editWhatsapp').value=profile.whatsapp_same ? (profile.phone||'') : (profile.whatsapp||'');
-  $('editWhatsapp').disabled=Boolean(profile.whatsapp_same);
-  $('editInstagram').value=profile.instagram||'';
-  $('editDocumentType').value=profile.document_type||'Cédula de ciudadanía';
-  $('editDocumentNumber').value=profile.document_number||'';
-  $('editBirthDate').value=profile.birth_date||'';
-}
-function setCustomerEditMode(active){
-  customerEditing=Boolean(active);
-  document.querySelectorAll('[data-edit-view]').forEach(el=>el.classList.toggle('hidden',customerEditing));
-  document.querySelectorAll('.edit-control').forEach(el=>el.classList.toggle('hidden',!customerEditing));
-  $('editWhatsapp').disabled=!customerEditing || $('editWhatsappSame').checked;
-  $('editCustomerBtn').textContent=customerEditing?'GUARDAR CAMBIOS':'EDITAR DATOS';
-  $('cancelEditCustomerBtn').classList.toggle('hidden',!customerEditing);
-  $('deleteCustomerBtn').disabled=customerEditing;
-  $('customerEditStatus').textContent=customerEditing?'Modifica los datos permitidos y guarda los cambios.':'';
-  $('customerEditStatus').className='customer-edit-status muted';
-}
-function enterCustomerEditMode(){
-  if(!selectedProfile)return;
-  populateCustomerEditFields(selectedProfile);
-  setCustomerEditMode(true);
-}
-function cancelCustomerEditMode(){
-  if(!customerEditing)return;
-  setCustomerEditMode(false);
-}
-async function saveCustomerData(){
-  if(!selectedProfile)return;
-  const fullName=$('editFullName').value.trim();
-  const email=$('editEmail').value.trim().toLowerCase();
-  const phone=$('editPhone').value.trim();
-  const whatsappSame=$('editWhatsappSame').checked;
-  const whatsapp=$('editWhatsapp').value.trim();
-  const instagram=$('editInstagram').value.trim();
-  const documentType=$('editDocumentType').value;
-  const documentNumber=$('editDocumentNumber').value.trim();
-  const birthDate=$('editBirthDate').value||null;
-
-  if(!fullName||!email||!phone||!documentNumber){
-    $('customerEditStatus').textContent='Completa nombre, correo, celular y documento.';
-    $('customerEditStatus').className='customer-edit-status error';
-    return;
-  }
-  if(!whatsappSame&&!whatsapp){
-    $('customerEditStatus').textContent='Indica el WhatsApp o marca «Igual al celular».';
-    $('customerEditStatus').className='customer-edit-status error';
-    return;
-  }
-
-  $('editCustomerBtn').disabled=true;
-  $('cancelEditCustomerBtn').disabled=true;
-  $('deleteCustomerBtn').disabled=true;
-  $('customerEditStatus').textContent='Guardando cambios…';
-  $('customerEditStatus').className='customer-edit-status muted';
-  hideNotice();
-
-  const {data,error}=await db.rpc('avopuntos_admin_update_customer_profile',{
-    p_profile_id:selectedProfile.id,
-    p_full_name:fullName,
-    p_email:email,
-    p_phone:phone,
-    p_whatsapp_same:whatsappSame,
-    p_whatsapp:whatsapp,
-    p_instagram:instagram||null,
-    p_document_type:documentType,
-    p_document_number:documentNumber,
-    p_birth_date:birthDate
-  });
-
-  if(error){
-    $('editCustomerBtn').disabled=false;
-    $('cancelEditCustomerBtn').disabled=false;
-    $('deleteCustomerBtn').disabled=false;
-    $('customerEditStatus').textContent=error.message||'No se pudieron guardar los cambios.';
-    $('customerEditStatus').className='customer-edit-status error';
-    return;
-  }
-
-  const updated=data?.profile;
-  if(!updated?.id){
-    $('editCustomerBtn').disabled=false;
-    $('cancelEditCustomerBtn').disabled=false;
-    $('deleteCustomerBtn').disabled=false;
-    $('customerEditStatus').textContent='La actualización terminó sin devolver el perfil actualizado.';
-    $('customerEditStatus').className='customer-edit-status error';
-    return;
-  }
-
-  selectedProfile={...selectedProfile,...updated};
-  customerEditing=false;
-  await loadClient(selectedProfile);
-  showNotice(
-    data?.email_changed
-      ? 'Datos actualizados. El correo de acceso del cliente también fue actualizado; Loyverse quedó programado para sincronizar los cambios.'
-      : 'Datos actualizados correctamente. Loyverse quedó programado para sincronizar los cambios.',
-    false
-  );
-}
-
-function closeDeleteCustomerModal(){
-  $('deleteCustomerModal').hidden=true;
-  document.body.style.overflow='';
-}
-
-function deleteSelectedCustomer(){
-  hideNotice();
-  if(!selectedProfile?.id){
-    showNotice('Selecciona primero una cuenta de cliente para eliminar.',true);
-    return;
-  }
-  const email=String(selectedProfile.email||'').trim();
-  const username=String(selectedProfile.username||'').trim();
-  $('deleteCustomerTarget').textContent=(username||email||'Cuenta seleccionada')+
-    (email&&username?' ('+email+')':'');
-  $('deleteCustomerStatus').textContent='Revisa la cuenta antes de confirmar la eliminación.';
-  $('deleteCustomerStatus').className='delete-confirm-status muted';
-  $('confirmDeleteCustomerBtn').disabled=false;
-  $('confirmDeleteCustomerBtn').textContent='ELIMINAR DEFINITIVAMENTE';
-  $('cancelDeleteCustomerBtn').disabled=false;
-  $('deleteCustomerModal').hidden=false;
-  document.body.style.overflow='hidden';
-  $('confirmDeleteCustomerBtn').focus();
-}
-
-async function confirmDeleteSelectedCustomer(){
-  if(!selectedProfile?.id){
-    $('deleteCustomerStatus').textContent='No hay una cuenta seleccionada. Cierra esta ventana y vuelve a buscar el cliente.';
-    $('deleteCustomerStatus').className='delete-confirm-status error';
-    return;
-  }
-  const profileId=selectedProfile.id;
-  const confirmBtn=$('confirmDeleteCustomerBtn');
-  const cancelBtn=$('cancelDeleteCustomerBtn');
-  confirmBtn.disabled=true;
-  cancelBtn.disabled=true;
-  $('deleteCustomerBtn').disabled=true;
-  confirmBtn.textContent='ELIMINANDO…';
-  $('deleteCustomerStatus').textContent='Eliminando la cuenta y esperando confirmación de Supabase…';
-  $('deleteCustomerStatus').className='delete-confirm-status muted';
-  hideNotice();
-
-  try{
-    const {data,error}=await db.rpc('avopuntos_admin_delete_customer',{p_profile_id:profileId});
-    if(error)throw error;
-    if(!data||data.deleted!==true)throw new Error('Supabase no confirmó la eliminación de la cuenta.');
-
-    if(selectedProfile?.id===profileId){
-      selectedProfile=null;
-      pointsBalance=0;
-      $('clientArea').classList.add('hidden');
-      $('results').innerHTML='<div class="empty">Cuenta eliminada. Puedes buscar otro cliente.</div>';
-      setText('infoUsername','—');
-      setText('infoFullName','—');
-      setText('infoEmail','—');
-      setText('infoPhone','—');
-      setText('infoWhatsapp','—');
-      setText('infoInstagram','—');
-      setText('infoDocument','—');
-      setText('infoBirth','—');
-      setText('infoCreated','—');
-      setText('balanceValue','—');
-      setText('accountMeta','—');
-    }
-    closeDeleteCustomerModal();
-    showNotice('La cuenta fue eliminada correctamente.',false);
-  }catch(error){
-    $('deleteCustomerStatus').textContent='No se pudo eliminar la cuenta: '+(error?.message||'Error desconocido.');
-    $('deleteCustomerStatus').className='delete-confirm-status error';
-    confirmBtn.disabled=false;
-    cancelBtn.disabled=false;
-    confirmBtn.textContent='REINTENTAR ELIMINACIÓN';
-    $('deleteCustomerBtn').disabled=false;
-  }
-}
-
-async function loadCustomerRule(){
-  if(!selectedProfile)return;
-  const {data:rows,error}=await db.from('avopuntos_customer_rules')
-    .select('id,multiplier,start_date,end_date,active,reason,created_at')
-    .eq('profile_id',selectedProfile.id)
-    .order('created_at',{ascending:false})
-    .limit(1);
-  if(error){
-    $('customerRuleSummary').textContent='No se pudo consultar el beneficio individual.';
-    return;
-  }
-  const data=Array.isArray(rows)?rows[0]:null;
-  if(!data){
-    $('customerRuleSummary').textContent='Sin beneficio individual configurado.';
-    $('customerRuleStatus').textContent='';
-    return;
-  }
-  const range=data.start_date+(data.end_date?' → '+data.end_date:' → sin fecha final');
-  $('customerRuleSummary').innerHTML='<strong>'+Number(data.multiplier).toLocaleString('es-CO',{maximumFractionDigits:2})+'×</strong> · '+range+' · '+(data.active?'Activo':'Inactivo')+'<br>Motivo: '+escapeHtml(data.reason);
-  $('customerRuleSummary').className='helper';
-  $('customerRuleSummary').dataset.ruleId=data.id;
-  $('disableCustomerRuleBtn').disabled=!data.active;
-}
-async function saveCustomerRule(){
-  if(!selectedProfile)return;
-  const multiplier=Number($('customerMultiplier').value);
-  const start=$('customerRuleStart').value;
-  const end=$('customerRuleEnd').value||null;
-  const reason=$('customerRuleReason').value.trim();
-  if(!Number.isFinite(multiplier)||multiplier<=0||multiplier>100||!start||(end&&end<start)||!reason){
-    $('customerRuleStatus').textContent='Revisa valor, fechas y motivo.';
-    $('customerRuleStatus').className='special-rule-status error';
-    return;
-  }
-  $('saveCustomerRuleBtn').disabled=true;
-  $('disableCustomerRuleBtn').disabled=true;
-  $('customerRuleStatus').textContent='Guardando…';
-  $('customerRuleStatus').className='special-rule-status muted';
-  const {error}=await db.rpc('avopuntos_admin_set_customer_multiplier',{
-    p_profile_id:selectedProfile.id,
-    p_multiplier:multiplier,
-    p_start_date:start,
-    p_end_date:end,
-    p_reason:reason
-  });
-  $('saveCustomerRuleBtn').disabled=false;
-  $('disableCustomerRuleBtn').disabled=false;
-  if(error){
-    $('customerRuleStatus').textContent=error.message||'No se pudo guardar el beneficio.';
-    $('customerRuleStatus').className='special-rule-status error';
-    return;
-  }
-  $('customerMultiplier').value='';
-  $('customerRuleStart').value='';
-  $('customerRuleEnd').value='';
-  $('customerRuleReason').value='';
-  $('customerRuleStatus').textContent='Beneficio guardado correctamente.';
-  $('customerRuleStatus').className='special-rule-status ok';
-  await loadCustomerRule();
-}
-async function disableCustomerRule(){
-  const ruleId=$('customerRuleSummary').dataset.ruleId;
-  if(!ruleId)return;
-  $('disableCustomerRuleBtn').disabled=true;
-  const {error}=await db.rpc('avopuntos_admin_set_customer_rule_active',{
-    p_rule_id:ruleId,p_active:false
-  });
-  if(error){
-    $('customerRuleStatus').textContent=error.message||'No se pudo desactivar.';
-    $('customerRuleStatus').className='special-rule-status error';
-    $('disableCustomerRuleBtn').disabled=false;
-    return;
-  }
-  $('customerRuleStatus').textContent='Beneficio individual desactivado.';
-  $('customerRuleStatus').className='special-rule-status ok';
-  await loadCustomerRule();
-}
-
-async function adjustSelectedPoints(deltaMultiplier){
-  if(!selectedProfile)return;
-
-  const pointsInput=$('adjustPoints');
-  const reasonInput=$('adjustReason');
-  const statusEl=$('pointsAdjustStatus');
-  const points=Number(pointsInput.value);
-  const reason=reasonInput.value.trim();
-
-  if(!Number.isInteger(points)||points<=0){
-    statusEl.textContent='Indica una cantidad entera de puntos mayor que cero.';
-    statusEl.className='points-adjust-status error';
-    return;
-  }
-  if(!reason){
-    statusEl.textContent='Indica el motivo del ajuste.';
-    statusEl.className='points-adjust-status error';
-    return;
-  }
-
-  const delta=points*deltaMultiplier;
-  if(delta<0 && points>Number(pointsBalance)){
-    statusEl.textContent='No se pueden quitar más puntos que el saldo disponible.';
-    statusEl.className='points-adjust-status error';
-    return;
-  }
-
-  $('addPointsBtn').disabled=true;
-  $('removePointsBtn').disabled=true;
-  statusEl.textContent='Aplicando ajuste…';
-  statusEl.className='points-adjust-status muted';
-
-  const {data,error}=await db.rpc('avopuntos_admin_adjust_points',{
-    p_profile_id:selectedProfile.id,
-    p_points_delta:delta,
-    p_reason:reason
-  });
-
-  $('addPointsBtn').disabled=false;
-  $('removePointsBtn').disabled=false;
-
-  if(error){
-    statusEl.textContent=error.message||'No se pudo aplicar el ajuste.';
-    statusEl.className='points-adjust-status error';
-    return;
-  }
-
-  const nextBalance=Number(data?.balance);
-  pointsBalance=Number.isInteger(nextBalance)?nextBalance:pointsBalance+delta;
-  setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
-  $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
-  pointsInput.value='';
-  reasonInput.value='';
-  statusEl.textContent=(delta>0?'+':'')+delta.toLocaleString('es-CO')+' AP aplicados correctamente.';
-  statusEl.className='points-adjust-status ok';
-
-  await loadRecentHistory();
-  await refreshHistoryYears();
-}
-
-async function refreshClientPointsAfterVerification(){
-  if(!selectedProfile)return;
-
-  const [{data:account,error:accountError},{data:movements,error:movementsError}]=await Promise.all([
-    db.from('avopuntos_accounts').select('balance,status,last_loyverse_points,last_loyverse_sync_at,last_loyverse_sync_attempt_at,last_loyverse_sync_error,updated_at').eq('profile_id',selectedProfile.id).maybeSingle(),
-    db.from('avopuntos_movements').select('movement_type,points_delta,receipt_number,related_receipt_number').eq('profile_id',selectedProfile.id).limit(1000)
-  ]);
-
-  if(!accountError){
-    pointsBalance=Number(account?.balance||0);
-    setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
-    $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
-  }
-
-  if(!movementsError){
-    let earned=0,used=0;
-    const ticketSet=new Set();
-    for(const m of movements||[]){
-      const d=Number(m.points_delta||0);
-      if(m.movement_type==='earn'||m.movement_type==='earn_reversal')earned+=d;
-      if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal')used-=d;
-      if(m.receipt_number)ticketSet.add(m.receipt_number);
-      if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
-    }
-    setText('statEarned',Math.max(0,Math.round(earned)).toLocaleString('es-CO')+' AP');
-    setText('statUsed',Math.max(0,Math.round(used)).toLocaleString('es-CO')+' AP');
-    setText('statMovements',(movements||[]).length.toLocaleString('es-CO'));
-    setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
-  }
-
-  await loadRecentHistory();
-  await refreshHistoryYears();
-}
-
-function setAdminVerificationInfo(infoId, baseValue, data){
-  const base=String(baseValue||'No registrado');
-  if(data?.status==='verified'){
-    setText(infoId,base+' · ✅ Verificado');
-  }else if(data?.status==='pending'){
-    setText(infoId,base+' · ⏳ Solicitud pendiente');
-  }else{
-    setText(infoId,base);
-  }
-}
-
-function renderWhatsappVerificationAdmin(data){
-  const area=$('whatsappAdminStatus');
-  const mode=$('whatsappAdminMode');
-  const card=$('whatsappAdminCard');
-  if(!area)return;
-
-  area.dataset.verificationId=String(data?.id||'');
-  if(card)card.hidden=!(data && data.status==='pending');
-
-  const base=selectedProfile
-    ? (selectedProfile.whatsapp_same
-      ? (selectedProfile.phone ? selectedProfile.phone : 'Igual al celular')
-      : (selectedProfile.whatsapp || 'No registrado'))
-    : (data?.contact_value||'No registrado');
-  setAdminVerificationInfo('infoWhatsapp',base,data);
-
-  if(!data){
-    area.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de WhatsApp para este cliente.</div>';
-    if(mode)mode.textContent='Sin solicitud';
-    return;
-  }
-
-  if(data.status==='verified'){
-    const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    area.innerHTML='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>'+
-      (bonus>0
-        ?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
-        :'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>');
-    if(mode)mode.textContent='Verificado';
-    return;
-  }
-
-  const code=String(data.code||'');
-  area.innerHTML='<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-    '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-    '<div class="verification-admin-help">Comprueba manualmente que el número desde el que te escribió por WhatsApp coincide con el número registrado arriba y que el código coincide. Después valida.</div>'+
-    '<button id="validateWhatsappBtn" class="verification-admin-btn" type="button">VALIDAR WHATSAPP</button>';
-
-  if(mode)mode.textContent='Pendiente';
-}
-async function loadWhatsappVerificationAdmin(){
-  if(!selectedProfile)return;
-
-  const {data,error}=await db.rpc('avopuntos_admin_get_whatsapp_verification',{
-    p_profile_id:selectedProfile.id
-  });
-
-  if(error){
-    renderWhatsappVerificationAdmin(null);
-    showNotice('No se pudo consultar la verificación de WhatsApp: '+(error.message||'error desconocido'),true);
-    return;
-  }
-
-  renderWhatsappVerificationAdmin(Array.isArray(data)?data[0]:null);
-}
-
-async function verifySelectedWhatsapp(){
-  const btn=$('validateWhatsappBtn');
-  const area=$('whatsappAdminStatus');
-  if(!btn||!area)return;
-  if(!selectedProfile){
-    showNotice('Selecciona un cliente antes de validar WhatsApp.',true);
-    return;
-  }
-
-  const id=area.dataset.verificationId;
-  if(!id){
-    showNotice('No hay una solicitud pendiente de WhatsApp para este cliente.',true);
-    return;
-  }
-
-  const originalLabel=btn.textContent;
-  btn.disabled=true;
-  btn.textContent='VALIDANDO…';
-
-  try{
-    hideNotice();
-    const {data,error}=await db.rpc('avopuntos_admin_verify_whatsapp',{p_verification_id:id});
-    if(error)throw error;
-
-    const result=data||{};
-    const bonus=Number(result.bonus_points||0);
-    $('pointsAdjustStatus').textContent=bonus>0
-      ? 'WhatsApp validado. +'+bonus.toLocaleString('es-CO')+' AP acreditados.'
-      : 'WhatsApp validado. No se acreditó un bono nuevo.';
-    $('pointsAdjustStatus').className='points-adjust-status '+(bonus>0?'ok':'muted');
-
-    await loadWhatsappVerificationAdmin();
-    await loadCustomerRewardsAdmin();
-    await refreshClientPointsAfterVerification();
-  }catch(error){
-    showNotice('No se pudo validar WhatsApp: '+(error?.message||'inténtalo nuevamente.'),true);
-  }finally{
-    if(btn.isConnected){
-      btn.disabled=false;
-      btn.textContent=originalLabel;
-    }
-  }
-}
-
-function renderInstagramVerificationAdmin(data){
-  const area=$('instagramAdminStatus');
-  const mode=$('instagramAdminMode');
-  const card=$('instagramAdminCard');
-  if(!area)return;
-
-  area.dataset.verificationId=String(data?.id||'');
-  if(card)card.hidden=!(data && data.status==='pending');
-
-  const base=String(data?.contact_value||selectedProfile?.instagram||'No registrado');
-  setAdminVerificationInfo('infoInstagram',base,data);
-
-  if(!data){
-    area.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Instagram para este cliente.</div>';
-    if(mode)mode.textContent='Sin solicitud';
-    return;
-  }
-
-  if(data.status==='verified'){
-    const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    area.innerHTML='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>'+
-      (bonus>0
-        ?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
-        :'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>');
-    if(mode)mode.textContent='Verificado';
-    return;
-  }
-
-  const code=String(data.code||'');
-  area.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Instagram')+'</div>'+
-    '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-    '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-    '<div class="instagram-admin-help">Comprueba manualmente que la cuenta corresponde al usuario registrado y que el código coincide con el enviado por DM. Después valida.</div>'+
-    '<button id="validateInstagramBtn" class="verification-admin-btn" type="button">VALIDAR INSTAGRAM</button>';
-
-  if(mode)mode.textContent='Pendiente';
-}
-async function loadInstagramVerificationAdmin(){
-  if(!selectedProfile)return;
-
-  const {data,error}=await db.rpc('avopuntos_admin_get_instagram_verification',{
-    p_profile_id:selectedProfile.id
-  });
-
-  if(error){
-    renderInstagramVerificationAdmin(null);
-    showNotice('No se pudo consultar la verificación de Instagram: '+(error.message||'error desconocido'),true);
-    return;
-  }
-
-  renderInstagramVerificationAdmin(Array.isArray(data)?data[0]:null);
-}
-
-async function verifySelectedInstagram(){
-  const btn=$('validateInstagramBtn');
-  const area=$('instagramAdminStatus');
-  if(!btn||!area)return;
-  if(!selectedProfile){
-    showNotice('Selecciona un cliente antes de validar Instagram.',true);
-    return;
-  }
-
-  const id=area.dataset.verificationId;
-  if(!id){
-    showNotice('No hay una solicitud pendiente de Instagram para este cliente.',true);
-    return;
-  }
-
-  const originalLabel=btn.textContent;
-  btn.disabled=true;
-  btn.textContent='VALIDANDO…';
-
-  try{
-    hideNotice();
-    const {data,error}=await db.rpc('avopuntos_admin_verify_instagram',{p_verification_id:id});
-    if(error)throw error;
-
-    const result=data||{};
-    const bonus=Number(result.bonus_points||0);
-    $('pointsAdjustStatus').textContent=bonus>0
-      ? 'Instagram validado. +'+bonus.toLocaleString('es-CO')+' AP acreditados.'
-      : 'Instagram validado. No se acreditó un bono nuevo.';
-    $('pointsAdjustStatus').className='points-adjust-status '+(bonus>0?'ok':'muted');
-
-    await loadInstagramVerificationAdmin();
-    await loadCustomerRewardsAdmin();
-    await refreshClientPointsAfterVerification();
-  }catch(error){
-    showNotice('No se pudo validar Instagram: '+(error?.message||'inténtalo nuevamente.'),true);
-  }finally{
-    if(btn.isConnected){
-      btn.disabled=false;
-      btn.textContent=originalLabel;
-    }
-  }
-}
-
-function renderFacebookVerificationAdmin(data){
-  const area=$('facebookAdminStatus');
-  const mode=$('facebookAdminMode');
-  const card=$('facebookAdminCard');
-  if(!area)return;
-
-  area.dataset.verificationId=String(data?.id||'');
-  if(card)card.hidden=!(data && data.status==='pending');
-
-  const base=String(data?.contact_value||'No registrado');
-  setAdminVerificationInfo('infoFacebook',base,data);
-
-  if(!data){
-    area.innerHTML='<div class="instagram-admin-help">No existe una solicitud de verificación de Facebook para este cliente.</div>';
-    if(mode)mode.textContent='Sin solicitud';
-    return;
-  }
-
-  if(data.status==='verified'){
-    const bonus=Number(data.bonus_granted?data.bonus_points:0);
-    area.innerHTML='<div class="verification-admin-line"><span class="verification-admin-badge verified">✅ Verificado</span></div>'+
-      (bonus>0
-        ?'<div class="verification-admin-help">Bonificación acreditada: +'+bonus.toLocaleString('es-CO')+' AP.</div>'
-        :'<div class="verification-admin-help">Verificado sin nueva bonificación.</div>');
-    if(mode)mode.textContent='Verificado';
-    return;
-  }
-
-  const code=String(data.code||'');
-  area.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Facebook')+'</div>'+
-    '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-    '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-    '<div class="instagram-admin-help">Comprueba manualmente que la cuenta/persona corresponde al cliente y que sigue a AvoHouse en Facebook. Confirma además que el código coincide con el recibido por mensaje directo.</div>'+
-    '<button id="validateFacebookBtn" class="verification-admin-btn" type="button">VALIDAR FACEBOOK</button>';
-
-  if(mode)mode.textContent='Pendiente';
-}
-async function loadFacebookVerificationAdmin(){
-  if(!selectedProfile)return;
-
-  const {data,error}=await db.rpc('avopuntos_admin_get_facebook_verification',{
-    p_profile_id:selectedProfile.id
-  });
-
-  if(error){
-    renderFacebookVerificationAdmin(null);
-    showNotice('No se pudo consultar la verificación de Facebook: '+(error.message||'error desconocido'),true);
-    return;
-  }
-
-  renderFacebookVerificationAdmin(Array.isArray(data)?data[0]:null);
-}
-
-async function verifySelectedFacebook(){
-  const btn=$('validateFacebookBtn');
-  const area=$('facebookAdminStatus');
-  if(!btn||!area)return;
-  if(!selectedProfile){
-    showNotice('Selecciona un cliente antes de validar Facebook.',true);
-    return;
-  }
-
-  const id=area.dataset.verificationId;
-  if(!id){
-    showNotice('No hay una solicitud pendiente de Facebook para este cliente.',true);
-    return;
-  }
-
-  const originalLabel=btn.textContent;
-  btn.disabled=true;
-  btn.textContent='VALIDANDO…';
-
-  try{
-    hideNotice();
-    const {data,error}=await db.rpc('avopuntos_admin_verify_facebook',{p_verification_id:id});
-    if(error)throw error;
-
-    const result=data||{};
-    const bonus=Number(result.bonus_points||0);
-    $('pointsAdjustStatus').textContent=bonus>0
-      ? 'Facebook validado. +'+bonus.toLocaleString('es-CO')+' AP acreditados.'
-      : 'Facebook validado. No se acreditó un bono nuevo.';
-    $('pointsAdjustStatus').className='points-adjust-status '+(bonus>0?'ok':'muted');
-
-    await loadFacebookVerificationAdmin();
-    await loadCustomerRewardsAdmin();
-    await refreshClientPointsAfterVerification();
-  }catch(error){
-    showNotice('No se pudo validar Facebook: '+(error?.message||'inténtalo nuevamente.'),true);
-  }finally{
-    if(btn.isConnected){
-      btn.disabled=false;
-      btn.textContent=originalLabel;
-    }
-  }
-}
-
-async function loadCustomerRewardsAdmin(){
-  if(!selectedProfile)return;
-
-  const {data,error}=await db.rpc('avopuntos_admin_get_customer_rewards',{
-    p_profile_id:selectedProfile.id
-  });
-
-  const list=$('customerRewardsAdmin');
-  if(!list)return;
-
-  if(error){
-    list.innerHTML='<div class="empty">No fue posible cargar las recompensas.</div>';
-    return;
-  }
-
-  if(!Array.isArray(data)||!data.length){
-    list.innerHTML='<div class="empty">No hay recompensas registradas.</div>';
-    return;
-  }
-
-  list.innerHTML=data.map(r=>{
-    const points=Number(r.points_granted||0);
-    const detail=points>0
-      ?'<div class="reward-admin-meta">+'+points.toLocaleString('es-CO')+' AP · '+escapeHtml(formatDate(r.claimed_at||r.created_at,true))+'</div>'
-      :'<div class="reward-admin-meta">'+escapeHtml(formatDate(r.claimed_at||r.created_at,true))+'</div>';
-    return '<div class="reward-admin-item"><div class="reward-admin-name">'+escapeHtml(r.name)+'</div>'+detail+'</div>';
-  }).join('');
-}
-
-
-async function loadClient(profile){
-  hideNotice();
-  selectedProfile=profile;
-  setCustomerEditMode(false);
-  $('clientArea').classList.remove('hidden');
-
-  setText('infoUsername',profile.username||'—');
-  setText('infoFullName',profile.full_name||'—');
-  setText('infoEmail',profile.email||'—');
-  setText('infoPhone',profile.phone||'—');
-  setText('infoWhatsapp',profile.whatsapp_same
-    ? (profile.phone ? profile.phone : 'Igual al celular')
-    : (profile.whatsapp || 'No registrado'));
-  setText('infoInstagram',profile.instagram || 'No registrado');
-  setText('infoFacebook','No registrado');
-  setText('infoDocument',[profile.document_type,profile.document_number].filter(Boolean).join(' · ')||'—');
-  setText('infoBirth',formatDateInput(profile.birth_date));
-  setText('infoCreated',formatDate(profile.created_at));
-  setText('clientStatus','Cliente seleccionado');
-
-  const [{data:account,error:accountError},{count:movementCount,error:movementError},{data:movements,error:movementsError}]=await Promise.all([
-    db.from('avopuntos_accounts').select('balance,status,last_loyverse_points,last_loyverse_sync_at,last_loyverse_sync_attempt_at,last_loyverse_sync_error,updated_at').eq('profile_id',profile.id).maybeSingle(),
-    db.from('avopuntos_movements').select('id',{count:'exact',head:true}).eq('profile_id',profile.id),
-    db.from('avopuntos_movements').select('movement_type,points_delta,receipt_number,related_receipt_number').eq('profile_id',profile.id).limit(1000)
-  ]);
-
-  if(accountError){showNotice('No se pudo cargar la cuenta AvoPuntos: '+accountError.message,true);return}
-  if(movementError){showNotice('No se pudo cargar el resumen de movimientos: '+movementError.message,true);return}
-  if(movementsError){showNotice('No se pudo cargar el resumen: '+movementsError.message,true);return}
-
-  pointsBalance=Number(account?.balance||0);
-  setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
-
-  const sync=account?.last_loyverse_sync_at?formatDate(account.last_loyverse_sync_at,true):'Sin sincronización registrada';
-  const syncError=account?.last_loyverse_sync_error?'<span class="error">Error de sincronización registrado</span>':'Última sincronización: '+sync;
-  $('accountMeta').innerHTML='Estado: <strong>'+String(account?.status||'—')+'</strong><br>'+syncError;
-
-  let earned=0,used=0;
-  const ticketSet=new Set();
-  for(const m of movements||[]){
-    const d=Number(m.points_delta||0);
-    if(m.movement_type==='earn'||m.movement_type==='earn_reversal')earned+=d;
-    if(m.movement_type==='redeem'||m.movement_type==='redeem_reversal')used-=d;
-    if(m.receipt_number)ticketSet.add(m.receipt_number);
-    if(m.related_receipt_number)ticketSet.add(m.related_receipt_number);
-  }
-  earned=Math.max(0,Math.round(earned));
-  used=Math.max(0,Math.round(used));
-  setText('statMovements',Number(movementCount||0).toLocaleString('es-CO'));
-  setText('statEarned',Number(earned).toLocaleString('es-CO')+' AP');
-  setText('statUsed',Number(used).toLocaleString('es-CO')+' AP');
-  setText('statTickets',ticketSet.size.toLocaleString('es-CO'));
-  $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
-
-  await loadRecentHistory();
-  await refreshHistoryYears();
-  await loadRecentEmailHistory();
-  await refreshEmailHistoryYears();
-  await loadWhatsappVerificationAdmin();
-  await loadInstagramVerificationAdmin();
-  await loadFacebookVerificationAdmin();
-  await loadCustomerRewardsAdmin();
-  await loadCustomerRule();
-}
-
-async function refreshHistoryYears(){
-  if(!selectedProfile)return;
-  const {data,error}=await db.from('avopuntos_movements').select('created_at').eq('profile_id',selectedProfile.id).order('created_at',{ascending:false}).limit(1000);
-  if(error)return;
-  populateHistoryYears(data||[]);
-}
-
-async function searchClients(){
-  const term=$('searchInput').value.trim();
-  const results=$('results');
-
-  if(term.length<2){
-    results.innerHTML=term?'<div class="empty">Escribe al menos 2 caracteres.</div>':'';
-    $('searchStatus').textContent='Admin';
-    return;
-  }
-
-  results.innerHTML='<div class="empty">Buscando clientes…</div>';
-  $('searchBtn').disabled=true;
-  $('searchStatus').textContent='Buscando…';
-  hideNotice();
-
-  // Escapar caracteres especiales del filtro PostgREST para que la búsqueda no se rompa.
-  const escaped=term.replace(/[,%]/g,' ').replace(/[()]/g,' ').trim();
-  const {data,error}=await db.from('profiles')
-    .select('id,username,full_name,email,phone,whatsapp,whatsapp_same,instagram,document_number,document_type,created_at,birth_date')
-    .or('username.ilike.%'+escaped+'%,full_name.ilike.%'+escaped+'%,email.ilike.%'+escaped+'%,document_number.ilike.%'+escaped+'%,phone.ilike.%'+escaped+'%')
-    .order('created_at',{ascending:false})
-    .limit(30);
-
-  $('searchBtn').disabled=false;
-  $('searchStatus').textContent='Admin';
-
-  if(error){
-    results.innerHTML='';
-    showNotice('No se pudo buscar clientes: '+error.message,true);
-    return;
-  }
-
-  if(!data?.length){
-    results.innerHTML='<div class="empty">No se encontraron clientes para «'+term.replace(/[<>&"]/g,'')+'».</div>';
-    return;
-  }
-
-  const ids=data.map(x=>x.id);
-  const {data:accounts,error:accountError}=await db
-    .from('avopuntos_accounts')
-    .select('profile_id,balance')
-    .in('profile_id',ids);
-
-  if(accountError){
-    showNotice('Clientes encontrados, pero no se pudieron cargar sus saldos: '+accountError.message,true);
-  }
-
-  const balanceMap=new Map((accounts||[]).map(a=>[a.profile_id,Number(a.balance||0)]));
-
-  results.innerHTML=data.map(p=>{
-    const secondary=[p.email,p.phone,[p.document_type,p.document_number].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
-    return '<div class="result-item" data-id="'+p.id+'">'+
-      '<div class="result-main"><div class="result-user">'+(p.username||p.full_name||'Sin nickname')+'</div><div class="result-sub">'+(p.full_name||'')+(secondary?' · '+secondary:'')+'</div></div>'+
-      '<div class="result-balance">'+(balanceMap.get(p.id)||0)+' AP</div>'+
-    '</div>';
-  }).join('');
-
-  results.querySelectorAll('.result-item').forEach((el,i)=>el.addEventListener('click',()=>loadClient(data[i])));
-}
-
-async function openReceipt(receiptNumber){
-  const number=String(receiptNumber||'').trim();
-  if(!number||!selectedProfile?.id)return;
-  $('receiptModal').hidden=false;
-  $('receiptTitle').textContent='Ticket '+number;
-  $('receiptBody').innerHTML='<div class="empty">Cargando tiquete…</div>';
-
-  try{
-    const {data,error}=await db.from('loyverse_receipts')
-      .select('receipt_number,receipt_type,refund_for,receipt_date,created_at,cancelled_at,total_money,total_discount,total_tax,points_earned,points_deducted,points_balance,line_items,payments')
-      .eq('profile_id',selectedProfile.id)
-      .eq('receipt_number',number)
-      .maybeSingle();
-
-    if(error){
-      $('receiptBody').innerHTML='<div class="error" style="padding:24px 4px;text-align:center">No se pudo cargar el tiquete: '+escapeHtml(error.message||'error de consulta')+'</div>';
-      return;
-    }
-    if(!data){
-      $('receiptBody').innerHTML='<div class="empty">No se encontró el tiquete asociado a este cliente.</div>';
-      return;
-    }
-
-    const items=Array.isArray(data.line_items)?data.line_items:[];
-    const payments=Array.isArray(data.payments)?data.payments:[];
-    const paymentNames=[...new Set(payments.map(p=>String(p?.name||'').trim()).filter(Boolean))];
-    const htmlItems=items.map(item=>{
-      const qty=Number(item?.quantity)||1;
-      const name=escapeHtml(item?.item_name||item?.variant_name||'Producto');
-      const amount=item?.total_money!=null
-        ? Number(item.total_money)
-        : qty*(Number(item?.price)||0)-(Number(item?.total_discount)||0);
-      return '<div class="receipt-item"><div class="receipt-item-name">'+name+'</div><div class="receipt-item-qty">× '+qty+'</div><div class="receipt-item-price">'+formatMoney(amount)+'</div></div>';
-    }).join('');
-
-    const typeLabel=data.receipt_type==='REFUND'?'Devolución':'Compra';
-    $('receiptBody').innerHTML=
-      '<div class="receipt-meta">'+
-        '<strong>'+typeLabel+'</strong><br>'+
-        'Fecha: '+escapeHtml(formatDate(data.receipt_date||data.created_at,true))+
-        (data.refund_for?'<br>Ticket de origen: '+escapeHtml(data.refund_for):'')+
-        (data.cancelled_at?'<br>Cancelado: '+escapeHtml(formatDate(data.cancelled_at,true)):'')+
-        (paymentNames.length?'<br>Pago: '+paymentNames.map(escapeHtml).join(' + '):'')+
-      '</div>'+
-      '<div class="receipt-items">'+(htmlItems||'<div class="empty">Sin detalle de productos.</div>')+'</div>'+
-      '<div class="receipt-summary">'+
-        '<div class="receipt-row"><span>Descuentos</span><span>'+formatMoney(data.total_discount)+'</span></div>'+
-        '<div class="receipt-row"><span>Impuestos</span><span>'+formatMoney(data.total_tax)+'</span></div>'+
-        '<div class="receipt-row total"><span>Total</span><span>'+formatMoney(data.total_money)+'</span></div>'+
-        '<div class="receipt-row"><span>AP registrados en tiquete</span><span>'+Number(data.points_earned||0).toLocaleString('es-CO')+' ganados · '+Number(data.points_deducted||0).toLocaleString('es-CO')+' utilizados</span></div>'+
-        '<div class="receipt-row"><span>Saldo almacenado en tiquete</span><span>'+Number(data.points_balance||0).toLocaleString('es-CO')+' AP</span></div>'+
-      '</div>'+
-      '<div class="receipt-footnote">Este detalle corresponde al tiquete registrado en AvoHouse.</div>';
-  }catch(error){
-    $('receiptBody').innerHTML='<div class="error" style="padding:24px 4px;text-align:center">No fue posible consultar este tiquete en este momento.</div>';
-  }
-}
-
-async function checkCurrentUserAdmin(){
-  const {data:userData,error:userError}=await db.auth.getUser();
-  if(userError) return {isAdmin:false,user:null,error:userError};
-  const user=userData?.user;
-  if(!user) return {isAdmin:false,user:null,error:null};
-
-  const {data:admin,error:adminError}=await db
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id',user.id)
-    .maybeSingle();
-
-  if(adminError) return {isAdmin:false,user,error:adminError};
-  return {isAdmin:!!admin,user,error:null};
-}
-
-async function isCurrentUserAdmin(){
-  return (await checkCurrentUserAdmin()).isAdmin;
-}
-
-function hideSessionGate(){const gate=document.getElementById('sessionGate');if(gate){gate.classList.add('hidden');gate.style.display='none'}}
-async function enterWithExistingSession(){document.getElementById('sessionGate')?.classList.remove('hidden');document.getElementById('sessionGate')?.style.setProperty('display','flex');
-  $('loginStatus').className='status';
-  $('loginStatus').textContent='Verificando la sesión…';
-
-  const {data,error}=await db.auth.getSession();
-
-  if(error){
-    $('loginStatus').className='status error';
-    $('loginStatus').textContent='No se pudo recuperar la sesión: '+error.message;
-    showLogin();
-    return false;
-  }
-
-  if(!data?.session){
-    $('loginStatus').textContent='No hay una sesión administrativa disponible. Puedes entrar desde AHtv.';
-    showLogin();
-    return false;
-  }
-
-  const check=await checkCurrentUserAdmin();
-
-  if(check.error){
-    $('loginStatus').className='status error';
-    $('loginStatus').textContent='No se pudo verificar la autorización administrativa: '+check.error.message;
-    showLogin();
-    return false;
-  }
-
-  if(!check.isAdmin){
-    $('loginStatus').className='status error';
-    $('loginStatus').textContent='La sesión activa ('+(check.user?.email||'correo no disponible')+') no tiene permisos de administración.';
-    showLogin();
-    return false;
-  }
-
-  session=data.session;
-  $('loginStatus').textContent='';
-  showAdmin();
-  await loadPointsSettings();
-  return true;
-}
-
-async function login(event){
-  if(event) event.preventDefault();
-  const email=$('email').value.trim();
-  const password=$('password').value;
-
-  if(!email||!password){
-    $('loginStatus').className='status error';
-    $('loginStatus').textContent='Introduce el correo y la contraseña.';
-    return false;
-  }
-
-  rememberAdminEmail();
-  const btn=$('loginBtn');
-  btn.disabled=true;
-  $('loginStatus').className='status';
-  $('loginStatus').textContent='Iniciando sesión…';
-
-  try{
-    const {error}=await db.auth.signInWithPassword({email,password});
-
-    if(error){
-      $('loginStatus').className='status error';
-      $('loginStatus').textContent=error.message||'No fue posible iniciar sesión.';
-      return false;
-    }
-
-    await enterWithExistingSession();
-    return true;
-  }catch(error){
-    $('loginStatus').className='status error';
-    $('loginStatus').textContent='No fue posible completar el ingreso: '+(error?.message||'verifica tu conexión.');
-    return false;
-  }finally{
-    btn.disabled=false;
-  }
-}
-
-async function logout(){
-  await db.auth.signOut();
-  selectedProfile=null;
-  pointsBalance=0;
-  $('results').innerHTML='';
-  $('clientArea').classList.add('hidden');
-  $('password').value='';
-  hideNotice();
-  showLogin();
-}
-
-
-$('email').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
-$('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
-$('searchForm').addEventListener('submit',e=>{e.preventDefault();searchClients();});
-let searchDebounce=null;
-$('searchInput').addEventListener('input',()=>{
-  clearTimeout(searchDebounce);
-  const term=$('searchInput').value.trim();
-  if(term.length<2){
-    $('results').innerHTML=term?'Escribe al menos 2 caracteres.':'';
-    $('searchStatus').textContent='Admin';
-    return;
-  }
-  searchDebounce=setTimeout(()=>searchClients(),300);
-});
-
-$('historyYear').addEventListener('change',populateHistoryMonths);
-$('editCustomerBtn').addEventListener('click',()=>customerEditing?saveCustomerData():enterCustomerEditMode());
-$('cancelEditCustomerBtn').addEventListener('click',cancelCustomerEditMode);
-$('deleteCustomerBtn').addEventListener('click',deleteSelectedCustomer);
-$('cancelDeleteCustomerBtn').addEventListener('click',closeDeleteCustomerModal);
-$('confirmDeleteCustomerBtn').addEventListener('click',confirmDeleteSelectedCustomer);
-$('deleteCustomerModal').addEventListener('click',event=>{
-  if(event.target?.dataset?.closeDeleteModal==='true')closeDeleteCustomerModal();
-});
-
-// Delegación estable: los botones de verificación se recrean al pintar cada solicitud.
-$('whatsappAdminStatus').addEventListener('click',event=>{
-  if(event.target.closest('#validateWhatsappBtn')) verifySelectedWhatsapp();
-});
-$('instagramAdminStatus').addEventListener('click',event=>{
-  if(event.target.closest('#validateInstagramBtn')) verifySelectedInstagram();
-});
-$('facebookAdminStatus').addEventListener('click',event=>{
-  if(event.target.closest('#validateFacebookBtn')) verifySelectedFacebook();
-});
-$('editWhatsappSame').addEventListener('change',()=>{
-  const same=$('editWhatsappSame').checked;
-  $('editWhatsapp').disabled=same;
-  if(same) $('editWhatsapp').value=$('editPhone').value;
-});
-$('editPhone').addEventListener('input',()=>{
-  if($('editWhatsappSame').checked) $('editWhatsapp').value=$('editPhone').value;
-});
-$('saveBaseRateBtn').addEventListener('click',saveBaseRate);
-$('refreshPaymentTypesBtn').addEventListener('click',loadPaymentMethods);
-$('detectedPaymentMethodList').addEventListener('click',async event=>{
-  const button=event.target.closest('button[data-add-detected-method]');
-  if(!button)return;
-  const paymentTypeId=button.dataset.addDetectedMethod;
-  const method=detectedPaymentMethodChoices.find(item=>item.id===paymentTypeId);
-  if(!method)return;
-  const row=button.closest('[data-detected-payment]');
-  const eligible=!!row?.querySelector('input[data-detected-eligible]')?.checked;
-  const status=$('paymentMethodActionStatus');
-  button.disabled=true;
-  status.textContent='Agregando '+method.name+'…';
-  const {error}=await db.from('avopuntos_payment_methods').insert({
-    payment_type_id:method.id,name:method.name,loyverse_type:method.type||'OTHER',
-    eligible_for_avopuntos:eligible,active:true,updated_at:new Date().toISOString()
-  });
-  button.disabled=false;
-  if(error){status.textContent='No se pudo agregar el método: '+error.message;return;}
-  status.textContent='Método agregado.';
-  await loadPaymentMethods();
-});
 $('paymentMethodList').addEventListener('change',async event=>{
   const checkbox=event.target.closest('input[data-method-eligible]');
   if(!checkbox)return;
@@ -2629,24 +1498,7 @@ $('paymentMethodList').addEventListener('change',async event=>{
   }
   $('paymentMethodsStatus').textContent='Guardado';
 });
-$('paymentMethodList').addEventListener('click',async event=>{
-  const button=event.target.closest('button[data-delete-method]');
-  if(!button)return;
-  const method=configuredPaymentMethodRows.find(item=>String(item.payment_type_id)===button.dataset.deleteMethod);
-  const methodName=method?.name||button.dataset.methodName||'este método';
-  if(!window.confirm('¿Eliminar "'+methodName+'" de la configuración de AvoPuntos?'))return;
-  button.disabled=true;
-  $('paymentMethodsStatus').textContent='Eliminando…';
-  const {error}=await db.from('avopuntos_payment_methods').delete().eq('payment_type_id',button.dataset.deleteMethod);
-  if(error){
-    button.disabled=false;
-    $('paymentMethodsStatus').textContent='Error';
-    showNotice('No se pudo eliminar el método de pago: '+error.message,true);
-    return;
-  }
-  $('paymentMethodActionStatus').textContent='Método eliminado.';
-  await loadPaymentMethods();
-});
+$('refreshPaymentTypesBtn').addEventListener('click',loadPaymentMethods);
 $('createPromoBtn').addEventListener('click',createPromotion);
 $('saveCustomerRuleBtn').addEventListener('click',saveCustomerRule);
 $('disableCustomerRuleBtn').addEventListener('click',disableCustomerRule);
