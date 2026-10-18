@@ -622,6 +622,62 @@ button.hidden{display:none!important}
 @media(max-width:620px){
   #pointsSettingsCard .base-rate-promotion-effect{font-size:11px;gap:4px 7px}
 }
+
+/* Ajustes visuales del formulario y las tarjetas de promociones */
+#pointsSettingsCard .promo-form .promotion-field .info-label{
+  display:block;
+  width:100%;
+  text-align:center;
+}
+#pointsSettingsCard .promo-form .promotion-field input{
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  height:44px;
+  min-height:44px;
+  line-height:normal;
+  text-align:center;
+  box-sizing:border-box;
+}
+#pointsSettingsCard .promo-form input[type="date"]{
+  height:44px;
+  min-height:44px;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  padding:0 8px;
+  text-align:center;
+  box-sizing:border-box;
+}
+#pointsSettingsCard .promo-item{align-items:center}
+#pointsSettingsCard .promo-main{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+}
+#pointsSettingsCard .promo-name,
+#pointsSettingsCard .promo-meta{text-align:center}
+#pointsSettingsCard .promo-actions{
+  align-self:center;
+  justify-content:center;
+}
+@media(max-width:620px){
+  #pointsSettingsCard .promo-form .promotion-field input,
+  #pointsSettingsCard .promo-form input[type="date"]{
+    height:44px;
+    min-height:44px;
+  }
+  #pointsSettingsCard .promo-item{
+    grid-template-columns:minmax(0,1fr);
+    align-items:center;
+  }
+  #pointsSettingsCard .promo-actions{
+    justify-content:center;
+  }
+}
+
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -1475,7 +1531,7 @@ async function loadPaymentMethods(){
   const actionStatus=$('paymentMethodActionStatus');
   if(refreshButton)refreshButton.disabled=true;
   status.textContent='Sincronizando…';
-  actionStatus.textContent='Consultando métodos de Loyverse…';
+  actionStatus.textContent='';
 
   const {data:initialMethods,error:methodsError}=await db.from('avopuntos_payment_methods')
     .select('payment_type_id,name,loyverse_type,eligible_for_avopuntos,active')
@@ -1536,10 +1592,8 @@ async function loadPaymentMethods(){
     actionStatus.textContent='No se pudieron incorporar todos los métodos detectados: '+insertError.message;
   }else if(reloadError){
     actionStatus.textContent='Catálogo consultado, pero no se pudo recargar la lista: '+reloadError.message;
-  }else if(missingMethods.length){
-    actionStatus.textContent='Se incorporaron '+missingMethods.length+' método(s) nuevo(s). Revisa «Suma AP» en cada uno.';
   }else{
-    actionStatus.textContent='Métodos sincronizados con Loyverse.';
+    actionStatus.textContent='';
   }
   if(refreshButton)refreshButton.disabled=false;
 }
