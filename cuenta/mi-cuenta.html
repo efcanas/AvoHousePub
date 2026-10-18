@@ -416,6 +416,24 @@ function formatDate(value,withTime=false){
     day:'2-digit',month:'long',year:'numeric'
   }).format(d);
 }
+function formatDocumentDisplay(type, number){
+  const rawType=String(type||'').trim();
+  const rawNumber=String(number||'').trim();
+  const normalized=rawType.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const codes={
+    'cedula de ciudadania':'CC',
+    'cedula de extranjeria':'CE',
+    'pasaporte':'PAS',
+    'tarjeta de identidad':'TI',
+    'registro civil':'RC',
+    'permiso por proteccion temporal':'PPT',
+    'permiso especial de permanencia':'PEP',
+    'cc':'CC','ce':'CE','ti':'TI','rc':'RC','pas':'PAS','ppt':'PPT','pep':'PEP'
+  };
+  const code=codes[normalized]||(rawType.length<=4?rawType.toUpperCase():rawType);
+  if(!code)return rawNumber;
+  return rawNumber?code+' '+rawNumber:code;
+}
 function formatMoney(value){
   const n=Number(value);
   return Number.isFinite(n)?'$'+n.toLocaleString('es-CO'):'—';
@@ -1258,7 +1276,7 @@ async function loadAccount(){
     setText('infoEmail',p.email);
     setText('infoPhone',p.phone);
     setText('infoWhatsapp',p.whatsapp);
-    setText('infoDocument',[p.document_type,p.document_number].filter(Boolean).join(' · '));
+    setText('infoDocument',formatDocumentDisplay(p.document_type,p.document_number));
     setText('infoCreated',formatDate(p.created_at));
     accountCreatedAt=p.created_at;
     setText('welcome','Hola, '+(p.full_name||p.username||'Usuario')+'.');
