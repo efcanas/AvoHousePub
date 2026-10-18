@@ -601,6 +601,28 @@ button.hidden{display:none!important}
   #pointsSettingsCard .promo-form input[type="date"]{height:40px;min-height:40px;padding-left:6px;padding-right:6px;font-size:12px}
 }
 
+
+/* Presentación de tasa base y tasa efectiva de promoción · solo AvoPuntos */
+#pointsSettingsCard #basePointsRate{text-align:center}
+#pointsSettingsCard .base-rate-promotion-effect{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:5px 9px;
+  margin-top:8px;
+  font-size:12px;
+  line-height:1.35;
+  color:#cfd2d8;
+}
+#pointsSettingsCard .base-rate-promotion-effect[hidden]{display:none!important}
+#pointsSettingsCard .base-rate-promotion-effect strong{
+  font-weight:800;
+  color:#b8ff39;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:620px){
+  #pointsSettingsCard .base-rate-promotion-effect{font-size:11px;gap:4px 7px}
+}
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -651,6 +673,7 @@ button.hidden{display:none!important}
         </div>
         <button id="saveBaseRateBtn" class="primary" type="button">GUARDAR TASA</button>
       </div>
+      <div id="baseRatePromotionEffect" class="base-rate-promotion-effect" hidden aria-live="polite"></div>
       <div class="payment-methods-block">
         <div class="panel-heading payment-methods-heading">
           <h3 class="panel-title">Métodos de pago</h3>
@@ -659,7 +682,6 @@ button.hidden{display:none!important}
             <button id="refreshPaymentTypesBtn" class="payment-method-refresh" type="button">ACTUALIZAR</button>
           </div>
         </div>
-        <div class="helper payment-method-help">Los métodos creados en Loyverse se incorporan aquí automáticamente. Activa «Suma AP» solo en los métodos que acumulan AvoPuntos.</div>
         <div id="paymentMethodList" class="payment-methods-list"><div class="empty">Cargando métodos de pago…</div></div>
         <div id="paymentMethodActionStatus" aria-live="polite"></div>
       </div>
@@ -1401,13 +1423,35 @@ function promotionState(p){
   if(p.end_date&&p.end_date<today)return 'Vencida';
   return 'Activa';
 }
+let currentConfiguredPromotions=[];
+
+function renderBaseRatePromotionEffect(items){
+  const el=$('baseRatePromotionEffect');
+  if(!el)return;
+  const activePromotion=(Array.isArray(items)?items:[])
+    .find(p=>promotionState(p)==='Activa');
+  const base=Number($('basePointsRate').value);
+  const multiplier=Number(activePromotion?.multiplier);
+  if(!activePromotion||!Number.isFinite(base)||!Number.isFinite(multiplier)){
+    el.hidden=true;
+    el.textContent='';
+    return;
+  }
+  const fmt=value=>Number(value).toLocaleString('es-CO',{maximumFractionDigits:2});
+  const effectiveRate=base*multiplier;
+  el.innerHTML='<span>Promoción activa</span><strong>'+fmt(base)+' × '+fmt(multiplier)+' = '+fmt(effectiveRate)+' AP por cada $1.000</strong>';
+  el.hidden=false;
+}
+
 function renderPromotions(items){
+  currentConfiguredPromotions=Array.isArray(items)?items:[];
+  renderBaseRatePromotionEffect(currentConfiguredPromotions);
   const el=$('promotionList');
-  if(!items?.length){
+  if(!currentConfiguredPromotions.length){
     el.innerHTML='<div class="empty">No hay promociones configuradas.</div>';
     return;
   }
-  el.innerHTML=items.map(p=>{
+  el.innerHTML=currentConfiguredPromotions.map(p=>{
     const state=promotionState(p);
     const range=p.start_date+(p.end_date?' → '+p.end_date:' → sin fecha final');
     return '<div class="promo-item">'+
@@ -1550,6 +1594,7 @@ async function saveBaseRate(){
   }
   status.textContent='Guardado';
   $('basePointsRate').value=Number(data?.points_per_thousand??value);
+  renderBaseRatePromotionEffect(currentConfiguredPromotions);
 }
 async function createPromotion(){
   const name=$('promoName').value.trim();
