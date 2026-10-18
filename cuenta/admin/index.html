@@ -1914,25 +1914,41 @@ async function confirmDeleteSelectedCustomer(){
 
 async function loadCustomerRule(){
   if(!selectedProfile)return;
-  const {data:rows,error}=await db.from('avopuntos_customer_rules')
-    .select('id,multiplier,start_date,end_date,active,reason,created_at')
-    .eq('profile_id',selectedProfile.id)
-    .order('created_at',{ascending:false})
-    .limit(1);
+  const profileId=selectedProfile.id;
+  const summary=$('customerRuleSummary');
+  summary.dataset.ruleId='';
+  summary.textContent='Consultando beneficio individual…';
+  summary.className='helper muted';
+  $('disableCustomerRuleBtn').disabled=true;
+
+  const {data:result,error}=await db.rpc('avopuntos_admin_get_customer_rule',{
+    p_profile_id:profileId
+  });
+
+  // Ignorar respuestas tardías si ya se seleccionó otro cliente.
+  if(selectedProfile?.id!==profileId)return;
+
   if(error){
-    $('customerRuleSummary').textContent='No se pudo consultar el beneficio individual.';
+    summary.textContent='No se pudo consultar el beneficio individual: '+(error.message||'Error desconocido.');
+    summary.className='helper error';
+    $('disableCustomerRuleBtn').disabled=true;
     return;
   }
-  const data=Array.isArray(rows)?rows[0]:null;
+
+  const data=result?.rule||null;
   if(!data){
-    $('customerRuleSummary').textContent='Sin beneficio individual configurado.';
+    summary.textContent='Sin beneficio individual configurado.';
+    summary.className='helper';
+    summary.dataset.ruleId='';
     $('customerRuleStatus').textContent='';
+    $('disableCustomerRuleBtn').disabled=true;
     return;
   }
+
   const range=data.start_date+(data.end_date?' → '+data.end_date:' → sin fecha final');
-  $('customerRuleSummary').innerHTML='<strong>'+Number(data.multiplier).toLocaleString('es-CO',{maximumFractionDigits:2})+'×</strong> · '+range+' · '+(data.active?'Activo':'Inactivo')+'<br>Motivo: '+escapeHtml(data.reason);
-  $('customerRuleSummary').className='helper';
-  $('customerRuleSummary').dataset.ruleId=data.id;
+  summary.innerHTML='<strong>'+Number(data.multiplier).toLocaleString('es-CO',{maximumFractionDigits:2})+'×</strong> · '+range+' · '+(data.active?'Activo':'Inactivo')+'<br>Motivo: '+escapeHtml(data.reason);
+  summary.className='helper';
+  summary.dataset.ruleId=data.id;
   $('disableCustomerRuleBtn').disabled=!data.active;
 }
 async function saveCustomerRule(){
