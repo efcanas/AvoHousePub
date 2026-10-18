@@ -627,7 +627,7 @@ button.hidden{display:none!important}
 #pointsSettingsCard .promo-form .promotion-field .info-label{
   display:block;
   width:100%;
-  text-align:center;
+  text-align:left;
 }
 #pointsSettingsCard .promo-form .promotion-field input{
   display:block;
@@ -650,6 +650,13 @@ button.hidden{display:none!important}
   text-align:center;
   box-sizing:border-box;
 }
+@media(min-width:621px){
+  #pointsSettingsCard .promo-form input[type="date"]::-webkit-date-and-time-value{
+    display:flex;
+    align-items:center;
+    height:100%;
+  }
+}
 #pointsSettingsCard .promo-item{align-items:center}
 #pointsSettingsCard .promo-main{
   display:flex;
@@ -665,7 +672,7 @@ button.hidden{display:none!important}
 }
 @media(max-width:620px){
   #pointsSettingsCard .promo-form .promotion-field .info-label{
-    text-align:right;
+    text-align:left;
   }
   #pointsSettingsCard .promo-form .promotion-field input,
   #pointsSettingsCard .promo-form input[type="date"]{
