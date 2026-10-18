@@ -1094,6 +1094,24 @@ function formatDate(value,withTime=false){
     day:'2-digit',month:'long',year:'numeric'
   }).format(d);
 }
+function formatDocumentDisplay(type, number){
+  const rawType=String(type||'').trim();
+  const rawNumber=String(number||'').trim();
+  const normalized=rawType.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const codes={
+    'cedula de ciudadania':'CC',
+    'cedula de extranjeria':'CE',
+    'pasaporte':'PAS',
+    'tarjeta de identidad':'TI',
+    'registro civil':'RC',
+    'permiso por proteccion temporal':'PPT',
+    'permiso especial de permanencia':'PEP',
+    'cc':'CC','ce':'CE','ti':'TI','rc':'RC','pas':'PAS','ppt':'PPT','pep':'PEP'
+  };
+  const code=codes[normalized]||(rawType.length<=4?rawType.toUpperCase():rawType);
+  if(!code)return rawNumber;
+  return rawNumber?code+' '+rawNumber:code;
+}
 function formatDateInput(value){
   if(!value)return '—';
   const d=new Date(value+'T00:00:00');
@@ -2050,7 +2068,7 @@ async function refreshClientPointsAfterVerification(){
 function setAdminVerificationInfo(infoId, baseValue, data){
   const base=String(baseValue||'No registrado');
   if(data?.status==='verified'){
-    setText(infoId,base+' · ✅ Verificado');
+    setText(infoId,base+' · ✅');
   }else if(data?.status==='pending'){
     setText(infoId,base+' · ⏳ Solicitud pendiente');
   }else{
@@ -2397,7 +2415,7 @@ async function loadClient(profile){
     : (profile.whatsapp || 'No registrado'));
   setText('infoInstagram',profile.instagram || 'No registrado');
   setText('infoFacebook','No registrado');
-  setText('infoDocument',[profile.document_type,profile.document_number].filter(Boolean).join(' · ')||'—');
+  setText('infoDocument',formatDocumentDisplay(profile.document_type,profile.document_number)||'—');
   setText('infoBirth',formatDateInput(profile.birth_date));
   setText('infoCreated',formatDate(profile.created_at));
   setText('clientStatus','Cliente seleccionado');
