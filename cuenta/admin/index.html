@@ -706,6 +706,42 @@ button.hidden{display:none!important}
   }
 }
 
+
+/* Ajustes de AvoPuntos del cliente: controles alineados y espacios compactos. */
+#clientArea .balance-card{min-width:0}
+#clientArea .balance-card .points-adjust{margin-top:10px;padding-top:10px}
+#clientArea .balance-card .points-adjust-row{margin-top:8px;min-width:0}
+#clientArea .balance-card .points-adjust-row input{min-width:0;max-width:100%}
+#clientArea .balance-card .points-adjust-actions{margin-top:6px;gap:8px}
+#clientArea .balance-card .points-adjust-status{margin-top:0;min-height:0}
+#clientArea .balance-card .points-adjust-status:not(:empty){margin-top:6px;min-height:16px}
+#clientArea .balance-card .special-rule{margin-top:8px;padding-top:10px}
+#clientArea .balance-card .special-rule-grid{
+  grid-template-columns:minmax(0,.75fr) repeat(2,minmax(0,1fr));
+  min-width:0;
+  margin-top:8px;
+}
+#clientArea .balance-card .special-rule-grid>div{min-width:0}
+#clientArea .balance-card .special-rule-grid input{
+  width:100%;
+  min-width:0;
+  max-width:100%;
+}
+#clientArea .balance-card .special-rule-actions{margin-top:6px;gap:8px}
+#clientArea .balance-card .special-rule-status{margin-top:0;min-height:0}
+#clientArea .balance-card .special-rule-status:not(:empty){margin-top:6px;min-height:16px}
+#customerRuleSummary:empty{display:none}
+@media(max-width:820px){
+  #clientArea .balance-card .special-rule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  #clientArea .balance-card{padding:16px 12px}
+  #clientArea .balance-card .special-rule-grid{grid-template-columns:minmax(0,1fr)}
+  #clientArea .balance-card .points-adjust-actions{gap:7px}
+  #clientArea .balance-card .points-adjust-actions button{padding:11px 8px;font-size:13px}
+  #clientArea .balance-card .special-rule-grid .full{grid-column:auto}
+}
+
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -874,8 +910,8 @@ button.hidden{display:none!important}
             <input id="adjustReason" type="text" maxlength="500" placeholder="Motivo del ajuste" aria-label="Motivo del ajuste">
           </div>
           <div class="points-adjust-actions">
-            <button id="addPointsBtn" class="points-add" type="button">AÑADIR PUNTOS</button>
-            <button id="removePointsBtn" class="points-remove" type="button">QUITAR PUNTOS</button>
+            <button id="addPointsBtn" class="primary points-add" type="button">AÑADIR PUNTOS</button>
+            <button id="removePointsBtn" class="danger-button points-remove" type="button">QUITAR PUNTOS</button>
           </div>
           <div id="pointsAdjustStatus" class="points-adjust-status"></div>
         </div>
@@ -883,7 +919,7 @@ button.hidden{display:none!important}
           <div class="special-rule-title">Beneficio individual de ganancia</div>
           <div id="customerRuleSummary" class="helper">Sin beneficio individual activo.</div>
           <div class="special-rule-grid">
-            <input id="customerMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Multiplicador" aria-label="Multiplicador individual">
+            <div><span class="info-label">Multiplicador</span><input id="customerMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Ej. 2" aria-label="Multiplicador individual"></div>
             <div><span class="info-label">Desde</span><input id="customerRuleStart" type="date"></div>
             <div><span class="info-label">Hasta</span><input id="customerRuleEnd" type="date"></div>
             <input id="customerRuleReason" class="full" type="text" maxlength="500" placeholder="Motivo del beneficio individual" aria-label="Motivo del beneficio individual">
@@ -1917,7 +1953,7 @@ async function loadCustomerRule(){
   const profileId=selectedProfile.id;
   const summary=$('customerRuleSummary');
   summary.dataset.ruleId='';
-  summary.textContent='Consultando beneficio individual…';
+  summary.textContent='';
   summary.className='helper muted';
   $('disableCustomerRuleBtn').disabled=true;
 
@@ -1937,7 +1973,7 @@ async function loadCustomerRule(){
 
   const data=result?.rule||null;
   if(!data){
-    summary.textContent='Sin beneficio individual configurado.';
+    summary.textContent='';
     summary.className='helper';
     summary.dataset.ruleId='';
     $('customerRuleStatus').textContent='';
