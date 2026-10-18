@@ -170,6 +170,27 @@ button:disabled{opacity:.45;cursor:default}
 .special-rule-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .special-rule-actions button{width:100%}
 .special-rule-status{margin-top:8px;min-height:18px;font-size:12px;text-align:center}
+/* Uniformidad de controles dentro del recuadro de AvoPuntos del cliente. */
+#clientArea .balance-card .points-adjust-row input,
+#clientArea .balance-card .special-rule-grid input{
+  height:46px;
+  min-height:46px;
+  box-sizing:border-box;
+  padding:0 12px;
+  margin:0;
+  line-height:normal;
+}
+#clientArea .balance-card .points-adjust-actions button,
+#clientArea .balance-card .special-rule-actions button{
+  height:46px;
+  min-height:46px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1.2;
+}
+
 @media(max-width:820px){
   .promo-form{grid-template-columns:1fr 110px 1fr 1fr}
   .promo-form button{grid-column:1/-1}
@@ -846,7 +867,6 @@ button.hidden{display:none!important}
         <div class="balance-kicker">AvoPuntos</div>
         <div id="balanceValue" class="balance-value">—</div>
         <div class="balance-caption">Saldo actual</div>
-        <div id="accountMeta" class="account-meta">—</div>
         <div class="points-adjust">
           <div class="points-adjust-title">Ajustar AvoPuntos</div>
           <div class="points-adjust-row">
@@ -1879,7 +1899,6 @@ async function confirmDeleteSelectedCustomer(){
       setText('infoBirth','—');
       setText('infoCreated','—');
       setText('balanceValue','—');
-      setText('accountMeta','—');
     }
     closeDeleteCustomerModal();
     showNotice('La cuenta fue eliminada correctamente.',false);
@@ -2035,7 +2054,7 @@ async function refreshClientPointsAfterVerification(){
   if(!selectedProfile)return;
 
   const [{data:account,error:accountError},{data:movements,error:movementsError}]=await Promise.all([
-    db.from('avopuntos_accounts').select('balance,status,last_loyverse_points,last_loyverse_sync_at,last_loyverse_sync_attempt_at,last_loyverse_sync_error,updated_at').eq('profile_id',selectedProfile.id).maybeSingle(),
+    db.from('avopuntos_accounts').select('balance').eq('profile_id',selectedProfile.id).maybeSingle(),
     db.from('avopuntos_movements').select('movement_type,points_delta,receipt_number,related_receipt_number').eq('profile_id',selectedProfile.id).limit(1000)
   ]);
 
@@ -2421,7 +2440,7 @@ async function loadClient(profile){
   setText('clientStatus','Cliente seleccionado');
 
   const [{data:account,error:accountError},{count:movementCount,error:movementError},{data:movements,error:movementsError}]=await Promise.all([
-    db.from('avopuntos_accounts').select('balance,status,last_loyverse_points,last_loyverse_sync_at,last_loyverse_sync_attempt_at,last_loyverse_sync_error,updated_at').eq('profile_id',profile.id).maybeSingle(),
+    db.from('avopuntos_accounts').select('balance').eq('profile_id',profile.id).maybeSingle(),
     db.from('avopuntos_movements').select('id',{count:'exact',head:true}).eq('profile_id',profile.id),
     db.from('avopuntos_movements').select('movement_type,points_delta,receipt_number,related_receipt_number').eq('profile_id',profile.id).limit(1000)
   ]);
@@ -2432,10 +2451,6 @@ async function loadClient(profile){
 
   pointsBalance=Number(account?.balance||0);
   setText('balanceValue',Number(pointsBalance).toLocaleString('es-CO')+' AP');
-
-  const sync=account?.last_loyverse_sync_at?formatDate(account.last_loyverse_sync_at,true):'Sin sincronización registrada';
-  const syncError=account?.last_loyverse_sync_error?'<span class="error">Error de sincronización registrado</span>':'Última sincronización: '+sync;
-  $('accountMeta').innerHTML='Estado: <strong>'+String(account?.status||'—')+'</strong><br>'+syncError;
 
   let earned=0,used=0;
   const ticketSet=new Set();
