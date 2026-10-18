@@ -72,7 +72,7 @@ async function supabaseRpc(name: string, args: Record<string, unknown>) {
 
 async function assertAdmin(req: Request) {
   const authorization = req.headers.get("authorization") ?? "";
-  const userToken = authorization.replace(/^Bearer\\s+/i, "").trim();
+  const userToken = authorization.replace(/^Bearer\s+/i, "").trim();
   if (!userToken) throw new Error("Inicia sesión como administrador.");
 
   const user = await supabaseRequest("/auth/v1/user", { method: "GET" }, userToken);
