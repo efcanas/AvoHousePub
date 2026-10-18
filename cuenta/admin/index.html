@@ -581,7 +581,6 @@ button.hidden{display:none!important}
 }
 
 /* Ajustes finales de compacidad y ancho para pantallas móviles */
-#pointsSettingsCard .promo-multiplier-help{margin:5px 0 0;font-size:10px;line-height:1.3;color:#9ca3af}
 #pointsSettingsCard .promo-form,
 #pointsSettingsCard .promo-form .promotion-field,
 #pointsSettingsCard .promo-form input{min-width:0;max-width:100%;box-sizing:border-box}
@@ -673,7 +672,6 @@ button.hidden{display:none!important}
         </div>
         <button id="saveBaseRateBtn" class="primary" type="button">GUARDAR TASA</button>
       </div>
-      <div id="baseRatePromotionEffect" class="base-rate-promotion-effect" hidden aria-live="polite"></div>
       <div class="payment-methods-block">
         <div class="panel-heading payment-methods-heading">
           <h3 class="panel-title">Métodos de pago</h3>
@@ -690,13 +688,13 @@ button.hidden{display:none!important}
       </div>
       <div class="promo-form">
         <div class="promotion-field"><span class="info-label">Nombre</span><input id="promoName" type="text" maxlength="120" placeholder="Nombre de la promoción"></div>
-        <div class="promotion-field"><span class="info-label">Multiplicador × tasa base</span><input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Ej. 1,5" aria-label="Multiplicador de la tasa base"></div>
+        <div class="promotion-field"><span class="info-label">Multiplicador</span><input id="promoMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Ej. 1,5" aria-label="Multiplicador de la tasa base"></div>
         <div class="promotion-field"><span class="info-label">Desde</span><input id="promoStart" type="date"></div>
         <div class="promotion-field"><span class="info-label">Hasta</span><input id="promoEnd" type="date"></div>
         <button id="createPromoBtn" class="primary" type="button">CREAR PROMOCIÓN</button>
       </div>
-      <div class="helper promo-multiplier-help">El multiplicador se aplica a la tasa base; no se suma. Ej.: 20 AP por $1.000 × 1,5 = 30 AP por $1.000.</div>
       <div id="promotionList" class="promo-list"><div class="empty">Cargando promociones…</div></div>
+      <div id="baseRatePromotionEffect" class="base-rate-promotion-effect" hidden aria-live="polite"></div>
     </section>
 
 
@@ -1439,7 +1437,7 @@ function renderBaseRatePromotionEffect(items){
   }
   const fmt=value=>Number(value).toLocaleString('es-CO',{maximumFractionDigits:2});
   const effectiveRate=base*multiplier;
-  el.innerHTML='<span>Promoción activa</span><strong>'+fmt(base)+' × '+fmt(multiplier)+' = '+fmt(effectiveRate)+' AP por cada $1.000</strong>';
+  el.innerHTML='<span>Promoción activa · '+escapeHtml(activePromotion.name)+'</span><strong>'+fmt(effectiveRate)+' AP por cada $1.000 ('+fmt(base)+' × '+fmt(multiplier)+')</strong>';
   el.hidden=false;
 }
 
@@ -1448,7 +1446,7 @@ function renderPromotions(items){
   renderBaseRatePromotionEffect(currentConfiguredPromotions);
   const el=$('promotionList');
   if(!currentConfiguredPromotions.length){
-    el.innerHTML='<div class="empty">No hay promociones configuradas.</div>';
+    el.innerHTML='';
     return;
   }
   el.innerHTML=currentConfiguredPromotions.map(p=>{
