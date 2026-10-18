@@ -43,7 +43,7 @@ button{font:inherit}
 .danger-button:hover{background:rgba(255,93,93,.15)}
 .customer-actions{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
 .customer-actions button{width:max-content}
-.customer-edit-status{min-height:18px;margin-top:8px;text-align:center;font-size:12px}
+.customer-edit-status{min-height:18px;margin-top:8px;text-align:center;font-size:12px}.customer-edit-status:empty{display:none}
 .edit-control{width:100%}
 .edit-whatsapp-same{display:flex;align-items:center;gap:7px;color:#d6d9df;font-size:12px;margin-top:4px}
 .edit-whatsapp-same input{width:auto;margin:0}
@@ -782,7 +782,7 @@ button.hidden{display:none!important}
           <span id="clientStatus" class="panel-tag">—</span>
         </div>
         <div class="info-grid">
-          <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">—</span><div class="helper">El nickname no se puede modificar.</div></div>
+          <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">—</span></div>
           <div class="info">
             <span class="info-label">Nombre completo</span>
             <span id="infoFullName" class="info-value edit-view" data-edit-view="editFullName">—</span>
@@ -792,7 +792,7 @@ button.hidden{display:none!important}
             <span class="info-label">Correo electrónico</span>
             <span id="infoEmail" class="info-value edit-view" data-edit-view="editEmail">—</span>
             <input id="editEmail" class="edit-control hidden" type="email" maxlength="254" autocomplete="email">
-            <div class="helper">También actualiza el correo de acceso del cliente.</div>
+            
           </div>
           <div class="info">
             <span class="info-label">Celular</span>
@@ -813,7 +813,7 @@ button.hidden{display:none!important}
           <div class="info">
             <span class="info-label">Facebook</span>
             <span id="infoFacebook" class="info-value">—</span>
-            <div class="helper">Se gestiona mediante la verificación de Facebook.</div>
+            
           </div>
           <div class="info">
             <span class="info-label">Documento</span>
