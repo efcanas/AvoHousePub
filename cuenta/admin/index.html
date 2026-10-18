@@ -708,6 +708,43 @@ button.hidden{display:none!important}
 
 
 /* Ajustes de AvoPuntos del cliente: controles alineados y espacios compactos. */
+
+/* Evitar que los controles de vigencia desborden la tarjeta, especialmente en Safari móvil. */
+#clientArea .balance-card>.points-adjust,
+#clientArea .balance-card>.special-rule{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  align-self:stretch;
+  box-sizing:border-box;
+}
+#clientArea .balance-card .special-rule-grid,
+#clientArea .balance-card .special-rule-grid>div{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+#clientArea .balance-card .special-rule-grid input,
+#clientArea .balance-card .special-rule-grid input[type="date"]{
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+@media(max-width:620px){
+  #clientArea .balance-card .special-rule-grid{
+    width:100%;
+    grid-template-columns:minmax(0,1fr);
+  }
+  #clientArea .balance-card .special-rule-grid>div,
+  #clientArea .balance-card .special-rule-grid input{
+    min-width:0;
+    max-width:100%;
+  }
+}
+
 #clientArea .balance-card{min-width:0}
 #clientArea .balance-card .points-adjust{margin-top:10px;padding-top:10px}
 #clientArea .balance-card .points-adjust-row{margin-top:8px;min-width:0}
@@ -926,7 +963,7 @@ button.hidden{display:none!important}
           </div>
           <div class="special-rule-actions">
             <button id="saveCustomerRuleBtn" class="primary" type="button">GUARDAR BENEFICIO</button>
-            <button id="disableCustomerRuleBtn" class="ghost" type="button">DESACTIVAR</button>
+            <button id="disableCustomerRuleBtn" class="danger-button" type="button">DESACTIVAR</button>
           </div>
           <div id="customerRuleStatus" class="special-rule-status"></div>
         </div>
