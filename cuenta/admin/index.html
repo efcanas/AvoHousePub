@@ -709,6 +709,26 @@ button.hidden{display:none!important}
 
 /* Ajustes de AvoPuntos del cliente: controles alineados y espacios compactos. */
 
+/* Restaurar el centrado vertical del valor en los campos de vigencia (escritorio y móvil). */
+#clientArea .balance-card #customerRuleStart,
+#clientArea .balance-card #customerRuleEnd{
+  height:46px;
+  min-height:46px;
+  padding-top:0;
+  padding-bottom:0;
+  line-height:46px;
+  vertical-align:middle;
+}
+#clientArea .balance-card #customerRuleStart::-webkit-date-and-time-value,
+#clientArea .balance-card #customerRuleEnd::-webkit-date-and-time-value{
+  display:flex;
+  align-items:center;
+  min-height:1.2em;
+  margin:0;
+  padding:0;
+}
+
+
 /* Evitar que los controles de vigencia desborden la tarjeta, especialmente en Safari móvil. */
 #clientArea .balance-card>.points-adjust,
 #clientArea .balance-card>.special-rule{
