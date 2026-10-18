@@ -274,6 +274,7 @@ body.achievement-modal-open{overflow:hidden}
 </div>
     <div class="info"><span class="info-label">Documento</span><span id="infoDocument" class="info-value">—</span></div>
     <div class="info"><span class="info-label">Miembro desde</span><span id="infoCreated" class="info-value">—</span></div>
+    <div class="info"><span class="info-label">Fecha de cumpleaños</span><span id="infoBirthday" class="info-value">—</span></div>
   </div>
 </section>
 
@@ -433,6 +434,15 @@ function formatDocumentDisplay(type, number){
   const code=codes[normalized]||(rawType.length<=4?rawType.toUpperCase():rawType);
   if(!code)return rawNumber;
   return rawNumber?code+' '+rawNumber:code;
+}
+function formatBirthday(value){
+  if(!value)return '—';
+  const parts=String(value).split('-');
+  if(parts.length!==3)return '—';
+  const year=Number(parts[0]),month=Number(parts[1]),day=Number(parts[2]);
+  const date=new Date(year,month-1,day);
+  if(!year||!month||!day||Number.isNaN(date.getTime())||date.getFullYear()!==year||date.getMonth()!==month-1||date.getDate()!==day)return '—';
+  return new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(date);
 }
 function formatMoney(value){
   const n=Number(value);
@@ -1259,7 +1269,7 @@ async function loadAccount(){
   const userId=session.user.id;
   try{
     const [profile,account]=await Promise.all([
-      restGet('/rest/v1/profiles?select=username,full_name,document_type,document_number,email,phone,whatsapp,created_at&id=eq.'+encodeURIComponent(userId)+'&limit=1',session.access_token),
+      restGet('/rest/v1/profiles?select=username,full_name,document_type,document_number,email,phone,whatsapp,birth_date,created_at&id=eq.'+encodeURIComponent(userId)+'&limit=1',session.access_token),
       restGet('/rest/v1/avopuntos_accounts?select=balance&profile_id=eq.'+encodeURIComponent(userId)+'&limit=1',session.access_token)
     ]);
     const p=Array.isArray(profile)?profile[0]:null;
@@ -1278,6 +1288,7 @@ async function loadAccount(){
     setText('infoWhatsapp',p.whatsapp);
     setText('infoDocument',formatDocumentDisplay(p.document_type,p.document_number));
     setText('infoCreated',formatDate(p.created_at));
+    setText('infoBirthday',formatBirthday(p.birth_date));
     accountCreatedAt=p.created_at;
     setText('welcome','Hola, '+(p.full_name||p.username||'Usuario')+'.');
 
