@@ -1087,7 +1087,7 @@ function renderAchievementDetails(reward){
  const successMessage=isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed||isPermanentAchievementClaimed||isPilotClaimed;
  const successTitle=(isWelcome||isPilotClaimed)?' achievement-welcome-title':'';
  const copyClass=successMessage?'achievement-detail-copy achievement-success-copy':'achievement-detail-copy';
- const hideStateLabel=successMessage||(['whatsapp_verified','instagram_verified','facebook_verified','points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k','account_anniversary','birthday_celebration'].includes(reward.code)&&status==='available');
+ const hideStateLabel=successMessage||status==='claimed'||(['whatsapp_verified','instagram_verified','facebook_verified','points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k','account_anniversary','birthday_celebration','pilot_launch_2026'].includes(reward.code)&&status==='available');
  const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
  const requirementMarkup=displayedRequirement?'<div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>':'';
  const progressMarkup=renderAchievementProgress(reward,false);
