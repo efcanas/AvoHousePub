@@ -138,19 +138,9 @@ button:disabled{opacity:.45;cursor:default}
   margin:0;
 }
 #templatesCard .template-editor-panel{
-  margin-top:12px;
-  padding:16px;
-  border:1px solid #2c3038;
-  border-radius:18px;
-  background:rgba(21,23,28,.95);
-}
-#templatesCard .template-editor-panel .email-preview-frame{
-  height:400px;
-}
-#templatesCard .template-editor-panel .preview-device-mobile .email-preview-frame{
-  height:420px;
-  max-width:390px;
-  margin:0 auto;
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.12);
 }
 #templatesCard .template-editor-panel .panel-heading{
   padding-bottom:10px;
@@ -371,7 +361,8 @@ button:disabled{opacity:.45;cursor:default}
       <span class="field-label">Variables</span>
       <div id="variableChips" class="variables"></div>
     </div>
-    <div class="template-content-heading"><span class="field-label">Contenido del correo</span><button id="insertCustomerNameBtn" class="insert-variable" type="button">+ Nombre del cliente</button></div>
+    <div class="template-content-block">
+      <div class="template-content-heading"><span class="field-label">Contenido del correo</span><button id="insertCustomerNameBtn" class="insert-variable" type="button">+ Nombre del cliente</button></div>
       <textarea id="templateHtml" class="code" spellcheck="false"></textarea>
       <div class="preview-wrap"><div class="preview-toolbar"><span class="preview-title">Vista previa del correo</span><div class="preview-modes"><button class="preview-mode active" id="editDesktopBtn" type="button">������️ Escritorio</button><button class="preview-mode" id="editMobileBtn" type="button">������ Móvil</button></div></div><div id="editPreviewDevice"><iframe id="editPreviewFrame" class="email-preview-frame" title="Vista previa del correo"></iframe></div></div>
     </div>
