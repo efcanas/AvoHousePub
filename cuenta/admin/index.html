@@ -42,7 +42,15 @@ button{font:inherit}
 .danger-button{border:1px solid #ff5d5d;background:rgba(255,93,93,.08);color:#ff5d5d;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}
 .danger-button:hover{background:rgba(255,93,93,.15)}
 .customer-actions{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
-.customer-actions button{width:max-content}
+.customer-actions button{
+  width:max-content;
+  height:37px;
+  min-height:37px;
+  padding:11px 15px;
+  box-sizing:border-box;
+  font-size:13px;
+  line-height:13px;
+}
 .customer-edit-status{min-height:18px;margin-top:8px;text-align:center;font-size:12px}.customer-edit-status:empty{display:none}
 .edit-control{width:100%}
 .edit-whatsapp-same{display:flex;align-items:center;gap:7px;color:#d6d9df;font-size:12px;margin-top:4px}
