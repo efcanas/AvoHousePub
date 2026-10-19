@@ -799,6 +799,93 @@ button.hidden{display:none!important}
   #clientArea .balance-card .special-rule-grid .full{grid-column:auto}
 }
 
+
+/* Vista de logros en CC: misma presentación de la cuenta del cliente, aislada a estas tarjetas. */
+#customerRewardsSectionAdmin .achievement-grid,
+#customerSpecialRewardsSectionAdmin .achievement-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+#customerRewardsSectionAdmin .achievement-tile,
+#customerSpecialRewardsSectionAdmin .achievement-tile{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:5px 2px;border:1px solid transparent;border-radius:11px;background:transparent;color:#fff;font:inherit;text-align:center;cursor:pointer;transition:background .18s,border-color .18s}
+#customerRewardsSectionAdmin .achievement-tile:hover,
+#customerSpecialRewardsSectionAdmin .achievement-tile:hover{background:rgba(255,255,255,.055);border-color:rgba(212,175,55,.3)}
+#customerRewardsSectionAdmin .achievement-tile:focus-visible,
+#customerSpecialRewardsSectionAdmin .achievement-tile:focus-visible{outline:2px solid #d4af37;outline-offset:2px}
+#customerRewardsSectionAdmin .achievement-tile[aria-pressed="true"],
+#customerSpecialRewardsSectionAdmin .achievement-tile[aria-pressed="true"]{border-color:rgba(212,175,55,.65);background:rgba(212,175,55,.08)}
+#customerRewardsSectionAdmin .achievement-emblem,
+#customerSpecialRewardsSectionAdmin .achievement-emblem{display:block;width:54px;height:54px;object-fit:contain;flex:0 0 auto}
+#customerRewardsSectionAdmin .achievement-emblem.is-locked,
+#customerSpecialRewardsSectionAdmin .achievement-emblem.is-locked{filter:grayscale(1) brightness(.38);opacity:.58}
+#customerRewardsSectionAdmin .achievement-title,
+#customerSpecialRewardsSectionAdmin .achievement-title{font-size:10px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+#customerRewardsSectionAdmin .achievement-state,
+#customerSpecialRewardsSectionAdmin .achievement-state{font-size:8px;line-height:1.25;letter-spacing:.55px;text-transform:uppercase;color:#888}
+#customerRewardsSectionAdmin .achievement-tile[data-status="claimed"] .achievement-state,
+#customerSpecialRewardsSectionAdmin .achievement-tile[data-status="claimed"] .achievement-state{color:#b8f5b8}
+#customerRewardsSectionAdmin .achievement-tile[data-status="pending"] .achievement-state,
+#customerSpecialRewardsSectionAdmin .achievement-tile[data-status="pending"] .achievement-state{color:#e8d59a}
+#customerRewardsSectionAdmin .achievement-progress,
+#customerSpecialRewardsSectionAdmin .achievement-progress{display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;min-width:0;margin-top:2px}
+#customerRewardsSectionAdmin .achievement-progress-text,
+#customerSpecialRewardsSectionAdmin .achievement-progress-text{display:block;color:#c9c9c9;font-size:8px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center}
+#customerRewardsSectionAdmin .achievement-progress-track,
+#customerSpecialRewardsSectionAdmin .achievement-progress-track{display:block;width:100%;height:4px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.13)}
+#customerRewardsSectionAdmin .achievement-progress-fill,
+#customerSpecialRewardsSectionAdmin .achievement-progress-fill{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#789b4a,#c6e46c 54%,#d4af37);transition:width .25s ease}
+#customerAchievementModalAdmin .achievement-progress-detail{margin:12px 0 5px;gap:7px}
+#customerAchievementModalAdmin .achievement-progress-detail .achievement-progress-text{font-size:12px}
+#customerAchievementModalAdmin .achievement-progress-detail .achievement-progress-track{height:7px}
+#customerAchievementModalAdmin.achievement-modal{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+#customerAchievementModalAdmin.achievement-modal[hidden]{display:none}
+#customerAchievementModalAdmin .achievement-modal-card{position:relative;width:min(420px,100%);max-height:min(84dvh,720px);overflow:auto;border:1px solid rgba(255,255,255,.17);border-radius:20px;background:rgba(12,12,12,.97);padding:24px 22px 22px;box-shadow:0 22px 70px rgba(0,0,0,.55);text-align:center}
+#customerAchievementModalAdmin .achievement-modal-close{position:absolute;top:10px;right:10px;width:34px;height:34px;border:1px solid rgba(255,255,255,.22);border-radius:50%;background:rgba(255,255,255,.04);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+#customerAchievementModalAdmin .achievement-modal-emblem{display:block;width:124px;height:124px;object-fit:contain;margin:2px auto 14px}
+#customerAchievementModalAdmin .achievement-modal-emblem.is-locked{filter:grayscale(1) brightness(.42);opacity:.65}
+#customerAchievementModalAdmin .achievement-details{margin-top:0;padding:0;border:0;background:transparent;text-align:left}
+#customerAchievementModalAdmin .achievement-detail-head{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px}
+#customerAchievementModalAdmin .achievement-detail-title{margin:0;font-size:17px;font-weight:800;text-align:center}
+#customerAchievementModalAdmin .achievement-welcome-title{font-size:21px;letter-spacing:1.4px}
+#customerAchievementModalAdmin .achievement-success-copy{margin-top:8px!important;color:#dedfbe!important;font-size:13px!important;line-height:1.5;text-align:center!important}
+#customerAchievementModalAdmin .achievement-detail-state{flex:0 0 auto;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:#aaa}
+#customerAchievementModalAdmin .achievement-detail-copy{margin:12px 0 0;color:#bdbdbd;font-size:12px;line-height:1.65;text-align:left}
+#customerAchievementModalAdmin .achievement-detail-reward{margin-top:12px;color:#d4af37;font-weight:800;font-size:13px;text-align:center}
+#customerAchievementModalAdmin .achievement-detail-meta{margin-top:7px;color:#777;font-size:10px;text-align:center}
+#customerAchievementModalAdmin .reward-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px}
+#customerAchievementModalAdmin .reward-social-text{margin-top:12px;color:#aaa;font-size:11px;line-height:1.55;text-align:left}
+#customerAchievementModalAdmin .reward-social-link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border-radius:9px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:#fff;text-decoration:none;padding:0 12px;font-size:11px;font-weight:800;letter-spacing:.5px}
+#customerAchievementModalAdmin .reward-social-link:hover{background:rgba(255,255,255,.10)}
+#customerAchievementModalAdmin .reward-actions input{min-width:0;flex:1 1 180px;min-height:36px;height:36px;max-width:100%;margin:0;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;padding:0 11px;font:inherit;font-size:12px}
+#customerAchievementModalAdmin .reward-actions button{min-height:36px;border-radius:9px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:#fff;padding:0 12px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+#customerAchievementModalAdmin .reward-actions button:hover{background:rgba(255,255,255,.10)}
+#customerAchievementModalAdmin .reward-actions button:disabled{opacity:.5;cursor:default}
+#customerAchievementModalAdmin .achievement-action-status:empty{display:none}
+#customerAchievementModalAdmin .achievement-action-status{margin-top:10px;font-size:11px;line-height:1.5;text-align:center;color:#b8f5b8}
+#customerAchievementModalAdmin .achievement-action-status.error{color:#ffb7b7}
+#customerRewardsSectionAdmin .achievement-admin-empty,
+#customerSpecialRewardsSectionAdmin .achievement-admin-empty{grid-column:1/-1;padding:12px 6px;text-align:center;color:#8f96a3;font-size:13px}
+#customerSpecialRewardsSectionAdmin .special-achievements-empty{display:flex;align-items:center;gap:14px;padding:17px;border:1px dashed rgba(255,255,255,.17);border-radius:14px;background:rgba(255,255,255,.02)}
+#customerSpecialRewardsSectionAdmin .special-achievements-empty[hidden]{display:none}
+#customerSpecialRewardsSectionAdmin .special-achievements-symbol{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border-radius:14px;border:1px solid rgba(212,175,55,.28);color:#d4af37;font-size:27px}
+#customerSpecialRewardsSectionAdmin .special-achievements-title{font-size:13px;font-weight:800}
+#customerSpecialRewardsSectionAdmin .special-achievements-copy{margin-top:4px;color:#999;font-size:11px;line-height:1.55}
+body.admin-achievement-modal-open{overflow:hidden}
+@media(max-width:620px){
+  #customerRewardsSectionAdmin .achievement-grid,
+  #customerSpecialRewardsSectionAdmin .achievement-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  #customerRewardsSectionAdmin .achievement-emblem,
+  #customerSpecialRewardsSectionAdmin .achievement-emblem{width:46px;height:46px}
+  #customerRewardsSectionAdmin .achievement-tile,
+  #customerSpecialRewardsSectionAdmin .achievement-tile{padding:4px 1px;gap:4px;border-radius:8px}
+  #customerRewardsSectionAdmin .achievement-title,
+  #customerSpecialRewardsSectionAdmin .achievement-title{font-size:9px}
+  #customerRewardsSectionAdmin .achievement-state,
+  #customerSpecialRewardsSectionAdmin .achievement-state{font-size:7px;letter-spacing:.3px}
+  #customerAchievementModalAdmin.achievement-modal{padding:12px}
+  #customerAchievementModalAdmin .achievement-modal-card{max-height:86dvh;padding:22px 17px 18px;border-radius:17px}
+  #customerAchievementModalAdmin .achievement-modal-emblem{width:108px;height:108px;margin-bottom:10px}
+  #customerAchievementModalAdmin .achievement-detail-title{font-size:16px}
+  #customerAchievementModalAdmin .achievement-detail-copy{font-size:12px}
+}
+
 </style>
   <link rel="stylesheet" href="./header.css?v=20261004-2">
 </head>
@@ -1042,16 +1129,34 @@ button.hidden{display:none!important}
     </section>
 
 
-    <section class="card">
+    <section id="customerRewardsSectionAdmin" class="card">
       <div class="panel-heading">
         <div>
-          <h2 class="panel-title">Recompensas AP</h2>
-          <div class="history-summary">Beneficios y bonificaciones registradas</div>
+          <h2 class="panel-title">Logros AH</h2>
+          <div class="history-summary">Desbloquea emblemas y gana puntos.</div>
         </div>
-        <span class="panel-tag">Cliente</span>
+        <span id="customerRewardsModeAdmin" class="panel-tag">Cliente</span>
       </div>
-      <div id="customerRewardsAdmin" class="rewards-admin-list">
-        <div class="empty">Selecciona un cliente.</div>
+      <div id="customerAchievementGridAdmin" class="achievement-grid" role="list" aria-label="Logros permanentes">
+        <div class="achievement-admin-empty">Selecciona un cliente.</div>
+      </div>
+    </section>
+
+    <section id="customerSpecialRewardsSectionAdmin" class="card">
+      <div class="panel-heading">
+        <div>
+          <h2 class="panel-title">Especiales AH</h2>
+          <div class="history-summary">Logros de temporada, celebraciones y campañas especiales</div>
+        </div>
+        <span class="panel-tag">Especiales</span>
+      </div>
+      <div id="customerSpecialAchievementGridAdmin" class="achievement-grid" role="list" aria-label="Logros especiales"></div>
+      <div id="customerSpecialAchievementsEmptyAdmin" class="special-achievements-empty" hidden>
+        <div class="special-achievements-symbol" aria-hidden="true">✦</div>
+        <div>
+          <div class="special-achievements-title">Nuevos logros en próximas campañas</div>
+          <div class="special-achievements-copy">Aquí aparecerán los emblemas temporales cuando AvoHouse publique una campaña con logros.</div>
+        </div>
       </div>
     </section>
 
@@ -1097,6 +1202,15 @@ button.hidden{display:none!important}
 </section>
 </div>
 </main>
+
+<div id="customerAchievementModalAdmin" class="achievement-modal" hidden role="dialog" aria-modal="true" aria-labelledby="customerAchievementModalTitleAdmin">
+  <div class="achievement-modal-card">
+    <button id="customerAchievementModalCloseAdmin" class="achievement-modal-close" type="button" aria-label="Cerrar detalle del logro">×</button>
+    <img id="customerAchievementModalEmblemAdmin" class="achievement-modal-emblem is-locked" src="../../assets/logros-ah/bienvenido.svg" alt="" width="512" height="512">
+    <div id="customerAchievementDetailsAdmin" class="achievement-details" aria-live="polite"></div>
+    <div id="customerAchievementActionStatusAdmin" class="achievement-action-status" role="status" aria-live="polite"></div>
+  </div>
+</div>
 
 <div id="receiptModal" class="receipt-modal" hidden>
   <div class="receipt-card" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
@@ -1161,6 +1275,9 @@ const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
 
 let session=null;
 let selectedProfile=null;
+let customerAchievementRewardsAdmin=[];
+let selectedCustomerAchievementCodeAdmin=null;
+let customerWhatsappVerificationAdmin=null;
 let pointsBalance=0;
 let historyMode='recent';
 let historyMovements=[];
@@ -2498,38 +2615,273 @@ async function verifySelectedFacebook(){
   }
 }
 
+
+const customerAchievementCatalogAdmin={
+ account_created:{title:'BIENVENIDO',icon:'../../assets/logros-ah/bienvenido.svg',requirement:'Ahora haces parte del mundo AvoHouse'},
+ whatsapp_verified:{title:'WhatsApp',icon:'../../assets/logros-ah/whatsapp.svg',requirement:'Solicita la verificación, envía el código generado al WhatsApp de AvoHouse y espera la validación.'},
+ instagram_verified:{title:'Instagram',icon:'../../assets/logros-ah/instagram.svg',requirement:'Sigue a @avohouseguaviare, solicita el código desde aquí y envíalo por mensaje directo (DM). El equipo debe validar la solicitud.'},
+ facebook_verified:{title:'Facebook',icon:'../../assets/logros-ah/facebook.svg',requirement:'Sigue la página de AvoHouse, solicita el código desde aquí y envíalo por mensaje directo. El equipo debe validar la solicitud.'},
+ points_earned_2k:{title:'2K AvoPuntos',icon:'../../assets/logros-ah/2k-avopuntos.svg',requirement:'Alcanza los 2.000 AvoPuntos en compras.'},
+ points_earned_10k:{title:'10K AvoPuntos',icon:'../../assets/logros-ah/10k-avopuntos.svg',requirement:'Alcanza los 10.000 AvoPuntos en compras.'},
+ first_redemption:{title:'Primer movimiento',icon:'../../assets/logros-ah/primer-movimiento.svg',requirement:'Realiza tu primer canje de AvoPuntos.'},
+ points_redeemed_20k:{title:'AP en circulación',icon:'../../assets/logros-ah/ap-en-circulacion.svg',requirement:'Haz circular 25.000 AvoPuntos.'},
+ account_anniversary:{title:'Aniversario',icon:'../../assets/logros-ah/aniversario-avohouse.svg?v=approved-avocado-emblems-v1',requirement:'Cada año, en el aniversario de creación de tu cuenta, recibes +5.000 AvoPuntos.'},
+ birthday_celebration:{title:'HB',icon:'../../assets/logros-ah/celebracion-avohouse.svg?v=approved-avocado-emblems-v1',requirement:'Recibes +10.000 AvoPuntos por tu cumpleaños. Tienes 15 días desde la acreditación para usarlos; los puntos que queden se revierten automáticamente.'},
+ pilot_launch_2026:{title:'Piloto',icon:'../../assets/logros-ah/piloto.svg?v=piloto-emblem-v1',requirement:'¡Gracias por ser parte del plan piloto! Por acompañarnos en esta primera etapa, tus compras elegibles acumulan el doble de AvoPuntos (AP×2) hasta el 31 de diciembre de 2026.'}
+};
+
+function closeCustomerAchievementModalAdmin(){
+  const modal=$('customerAchievementModalAdmin');
+  if(modal)modal.hidden=true;
+  $('customerAchievementDetailsAdmin').innerHTML='';
+  $('customerAchievementActionStatusAdmin').textContent='';
+  $('customerAchievementActionStatusAdmin').className='achievement-action-status';
+  document.body.classList.remove('admin-achievement-modal-open');
+  selectedCustomerAchievementCodeAdmin=null;
+  document.querySelectorAll('#customerRewardsSectionAdmin button[data-achievement],#customerSpecialRewardsSectionAdmin button[data-achievement]').forEach(button=>button.setAttribute('aria-pressed','false'));
+}
+
+function setCustomerAchievementActionStatusAdmin(message,error=false){
+  const box=$('customerAchievementActionStatusAdmin');
+  if(!box)return;
+  box.textContent=message||'';
+  box.className='achievement-action-status'+(error?' error':'');
+}
+
+function renderCustomerAchievementProgressAdmin(reward,compact=false){
+  const targets={points_earned_2k:2000,points_earned_10k:10000,points_redeemed_20k:25000};
+  const code=reward?.code;
+  if(!Object.prototype.hasOwnProperty.call(targets,code))return '';
+  const target=Math.max(0,Number(reward.progress_target)||targets[code]);
+  if(!target)return '';
+  const raw=Number(reward.progress_current);
+  const current=Math.min(target,Math.max(0,Number.isFinite(raw)?raw:0));
+  const percent=Math.max(0,Math.min(100,Math.round(current/target*100)));
+  const label=customerAchievementCatalogAdmin[code]?.title||reward.name||'logro';
+  const className=compact?'achievement-progress achievement-progress-compact':'achievement-progress achievement-progress-detail';
+  return '<span class="'+className+'"><span class="achievement-progress-text">'+current.toLocaleString('es-CO')+' / '+target.toLocaleString('es-CO')+' AP</span><span class="achievement-progress-track" role="progressbar" aria-label="Progreso de '+escapeHtml(label)+'" aria-valuemin="0" aria-valuemax="'+target+'" aria-valuenow="'+current+'"><span class="achievement-progress-fill" style="width:'+percent+'%"></span></span></span>';
+}
+
+function renderCustomerAchievementDetailsAdmin(reward){
+  const modal=$('customerAchievementModalAdmin');
+  const details=$('customerAchievementDetailsAdmin');
+  const emblem=$('customerAchievementModalEmblemAdmin');
+  if(!modal||!details||!emblem)return;
+  if(!reward){
+    modal.hidden=true;
+    details.innerHTML='';
+    document.body.classList.remove('admin-achievement-modal-open');
+    return;
+  }
+
+  const catalogBase=customerAchievementCatalogAdmin[reward.code]||{title:reward.name||'Logro AH',icon:'../../assets/logros-ah/bienvenido.svg',requirement:reward.description||'Consulta las condiciones del logro.'};
+  const specialCodes=['account_anniversary','birthday_celebration'];
+  const catalog=specialCodes.includes(reward.code)?{...catalogBase,title:reward.name||catalogBase.title}:catalogBase;
+  const status=reward.status||'available';
+  const statusLabel={claimed:'Logro obtenido',pending:'Pendiente de validación',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
+  const isWelcome=reward.code==='account_created'&&status==='claimed';
+  const isWhatsappClaimed=reward.code==='whatsapp_verified'&&status==='claimed';
+  const isInstagramClaimed=reward.code==='instagram_verified'&&status==='claimed';
+  const isFacebookClaimed=reward.code==='facebook_verified'&&status==='claimed';
+  const isEarned2kClaimed=reward.code==='points_earned_2k'&&status==='claimed';
+  const isEarned10kClaimed=reward.code==='points_earned_10k'&&status==='claimed';
+  const isFirstRedemptionClaimed=reward.code==='first_redemption'&&status==='claimed';
+  const isRedeemed20kClaimed=reward.code==='points_redeemed_20k'&&status==='claimed';
+  const isPermanentAchievementClaimed=isEarned2kClaimed||isEarned10kClaimed||isFirstRedemptionClaimed||isRedeemed20kClaimed;
+  const isInstagramPending=reward.code==='instagram_verified'&&status==='pending';
+  const isWhatsappPending=reward.code==='whatsapp_verified'&&status==='pending';
+  const isFacebookPending=reward.code==='facebook_verified'&&status==='pending';
+  const isPilotClaimed=reward.code==='pilot_launch_2026'&&status==='claimed';
+  const displayedRequirement=isPilotClaimed?'¡Gracias por ser parte de la primera generación de AvoHousePub.com! Como agradecimiento por acompañarnos en el plan piloto, tus compras elegibles acumulan el doble de AvoPuntos (AP×2) hasta el 31 de diciembre de 2026.':isWhatsappClaimed?'Tu número ya está verificado. Gracias por conectar con AvoHouse.':isInstagramClaimed?'Tu seguimiento de Instagram ya está verificado. Gracias por conectar con AvoHouse.':isFacebookClaimed?'Tu seguimiento de Facebook ya está verificado. Gracias por conectar con AvoHouse.':isEarned2kClaimed||isEarned10kClaimed?'Has alcanzado un nuevo hito. Gracias por conectar con AvoHouse.':isFirstRedemptionClaimed?'Tu primer movimiento de AvoPuntos ya forma parte de tu historia AvoHouse.':isRedeemed20kClaimed?'Has puesto 25.000 AvoPuntos en circulación. Gracias por conectar con AvoHouse.':(isInstagramPending||isWhatsappPending||isFacebookPending)?'':catalog.requirement;
+  const granted=Number(reward.points_granted||0),configured=Number(reward.points||0);
+  emblem.src=catalog.icon;
+  emblem.alt=catalog.title;
+  emblem.classList.toggle('is-locked',status!=='claimed');
+
+  let extra='';
+  if(status==='claimed'&&granted>0)extra='<div class="achievement-detail-reward">+'+granted.toLocaleString('es-CO')+' AP'+((isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed||isPermanentAchievementClaimed)?'':' acreditados')+'</div>';
+  else if(status!=='claimed'&&configured>0)extra='<div class="achievement-detail-reward">Recompensa: +'+configured.toLocaleString('es-CO')+' AP</div>';
+  if(status==='claimed'&&reward.claimed_at)extra+='<div class="achievement-detail-meta">Obtenido el '+escapeHtml(formatDate(reward.claimed_at))+'</div>';
+
+  let actions='';
+  if(reward.code==='instagram_verified'&&status==='available'){
+    actions='<div class="reward-actions"><a class="reward-social-link" href="https://www.instagram.com/avohouseguaviare" target="_blank" rel="noopener">IR A INSTAGRAM</a></div><div class="reward-actions"><input id="customerRewardInstagramInputAdmin" type="text" maxlength="32" placeholder="@tuusuario" autocomplete="off" aria-label="Usuario de Instagram"><button id="customerRewardInstagramRequestAdmin" type="button">SOLICITAR CÓDIGO</button></div>';
+  }else if(reward.code==='instagram_verified'&&status==='pending'){
+    const code=String(reward.verification_code||'');
+    actions='<div class="reward-social-text">Envía este código por mensaje directo (DM) a AvoHouse. El logro se desbloqueará cuando el equipo valide que sigues la cuenta.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.instagram.com/avohouseguaviare" target="_blank" rel="noopener">ABRIR INSTAGRAM</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
+  }else if(reward.code==='facebook_verified'&&status==='available'){
+    actions='<div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/share/1HULpaCs6G/?mibextid=wwXIfr" target="_blank" rel="noopener">IR A FACEBOOK</a></div><div class="reward-actions"><input id="customerRewardFacebookInputAdmin" type="text" maxlength="100" placeholder="Tu nombre o usuario de Facebook" autocomplete="off" aria-label="Nombre o usuario de Facebook"><button id="customerRewardFacebookRequestAdmin" type="button">SOLICITAR CÓDIGO</button></div>';
+  }else if(reward.code==='facebook_verified'&&status==='pending'){
+    const code=String(reward.verification_code||'');
+    actions='<div class="reward-social-text">Envía este código por mensaje directo a la página de AvoHouse. El equipo debe validar tu seguimiento.</div><div class="reward-actions"><a class="reward-social-link" href="https://www.facebook.com/share/1HULpaCs6G/?mibextid=wwXIfr" target="_blank" rel="noopener">ABRIR FACEBOOK</a></div>'+(code?'<div class="verification-code">Código: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
+  }else if(reward.code==='whatsapp_verified'&&(status==='available'||status==='pending')){
+    const verification=customerWhatsappVerificationAdmin;
+    if(verification?.status==='pending'){
+      const code=String(verification.code||reward.verification_code||'');
+      const whatsappUrl='https://wa.me/573026475174?text='+encodeURIComponent('Hola AvoHouse, solicito la verificación de mi WhatsApp. Mi código es '+code+'.');
+      actions='<div class="reward-social-text">Envía este código a AvoHouse por WhatsApp para que el equipo valide tu número.</div>'+
+        (code?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>')+
+        (code?'<div class="reward-actions"><a class="reward-social-link" href="'+whatsappUrl+'" target="_blank" rel="noopener">ENVIAR CÓDIGO POR WHATSAPP</a></div>':'');
+    }else if(verification?.status==='verified'){
+      actions='<div class="reward-social-text">Tu número de WhatsApp ya aparece verificado.</div>';
+    }else{
+      actions='<div class="reward-actions"><button id="customerRewardWhatsappRequestAdmin" type="button">SOLICITAR CÓDIGO</button></div>';
+    }
+  }
+
+  const successMessage=isWelcome||isWhatsappClaimed||isInstagramClaimed||isFacebookClaimed||isPermanentAchievementClaimed||isPilotClaimed;
+  const successTitle=(isWelcome||isPilotClaimed)?' achievement-welcome-title':'';
+  const copyClass=successMessage?'achievement-detail-copy achievement-success-copy':'achievement-detail-copy';
+  const hideStateLabel=successMessage||status==='claimed'||(['whatsapp_verified','instagram_verified','facebook_verified','points_earned_2k','points_earned_10k','first_redemption','points_redeemed_20k','account_anniversary','birthday_celebration','pilot_launch_2026'].includes(reward.code)&&status==='available');
+  const stateMarkup=hideStateLabel?'':'<span class="achievement-detail-state">'+statusLabel+'</span>';
+  const requirementMarkup=displayedRequirement?'<div class="'+copyClass+'">'+escapeHtml(displayedRequirement)+'</div>':'';
+  const progressMarkup=renderCustomerAchievementProgressAdmin(reward,false);
+  details.innerHTML='<div class="achievement-detail-head"><h3 id="customerAchievementModalTitleAdmin" class="achievement-detail-title'+successTitle+'">'+escapeHtml(catalog.title)+'</h3>'+stateMarkup+'</div>'+requirementMarkup+progressMarkup+extra+actions;
+
+  modal.hidden=false;
+  document.body.classList.add('admin-achievement-modal-open');
+
+  const instagramBtn=$('customerRewardInstagramRequestAdmin');
+  if(instagramBtn)instagramBtn.addEventListener('click',()=>requestCustomerAchievementVerificationAdmin('instagram'));
+  const facebookBtn=$('customerRewardFacebookRequestAdmin');
+  if(facebookBtn)facebookBtn.addEventListener('click',()=>requestCustomerAchievementVerificationAdmin('facebook'));
+  const whatsappBtn=$('customerRewardWhatsappRequestAdmin');
+  if(whatsappBtn)whatsappBtn.addEventListener('click',()=>requestCustomerAchievementVerificationAdmin('whatsapp'));
+}
+
+function renderCustomerAchievementGridAdmin(rewards){
+  const grid=$('customerAchievementGridAdmin');
+  const specialGrid=$('customerSpecialAchievementGridAdmin');
+  if(!grid||!specialGrid)return;
+
+  const specialCodes=new Set(['pilot_launch_2026','account_anniversary','birthday_celebration']);
+  const order={pilot_launch_2026:-1,points_earned_2k:0,points_earned_10k:1,first_redemption:2,points_redeemed_20k:3,account_anniversary:4,birthday_celebration:5};
+  const sorted=Array.isArray(rewards)?rewards.slice():[];
+  sorted.sort((a,b)=>{
+    const aSpecial=Object.prototype.hasOwnProperty.call(order,a.code);
+    const bSpecial=Object.prototype.hasOwnProperty.call(order,b.code);
+    if(aSpecial&&bSpecial)return order[a.code]-order[b.code];
+    if(aSpecial)return 1;
+    if(bSpecial)return -1;
+    return 0;
+  });
+  customerAchievementRewardsAdmin=sorted;
+
+  const renderTile=reward=>{
+    const status=reward.status||'available';
+    const base=customerAchievementCatalogAdmin[reward.code]||{title:reward.name||'Logro AH',icon:'../../assets/logros-ah/bienvenido.svg'};
+    const catalog=specialCodes.has(reward.code)?{...base,title:reward.name||base.title}:base;
+    const selected=selectedCustomerAchievementCodeAdmin===reward.code;
+    const label={claimed:'Obtenido',pending:'En revisión',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
+    return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span>'+renderCustomerAchievementProgressAdmin(reward,true)+'</button>';
+  };
+
+  const bindGrid=targetGrid=>{
+    targetGrid.innerHTML='';
+    targetGrid.onclick=event=>{
+      const tile=event.target.closest('button[data-achievement]');
+      if(!tile)return;
+      const code=tile.getAttribute('data-achievement');
+      if(selectedCustomerAchievementCodeAdmin===code){closeCustomerAchievementModalAdmin();return;}
+      selectedCustomerAchievementCodeAdmin=code;
+      document.querySelectorAll('#customerRewardsSectionAdmin button[data-achievement],#customerSpecialRewardsSectionAdmin button[data-achievement]').forEach(button=>button.setAttribute('aria-pressed',button.getAttribute('data-achievement')===code?'true':'false'));
+      $('customerAchievementActionStatusAdmin').textContent='';
+      renderCustomerAchievementDetailsAdmin(customerAchievementRewardsAdmin.find(reward=>reward.code===code)||null);
+    };
+  };
+  bindGrid(grid);
+  bindGrid(specialGrid);
+
+  const standardRewards=sorted.filter(reward=>!specialCodes.has(reward.code));
+  const specialRewards=sorted.filter(reward=>specialCodes.has(reward.code));
+  grid.innerHTML=standardRewards.length?standardRewards.map(renderTile).join(''):'<div class="achievement-admin-empty">No hay logros activos en este momento.</div>';
+  specialGrid.innerHTML=specialRewards.map(renderTile).join('');
+  const emptySpecials=$('customerSpecialAchievementsEmptyAdmin');
+  if(emptySpecials)emptySpecials.hidden=specialRewards.length>0;
+  $('customerRewardsModeAdmin').textContent=standardRewards.filter(reward=>reward.status==='claimed').length+' de '+standardRewards.length+' obtenidos';
+  renderCustomerAchievementDetailsAdmin(customerAchievementRewardsAdmin.find(reward=>reward.code===selectedCustomerAchievementCodeAdmin)||null);
+}
+
 async function loadCustomerRewardsAdmin(){
   if(!selectedProfile)return;
+  const profileId=selectedProfile.id;
+  const [{data,error},{data:whatsappData,error:whatsappError}]=await Promise.all([
+    db.rpc('avopuntos_admin_get_customer_rewards_with_progress',{p_profile_id:profileId}),
+    db.rpc('avopuntos_admin_get_whatsapp_verification',{p_profile_id:profileId})
+  ]);
+  if(selectedProfile?.id!==profileId)return;
 
-  const {data,error}=await db.rpc('avopuntos_admin_get_customer_rewards',{
-    p_profile_id:selectedProfile.id
-  });
-
-  const list=$('customerRewardsAdmin');
-  if(!list)return;
-
+  customerWhatsappVerificationAdmin=whatsappError?null:(Array.isArray(whatsappData)?(whatsappData[0]||null):(whatsappData||null));
   if(error){
-    list.innerHTML='<div class="empty">No fue posible cargar las recompensas.</div>';
+    $('customerAchievementGridAdmin').innerHTML='<div class="achievement-admin-empty">No fue posible cargar los logros de este cliente.</div>';
+    $('customerSpecialAchievementGridAdmin').innerHTML='';
+    $('customerRewardsModeAdmin').textContent='Error';
+    showNotice('No se pudieron consultar los logros del cliente: '+(error.message||'error desconocido.'),true);
     return;
   }
-
-  if(!Array.isArray(data)||!data.length){
-    list.innerHTML='<div class="empty">No hay recompensas registradas.</div>';
-    return;
-  }
-
-  list.innerHTML=data.map(r=>{
-    const points=Number(r.points_granted||0);
-    const detail=points>0
-      ?'<div class="reward-admin-meta">+'+points.toLocaleString('es-CO')+' AP · '+escapeHtml(formatDate(r.claimed_at||r.created_at,true))+'</div>'
-      :'<div class="reward-admin-meta">'+escapeHtml(formatDate(r.claimed_at||r.created_at,true))+'</div>';
-    return '<div class="reward-admin-item"><div class="reward-admin-name">'+escapeHtml(r.name)+'</div>'+detail+'</div>';
-  }).join('');
+  renderCustomerAchievementGridAdmin(Array.isArray(data)?data:[]);
 }
+
+async function requestCustomerAchievementVerificationAdmin(channel){
+  if(!selectedProfile)return;
+  const profileId=selectedProfile.id;
+  let contactValue=null;
+  let buttonId='';
+  let label='';
+
+  if(channel==='instagram'){
+    const input=$('customerRewardInstagramInputAdmin');
+    buttonId='customerRewardInstagramRequestAdmin';
+    label='Instagram';
+    contactValue=input?.value?.trim()||'';
+    if(!contactValue){setCustomerAchievementActionStatusAdmin('Escribe el usuario de Instagram del cliente.',true);input?.focus();return;}
+  }else if(channel==='facebook'){
+    const input=$('customerRewardFacebookInputAdmin');
+    buttonId='customerRewardFacebookRequestAdmin';
+    label='Facebook';
+    contactValue=input?.value?.trim()||'';
+    if(!contactValue){setCustomerAchievementActionStatusAdmin('Escribe el nombre o usuario de Facebook del cliente.',true);input?.focus();return;}
+  }else{
+    buttonId='customerRewardWhatsappRequestAdmin';
+    label='WhatsApp';
+  }
+
+  const btn=$(buttonId);
+  if(btn){btn.disabled=true;btn.textContent='SOLICITANDO…';}
+  setCustomerAchievementActionStatusAdmin('Generando solicitud…');
+  try{
+    const {data,error}=await db.rpc('avopuntos_admin_request_customer_verification',{
+      p_profile_id:profileId,
+      p_channel:channel,
+      p_contact_value:contactValue
+    });
+    if(error)throw error;
+    const result=Array.isArray(data)?(data[0]||{}):(data||{});
+    if(selectedProfile?.id!==profileId)return;
+
+    if(channel==='whatsapp')await Promise.all([loadCustomerRewardsAdmin(),loadWhatsappVerificationAdmin()]);
+    else if(channel==='instagram')await Promise.all([loadCustomerRewardsAdmin(),loadInstagramVerificationAdmin()]);
+    else await Promise.all([loadCustomerRewardsAdmin(),loadFacebookVerificationAdmin()]);
+
+    if(result.status==='pending'){
+      setCustomerAchievementActionStatusAdmin('Código generado. '+(channel==='whatsapp'?'Envíalo al cliente para que pueda escribir a AvoHouse.':'Comparte el código con el cliente para que complete la verificación de '+label+'.'));
+    }else if(result.status==='verified'){
+      setCustomerAchievementActionStatusAdmin(label+' ya aparece verificado.');
+    }else{
+      setCustomerAchievementActionStatusAdmin('Solicitud actualizada.');
+    }
+  }catch(error){
+    setCustomerAchievementActionStatusAdmin('No fue posible generar la solicitud: '+(error?.message||'error desconocido.'),true);
+  }finally{
+    if(btn&&btn.isConnected){btn.disabled=false;btn.textContent='SOLICITAR CÓDIGO';}
+  }
+}
+
 
 
 async function loadClient(profile){
   hideNotice();
+  closeCustomerAchievementModalAdmin();
   selectedProfile=profile;
   setCustomerEditMode(false);
   $('clientArea').classList.remove('hidden');
@@ -2902,10 +3254,13 @@ $('emailHistoryYear').addEventListener('change',populateEmailHistoryMonths);
 $('emailModalClose').addEventListener('click',()=>{$('emailModal').hidden=true});
 $('emailModal').addEventListener('click',e=>{if(e.target===$('emailModal'))$('emailModal').hidden=true});
 window.addEventListener('error',()=>{document.getElementById('sessionGate')?.classList.add('hidden')});$('logoutBtn').addEventListener('click',logout);
+$('customerAchievementModalCloseAdmin').addEventListener('click',closeCustomerAchievementModalAdmin);
+$('customerAchievementModalAdmin').addEventListener('click',event=>{if(event.target===$('customerAchievementModalAdmin'))closeCustomerAchievementModalAdmin()});
 $('receiptClose').addEventListener('click',()=>{$('receiptModal').hidden=true});
 $('receiptModal').addEventListener('click',e=>{if(e.target===$('receiptModal'))$('receiptModal').hidden=true});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
+    closeCustomerAchievementModalAdmin();
     $('receiptModal').hidden=true;
     $('emailModal').hidden=true;
     if(!$('deleteCustomerModal').hidden)closeDeleteCustomerModal();
