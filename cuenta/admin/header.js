@@ -36,30 +36,22 @@
     '</header>';
 
   /*
-   * Las cuatro áreas administrativas distintas de AHtv reciben una separación
-   * calculada desde el borde inferior real del encabezado, no una altura fija.
-   * Así se mantiene el hueco en escritorio y cuando la navegación ocupa varias
-   * filas en pantallas móviles.
+   * Las cuatro áreas distintas de AHtv reproducen su inicio de contenido.
+   * En AHtv, el contenido comienza a 255 px en escritorio y 251 px en móvil:
+   * padding superior de 225 px, más el padding de main (18/14 px) y los 12 px
+   * de margen de la primera tarjeta. Aquí la tarjeta ya aporta esos 12 px,
+   * por eso el padding de .page es 243/239 px. AHtv no se modifica.
    */
   function syncContentOffset() {
     if (activeSection === "ahtv") return;
 
     const page = mount.closest(".page");
-    const header = mount.querySelector(".header");
-    if (!page || !header) return;
+    if (!page) return;
 
-    const gap = 12;
-    const height = Math.ceil(header.getBoundingClientRect().height);
-    page.style.paddingTop = (height + gap) + "px";
+    const topPadding = window.matchMedia("(max-width: 640px)").matches ? 239 : 243;
+    page.style.paddingTop = topPadding + "px";
   }
 
   syncContentOffset();
-  window.addEventListener("load", syncContentOffset);
   window.addEventListener("resize", syncContentOffset);
-
-  if ("ResizeObserver" in window) {
-    const headerObserver = new ResizeObserver(syncContentOffset);
-    const header = mount.querySelector(".header");
-    if (header) headerObserver.observe(header);
-  }
 })();
