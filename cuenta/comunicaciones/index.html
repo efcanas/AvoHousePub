@@ -416,6 +416,40 @@ button:disabled{opacity:.45;cursor:default}
   }
 }
 
+/* Historial de comunicaciones · ajustes compactos exclusivos de esta tarjeta. */
+#communicationsHistoryCard{
+  padding:16px;
+}
+#communicationsHistoryCard .panel-heading{
+  padding-bottom:10px;
+  margin-bottom:10px;
+  gap:8px 12px;
+  flex-wrap:wrap;
+}
+#communicationsHistoryCard button{
+  height:37px;
+  min-height:37px;
+  box-sizing:border-box;
+  padding:11px 15px;
+  font-size:13px;
+  line-height:13px;
+  border-radius:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0;
+}
+#communicationsHistoryCard .history-list{
+  gap:6px;
+}
+#communicationsHistoryCard .history-item{
+  padding:8px 0;
+  gap:10px;
+}
+#communicationsHistoryCard .empty{
+  padding:8px 4px;
+}
+
 </style>
   <link rel="stylesheet" href="../admin/header.css?v=20261004-2">
 </head>
@@ -554,7 +588,7 @@ button:disabled{opacity:.45;cursor:default}
     </div>
   </section>
 
-  <section class="card">
+  <section id="communicationsHistoryCard" class="card">
     <div class="panel-heading">
       <h2 class="panel-title">Historial de comunicaciones</h2>
       <button id="refreshHistoryBtn" class="ghost" type="button">ACTUALIZAR</button>
