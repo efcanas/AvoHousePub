@@ -188,12 +188,12 @@ button:disabled{opacity:.45;cursor:default}
 
 /* Probar una plantilla · controles alineados con los estándares de AHP. */
 #testTemplateCard input[type="email"]{
-  height:44px;
-  min-height:44px;
+  height:37px;
+  min-height:37px;
   box-sizing:border-box;
-  padding:12px 13px;
-  margin:4px 0 0;
-  line-height:18px;
+  padding:0 13px;
+  margin:0;
+  line-height:normal;
   border:1px solid #2c3038;
   border-radius:11px;
 }
@@ -202,7 +202,7 @@ button:disabled{opacity:.45;cursor:default}
   min-height:37px;
   box-sizing:border-box;
   padding:0 13px;
-  margin:4px 0 0;
+  margin:0;
   line-height:normal;
   border:1px solid #2c3038;
   border-radius:11px;
@@ -220,11 +220,25 @@ button:disabled{opacity:.45;cursor:default}
   justify-content:center;
   margin:0;
 }
+#testTemplateCard{
+  padding:16px;
+}
+#testTemplateCard .panel-heading{
+  padding-bottom:10px;
+  margin-bottom:10px;
+}
 #testTemplateCard .grid-2{
   gap:8px 12px;
+  align-items:end;
 }
-#testTemplateCard .help{
-  margin:8px 0 0;
+#testTemplateCard .grid-2 label{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+#testTemplateCard .grid-2 .field-label{
+  margin:0;
 }
 #testTemplateCard .editor-actions{
   margin-top:8px;
@@ -454,7 +468,6 @@ button:disabled{opacity:.45;cursor:default}
       <label><span class="field-label">Plantilla</span><select id="testTemplate"></select></label>
       <label><span class="field-label">Enviar a</span><input id="testTo" type="email" placeholder="correo de prueba"></label>
     </div>
-    <div class="help">La plantilla utilizará sus valores de respaldo. Este botón envía únicamente al destinatario indicado.</div>
     <div class="editor-actions"><button id="sendTestBtn" class="ghost" type="button">ENVIAR PRUEBA</button></div>
   </section>
 
