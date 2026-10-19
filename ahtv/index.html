@@ -42,20 +42,20 @@
       border-radius: 30px; font-size: .85em; transition: .3s;
     }
     .home-button:hover { background: white; color: #111; }
-    .wrap { width: 100%; max-width: 760px; margin: 0 auto; padding: 20px 12px 44px; }
+    .wrap { width: 100%; max-width: 760px; margin: 0 auto; padding: 16px 12px 32px; }
     .card {
       background: rgba(21,23,28,.94);
       border: 1px solid var(--line);
       border-radius: 18px;
-      padding: 18px;
+      padding: 16px;
       box-shadow: 0 12px 30px rgba(0,0,0,.25);
-      margin-top: 16px;
+      margin-top: 12px;
     }
     .counter { display:flex; justify-content:space-between; align-items:center; gap:12px; }
     .counter strong { font-size: 17px; }
     .counter span { color: var(--accent); font-weight: 700; }
-    .hint { color: var(--muted); font-size: 13px; line-height: 1.4; margin-top: 7px; }
-    .search { position: relative; margin-top: 16px; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.4; margin-top: 6px; }
+    .search { position: relative; margin-top: 10px; }
     input {
       width: 100%;
       padding: 15px 16px;
@@ -67,7 +67,7 @@
       font-size: 16px;
     }
     input:focus { border-color: var(--accent); }
-    .results { margin-top: 12px; display: grid; gap: 10px; }
+    .results { margin-top: 10px; display: grid; gap: 8px; }
     .row {
       width: 100%;
       min-width: 0;
@@ -87,8 +87,8 @@
     }
     .request { background: var(--accent); color: var(--accentText); }
     .request:disabled { background:#3c414b; color:#aeb3bb; cursor:not-allowed; }
-    .mine { margin-top: 18px; display:grid; gap:10px; }
-    .section-label { margin-top: 18px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .mine { margin-top: 14px; display:grid; gap:8px; }
+    .section-label { margin-top: 14px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
     .recent-item { padding:12px 13px; border-radius:12px; background:#111318; border:1px solid var(--line); }
     .recent-item .artist { font-size: 14px; }
     .recent-item .title { font-size: 14px; }
@@ -96,16 +96,17 @@
     .mine-item { padding:12px 13px; border-radius:12px; background:#111318; border:1px solid var(--line); }
     .mine-item .artist { font-size: 14px; }
     .mine-item .title { font-size: 14px; }
-    .msg { margin-top: 12px; padding: 11px 12px; border-radius: 10px; font-size: 14px; background:#1b1e24; color:#d9dce2; }
+    .msg { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; background:#1b1e24; color:#d9dce2; }
     .msg.error { border:1px solid rgba(255,93,93,.4); color:#ffd0d0; }
-    .empty { color:var(--muted); text-align:center; padding:18px 8px; }
-    .tiny { margin-top: 14px; color:#777f8b; font-size:11px; text-align:center; }
+    .availability-message.error { background:rgba(255,93,93,.10); }
+    .empty { color:var(--muted); text-align:center; padding:14px 8px; }
+    .tiny { margin-top: 12px; color:#777f8b; font-size:11px; text-align:center; }
     @media (max-width: 520px) {
       body { padding-top: 220px; }
       .header { padding: 18px 15px 12px; }
       .logo { width: 200px; }
       .header-title { font-size: 22px !important; line-height: 1.2; margin-bottom: 10px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-      .wrap { padding: 14px 10px 36px; }
+      .wrap { padding: 12px 10px 28px; }
       .card { padding: 14px; border-radius: 15px; }
       .row { align-items: flex-start; }
       .row .request { align-self: center; }
@@ -163,10 +164,10 @@ body::before {
 
     <section class="card">
       <strong>Buscar canción</strong>
+      <div id="availabilityMessage" class="msg availability-message" role="status" aria-live="polite" hidden></div>
       <div class="search">
         <input id="search" type="search" autocomplete="off" placeholder="Artista o canción…" />
       </div>
-      <div id="availabilityMessage" class="msg" hidden></div>
       <div id="results" class="results"></div>
       <div id="message" class="msg" hidden></div>
     </section>
@@ -215,7 +216,7 @@ body::before {
       availabilityMessageEl.hidden = requestsEnabled;
       availabilityMessageEl.textContent = requestsEnabled
         ? ''
-        : 'Las solicitudes están cerradas en este momento.';
+        : 'La solicitud de música no está habilitada en este momento.';
       availabilityMessageEl.classList.toggle('error', !requestsEnabled);
     }
 
@@ -426,7 +427,7 @@ body::before {
         if (msg.includes('Las solicitudes están cerradas')) {
           requestsEnabled = false;
           renderRequestAvailability();
-          showMessage('Las solicitudes están cerradas en este momento.', true);
+          showMessage('');
         } else if (msg.includes('máximo de 2')) {
           showMessage('Ya tienes 2 solicitudes activas. Espera a que suenen para pedir otra.', true);
         } else if (msg.includes('Esta canción ya está solicitada')) {
