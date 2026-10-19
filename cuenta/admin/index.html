@@ -2720,10 +2720,8 @@ function renderCustomerAchievementDetailsAdmin(reward){
     const verification=customerWhatsappVerificationAdmin;
     if(verification?.status==='pending'){
       const code=String(verification.code||reward.verification_code||'');
-      const whatsappUrl='https://wa.me/573026475174?text='+encodeURIComponent('Hola AvoHouse, solicito la verificación de mi WhatsApp. Mi código es '+code+'.');
-      actions='<div class="reward-social-text">Envía este código a AvoHouse por WhatsApp para que el equipo valide tu número.</div>'+
-        (code?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>')+
-        (code?'<div class="reward-actions"><a class="reward-social-link" href="'+whatsappUrl+'" target="_blank" rel="noopener">ENVIAR CÓDIGO POR WHATSAPP</a></div>':'');
+      actions='<div class="reward-social-text">Para validar el número, el cliente debe enviar el código a AvoHouse desde su WhatsApp registrado.</div>'+
+        (code?'<div class="verification-code">Código generado: <strong>'+escapeHtml(code)+'</strong></div>':'<div class="achievement-detail-meta">Solicitud pendiente de validación.</div>');
     }else if(verification?.status==='verified'){
       actions='<div class="reward-social-text">Tu número de WhatsApp ya aparece verificado.</div>';
     }else{
