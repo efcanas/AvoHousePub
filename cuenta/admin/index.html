@@ -52,6 +52,35 @@ button{font:inherit}
   line-height:13px;
 }
 .customer-edit-status{min-height:18px;margin-top:8px;text-align:center;font-size:12px}.customer-edit-status:empty{display:none}
+.customer-actions .marketing-consent-indicator{
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left:1px;
+  color:#d4af37;
+  cursor:help;
+  opacity:.9;
+}
+.customer-actions .marketing-consent-indicator svg{
+  display:block;
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.customer-actions .marketing-consent-indicator.authorized{color:#b8ff39}
+.customer-actions .marketing-consent-indicator.declined{color:#9ca3af}
+.customer-actions .marketing-consent-indicator.unknown{color:#d4af37}
+.customer-actions .marketing-consent-indicator.loading{color:#8f96a3}
+.customer-actions .marketing-consent-indicator .marketing-consent-slash{display:none}
+.customer-actions .marketing-consent-indicator.declined .marketing-consent-slash,
+.customer-actions .marketing-consent-indicator.unknown .marketing-consent-slash{display:block}
 .edit-control{width:100%}
 .edit-whatsapp-same{display:flex;align-items:center;gap:7px;color:#d6d9df;font-size:12px;margin-top:4px}
 .edit-whatsapp-same input{width:auto;margin:0}
@@ -1260,6 +1289,14 @@ body.admin-achievement-modal-open{overflow:hidden}
           <button id="editCustomerBtn" class="ghost" type="button">EDITAR DATOS</button>
           <button id="cancelEditCustomerBtn" class="ghost hidden" type="button">CANCELAR</button>
           <button id="deleteCustomerBtn" class="danger-button" type="button">ELIMINAR CUENTA</button>
+          <span id="marketingConsentIndicator" class="marketing-consent-indicator loading" title="Consultando autorización publicitaria" aria-label="Consultando autorización publicitaria" role="img">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m3 11 18-5v12L3 13v-2z"></path>
+              <path d="M11.6 16.8a3 3 0 0 1-5.6-2.1"></path>
+              <path d="M19 10a5 5 0 0 1 0 6"></path>
+              <path class="marketing-consent-slash" d="M4 4 20 20"></path>
+            </svg>
+          </span>
         </div>
         <div id="customerEditStatus" class="customer-edit-status"></div>
       </section>
@@ -3097,10 +3134,45 @@ async function requestCustomerAchievementVerificationAdmin(channel){
 
 
 
+function setMarketingConsentIndicator(state,message){
+  const indicator=$('marketingConsentIndicator');
+  if(!indicator)return;
+  indicator.className='marketing-consent-indicator '+state;
+  indicator.title=message;
+  indicator.setAttribute('aria-label',message);
+}
+
+async function loadMarketingConsentIndicator(profileId){
+  setMarketingConsentIndicator('loading','Consultando autorización publicitaria');
+  try{
+    const {data,error}=await db.rpc('cc_get_customer_marketing_consent',{p_user_id:profileId});
+    if(selectedProfile?.id!==profileId)return;
+    if(error){
+      setMarketingConsentIndicator('unknown','No se pudo consultar la autorización publicitaria');
+      return;
+    }
+    const record=Array.isArray(data)?data[0]:data;
+    if(!record||typeof record.marketing_authorized!=='boolean'){
+      setMarketingConsentIndicator('unknown','No consta un registro de autorización publicitaria');
+      return;
+    }
+    if(record.marketing_authorized){
+      setMarketingConsentIndicator('authorized','Autorizó el envío de publicidad');
+    }else{
+      setMarketingConsentIndicator('declined','No autorizó el envío de publicidad');
+    }
+  }catch(_){
+    if(selectedProfile?.id===profileId){
+      setMarketingConsentIndicator('unknown','No se pudo consultar la autorización publicitaria');
+    }
+  }
+}
+
 async function loadClient(profile){
   hideNotice();
   closeCustomerAchievementModalAdmin();
   selectedProfile=profile;
+  loadMarketingConsentIndicator(profile.id);
   setCustomerEditMode(false);
   $('clientArea').classList.remove('hidden');
 
