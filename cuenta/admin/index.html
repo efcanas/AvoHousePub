@@ -243,6 +243,27 @@ button:disabled{opacity:.45;cursor:default}
 .receipt-row.total{padding-top:12px;margin-top:5px;border-top:1px solid rgba(255,255,255,.12);color:#fff;font-size:15px;font-weight:800}
 .status{text-align:center;color:#777;font-size:11px;padding-top:5px;min-height:26px}
 .email-history-search{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;margin-bottom:14px}
+
+/* Altura uniforme para los cuatro controles del filtro de correos, en escritorio y móvil. */
+.email-history-search select,
+.email-history-search button{
+  height:46px;
+  min-height:46px;
+  box-sizing:border-box;
+  margin:0;
+  line-height:normal;
+}
+.email-history-search select{
+  min-width:0;
+  padding:0 12px;
+}
+.email-history-search button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 15px;
+  white-space:nowrap;
+}
 .email-history-list{display:flex;flex-direction:column;gap:5px}
 .email-history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer}
 .email-history-item:hover{background:rgba(255,255,255,.025);padding-left:7px;padding-right:7px;border-radius:10px}
@@ -1204,7 +1225,6 @@ body.admin-achievement-modal-open{overflow:hidden}
         <button id="emailHistorySearchBtn" class="primary" type="button">CONSULTAR</button>
         <button id="emailHistoryRecentBtn" class="ghost" type="button">ÚLTIMOS 10</button>
       </div>
-      <div class="helper">Registro de correos enviados a este cliente. Selecciona un correo para abrir la copia del mensaje.</div>
       <div id="emailHistoryList" class="email-history-list" style="margin-top:10px">
         <div class="empty">Selecciona un cliente.</div>
       </div>
