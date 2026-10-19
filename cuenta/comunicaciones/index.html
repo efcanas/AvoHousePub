@@ -104,6 +104,14 @@ button:disabled{opacity:.45;cursor:default}
   display:block;
   margin:0;
 }
+#templatesCard #templateSelector{
+  height:44px;
+  min-height:44px;
+  box-sizing:border-box;
+  padding:12px 13px;
+  margin:0;
+  line-height:18px;
+}
 #templatesCard .template-selector-wrap{
   display:block;
   margin:0;
@@ -293,7 +301,7 @@ button:disabled{opacity:.45;cursor:default}
   <section id="templatesCard" class="card templates-admin-card">
     <div class="panel-heading">
       <h2 class="panel-title">Plantillas</h2>
-      <button id="newTemplateBtn" class="ghost" type="button">NUEVA PLANTILLA</button>
+      <button id="newTemplateBtn" class="primary" type="button">NUEVA PLANTILLA</button>
     </div>
     <p class="section-intro">Aquí se administran las plantillas reales de Resend. Guardar conserva cambios como borrador; <strong>PUBLICAR</strong> los hace vigentes para los envíos que usan esa plantilla.</p>
     <label class="template-selector-wrap">
