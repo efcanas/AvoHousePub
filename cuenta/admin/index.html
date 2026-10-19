@@ -242,13 +242,13 @@ button:disabled{opacity:.45;cursor:default}
 .receipt-row{display:flex;justify-content:space-between;gap:16px;padding:6px 0;color:#aaa;font-size:12px}
 .receipt-row.total{padding-top:12px;margin-top:5px;border-top:1px solid rgba(255,255,255,.12);color:#fff;font-size:15px;font-weight:800}
 .status{text-align:center;color:#777;font-size:11px;padding-top:5px;min-height:26px}
-.email-history-search{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;margin-bottom:14px}
+.email-history-search{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;margin-bottom:8px}
 
-/* Altura uniforme para los cuatro controles del filtro de correos, en escritorio y móvil. */
+/* Altura y relleno estándar para los controles del filtro de correos. */
 .email-history-search select,
 .email-history-search button{
-  height:46px;
-  min-height:46px;
+  height:37px;
+  min-height:37px;
   box-sizing:border-box;
   margin:0;
   line-height:normal;
@@ -261,17 +261,19 @@ button:disabled{opacity:.45;cursor:default}
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:0 15px;
+  padding:11px 15px;
+  font-size:13px;
+  line-height:13px;
   white-space:nowrap;
 }
-.email-history-list{display:flex;flex-direction:column;gap:5px}
-.email-history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer}
+.email-history-list{display:flex;flex-direction:column;gap:4px}
+.email-history-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer}
 .email-history-item:hover{background:rgba(255,255,255,.025);padding-left:7px;padding-right:7px;border-radius:10px}
 .email-history-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:50%;font-size:15px}
 .email-history-main{min-width:0;flex:1}
 .email-history-type{font-size:14px;font-weight:800}
-.email-history-subject{margin-top:3px;color:#d6d9df;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.email-history-meta{margin-top:4px;color:#8f96a3;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.email-history-subject{margin-top:2px;color:#d6d9df;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.email-history-meta{margin-top:3px;color:#8f96a3;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
 .email-history-status{font-size:10px;color:#b8f5b8;border:1px solid rgba(184,245,184,.25);border-radius:20px;padding:5px 8px;white-space:nowrap}
 .email-history-status.error{color:#ffb7b7;border-color:rgba(255,90,90,.35)}
 .email-modal{position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.76);backdrop-filter:blur(7px)}
@@ -417,14 +419,14 @@ button:disabled{opacity:.45;cursor:default}
 .session-gate-title{font-size:17px;font-weight:800}.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
 
 
-/* En Safari para iOS, igualar la altura de año, mes y botones del historial de correos. */
+/* Mantener la altura estándar también en Safari para iOS. */
 @media (hover: none) and (pointer: coarse) {
   @supports (-webkit-touch-callout: none) {
     .email-history-search select,
     .email-history-search .primary,
     .email-history-search .ghost {
-      height: 46px;
-      min-height: 46px;
+      height: 37px;
+      min-height: 37px;
       box-sizing: border-box;
       line-height: normal;
     }
@@ -437,8 +439,10 @@ button:disabled{opacity:.45;cursor:default}
       display: flex;
       align-items: center;
       justify-content: center;
-      padding-top: 0;
-      padding-bottom: 0;
+      padding-top: 11px;
+      padding-bottom: 11px;
+      font-size: 13px;
+      line-height: 13px;
     }
   }
 }
@@ -964,6 +968,15 @@ body.admin-achievement-modal-open{overflow:hidden}
   white-space:nowrap;
 }
 
+/* Espacios verticales compactos, pero legibles · Correos enviados. */
+#emailHistoryCard>.panel-heading{
+  padding-bottom:10px;
+  margin-bottom:10px;
+}
+#emailHistoryList{
+  margin-top:8px;
+}
+
 /* Campos de promoción a la misma altura que el botón, solo en Configuración general de AP. */
 #pointsSettingsCard .promo-form .promotion-field input{
   height:37px;
@@ -1267,7 +1280,7 @@ body.admin-achievement-modal-open{overflow:hidden}
       </div>
     </section>
 
-    <section class="card">
+    <section id="emailHistoryCard" class="card">
       <div class="panel-heading">
         <div>
           <h2 class="panel-title">Correos enviados</h2>
@@ -1281,7 +1294,7 @@ body.admin-achievement-modal-open{overflow:hidden}
         <button id="emailHistorySearchBtn" class="primary" type="button">CONSULTAR</button>
         <button id="emailHistoryRecentBtn" class="ghost" type="button">ÚLTIMOS 10</button>
       </div>
-      <div id="emailHistoryList" class="email-history-list" style="margin-top:10px">
+      <div id="emailHistoryList" class="email-history-list">
         <div class="empty">Selecciona un cliente.</div>
       </div>
     </section>
