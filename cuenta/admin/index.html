@@ -801,6 +801,34 @@ button.hidden{display:none!important}
 
 
 /* Vista de logros en CC: misma presentación de la cuenta del cliente, aislada a estas tarjetas. */
+
+/* La tarjeta debe contener todas las filas de logros y crecer según su cantidad. */
+#customerRewardsSectionAdmin,
+#customerSpecialRewardsSectionAdmin{
+  display:flow-root;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible;
+  align-self:start;
+}
+#customerRewardsSectionAdmin .achievement-grid,
+#customerSpecialRewardsSectionAdmin .achievement-grid{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  grid-auto-rows:max-content;
+  align-content:start;
+  overflow:visible;
+}
+#customerRewardsSectionAdmin .achievement-tile,
+#customerSpecialRewardsSectionAdmin .achievement-tile{
+  height:auto!important;
+  min-height:0;
+  max-height:none;
+  align-self:start;
+}
+
 #customerRewardsSectionAdmin .achievement-grid,
 #customerSpecialRewardsSectionAdmin .achievement-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
 #customerRewardsSectionAdmin .achievement-tile,
