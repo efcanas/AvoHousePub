@@ -156,6 +156,18 @@ button:disabled{opacity:.45;cursor:default}
   display:block;
   margin-top:8px;
 }
+#templatesCard .template-content-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+  margin-bottom:4px;
+}
+#templatesCard .template-content-heading .field-label{
+  margin:0;
+}
 #templatesCard #cancelEditBtn:hover{
   background:rgba(255,93,93,.15);
   border-color:#ff5d5d;
@@ -322,7 +334,6 @@ button:disabled{opacity:.45;cursor:default}
       <h2 class="panel-title">Plantillas</h2>
       <button id="newTemplateBtn" class="primary" type="button">NUEVA PLANTILLA</button>
     </div>
-    <p class="section-intro">Aquí se administran las plantillas reales de Resend. Guardar conserva cambios como borrador; <strong>PUBLICAR</strong> los hace vigentes para los envíos que usan esa plantilla.</p>
     <label class="template-selector-wrap">
       <span class="field-label">Seleccionar plantilla</span>
       <select id="templateSelector" class="template-selector" aria-label="Seleccionar plantilla">
@@ -350,8 +361,7 @@ button:disabled{opacity:.45;cursor:default}
       <span class="field-label">Variables</span>
       <div id="variableChips" class="variables"></div>
     </div>
-    <div style="margin-top:14px"><span class="field-label">Contenido del correo</span>
-      <div class="insert-variable-row"><span class="help" style="margin:0">Edita el HTML del correo. La vista previa se actualiza automáticamente.</span><button id="insertCustomerNameBtn" class="insert-variable" type="button">+ Nombre del cliente</button></div>
+    <div class="template-content-heading"><span class="field-label">Contenido del correo</span><button id="insertCustomerNameBtn" class="insert-variable" type="button">+ Nombre del cliente</button></div>
       <textarea id="templateHtml" class="code" spellcheck="false"></textarea>
       <div class="preview-wrap"><div class="preview-toolbar"><span class="preview-title">Vista previa del correo</span><div class="preview-modes"><button class="preview-mode active" id="editDesktopBtn" type="button">������️ Escritorio</button><button class="preview-mode" id="editMobileBtn" type="button">������ Móvil</button></div></div><div id="editPreviewDevice"><iframe id="editPreviewFrame" class="email-preview-frame" title="Vista previa del correo"></iframe></div></div>
     </div>
