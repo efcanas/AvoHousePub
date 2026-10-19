@@ -1026,6 +1026,58 @@ body.admin-achievement-modal-open{overflow:hidden}
   #emailHistoryCard .email-history-search button{width:100%}
 }
 
+/* Actividad de AvoPuntos: controles de 37 px, alineación estable y lista compacta. */
+#pointsActivityCard .history-search{
+  align-items:center;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto;
+  gap:8px;
+  margin:0 0 8px;
+}
+#pointsActivityCard .history-search select{
+  width:100%;
+  height:37px;
+  min-height:37px;
+  margin:0;
+  padding:0 12px;
+  box-sizing:border-box;
+  font-size:14px;
+  line-height:normal;
+  align-self:center;
+}
+#pointsActivityCard .history-search button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  height:37px;
+  min-height:37px;
+  margin:0;
+  padding:11px 15px;
+  box-sizing:border-box;
+  font-size:13px;
+  line-height:13px;
+  white-space:nowrap;
+  align-self:center;
+}
+#pointsActivityCard .history-list{gap:4px}
+#pointsActivityCard .history-item{gap:10px;padding:8px 0}
+#pointsActivityCard .history-meta{margin-top:3px}
+#pointsActivityCard .history-balance{margin-top:3px}
+#pointsActivityCard .history-points{
+  height:37px;
+  min-height:37px;
+  padding:0 2px;
+  box-sizing:border-box;
+  font-size:13px;
+  line-height:13px;
+}
+@media(max-width:620px){
+  #pointsActivityCard .history-search{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #pointsActivityCard .history-search button{width:100%}
+  #pointsActivityCard .history-item{gap:8px;padding:8px 0}
+  #pointsActivityCard .history-points{padding:0;font-size:12px}
+}
+
 /* Campos de promoción a la misma altura que el botón, solo en Configuración general de AP. */
 #pointsSettingsCard .promo-form .promotion-field input{
   height:37px;
@@ -1348,7 +1400,7 @@ body.admin-achievement-modal-open{overflow:hidden}
       </div>
     </section>
 
-    <section class="card">
+    <section id="pointsActivityCard" class="card">
       <div class="panel-heading">
         <div>
           <h2 class="panel-title">Actividad de AvoPuntos</h2>
@@ -1360,7 +1412,7 @@ body.admin-achievement-modal-open{overflow:hidden}
         <select id="historyYear" aria-label="Año"></select>
         <select id="historyMonth" aria-label="Mes"></select>
         <button id="historySearchBtn" class="primary">CONSULTAR</button>
-        <button id="historyRecentBtn" class="ghost">ÚLTIMOS 50</button>
+        <button id="historyRecentBtn" class="ghost">ÚLTIMOS 10</button>
       </div>
       <div id="pointsHistory" class="history-list">
         <div class="empty">Selecciona un cliente.</div>
@@ -1607,7 +1659,7 @@ function renderHistory(movements){
 
   if(!movements.length){
     history.innerHTML='<div class="empty">'+(historyMode==='recent'?'Todavía no hay movimientos registrados.':'No hay movimientos registrados para el período seleccionado.')+'</div>';
-    $('historySummary').textContent=historyMode==='recent'?'Últimos 50 movimientos':'Sin movimientos en el período';
+    $('historySummary').textContent=historyMode==='recent'?'Últimos 10 movimientos':'Sin movimientos en el período';
     $('historyMode').textContent=historyMode==='recent'?'Recientes':'Búsqueda mensual';
     return;
   }
@@ -1705,7 +1757,7 @@ async function loadRecentHistory(){
     .select('id,profile_id,movement_type,points_delta,eligible_amount,receipt_number,related_receipt_number,details,created_at')
     .eq('profile_id',selectedProfile.id)
     .order('created_at',{ascending:false})
-    .limit(50);
+    .limit(10);
   if(error){showNotice('No se pudo cargar el historial: '+error.message,true);return}
   historyMode='recent';
   historyMovements=data||[];
