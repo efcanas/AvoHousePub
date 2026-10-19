@@ -112,6 +112,13 @@ button:disabled{opacity:.45;cursor:default}
   margin:0;
   line-height:normal;
 }
+#templatesCard .template-editor-panel input:not([type="hidden"]){
+  height:37px;
+  min-height:37px;
+  box-sizing:border-box;
+  padding:0 13px;
+  line-height:normal;
+}
 #templatesCard .template-selector-wrap{
   display:block;
   margin:0;
@@ -141,6 +148,13 @@ button:disabled{opacity:.45;cursor:default}
 }
 #templatesCard .template-editor-panel .grid-2{
   gap:8px 12px;
+}
+#templatesCard .template-editor-panel .grid-2 + .grid-2{
+  margin-top:8px;
+}
+#templatesCard .template-editor-panel .template-reply-field{
+  display:block;
+  margin-top:8px;
 }
 #templatesCard .insert-variable,
 #newTemplateCard .insert-variable{
@@ -326,7 +340,7 @@ button:disabled{opacity:.45;cursor:default}
       <label><span class="field-label">Asunto</span><input id="templateSubject"></label>
       <label><span class="field-label">Remitente</span><input id="templateFrom" value="AvoHouse &lt;noreply@avohousepub.com&gt;"></label>
     </div>
-    <label><span class="field-label">Reply-to</span><input id="templateReplyTo"></label>
+    <label class="template-reply-field"><span class="field-label">Reply-to</span><input id="templateReplyTo"></label>
     <div style="margin-top:7px">
       <span class="field-label">Variables</span>
       <div id="variableChips" class="variables"></div>
@@ -337,7 +351,7 @@ button:disabled{opacity:.45;cursor:default}
       <div class="preview-wrap"><div class="preview-toolbar"><span class="preview-title">Vista previa del correo</span><div class="preview-modes"><button class="preview-mode active" id="editDesktopBtn" type="button">������️ Escritorio</button><button class="preview-mode" id="editMobileBtn" type="button">������ Móvil</button></div></div><div id="editPreviewDevice"><iframe id="editPreviewFrame" class="email-preview-frame" title="Vista previa del correo"></iframe></div></div>
     </div>
     <div class="editor-actions">
-      <button id="cancelEditBtn" class="ghost" type="button">CANCELAR</button>
+      <button id="cancelEditBtn" class="danger" type="button">CANCELAR</button>
       <button id="reloadTemplateBtn" class="ghost" type="button">RECARGAR</button>
       <button id="saveTemplateBtn" class="primary" type="button">GUARDAR BORRADOR</button>
       <button id="publishTemplateBtn" class="primary" type="button">PUBLICAR</button>
