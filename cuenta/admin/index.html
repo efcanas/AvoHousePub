@@ -938,6 +938,11 @@ body.admin-achievement-modal-open{overflow:hidden}
 }
 
 
+/* Alinear verticalmente Crear promoción con los campos de su fila en escritorio. */
+@media(min-width:901px){
+  #pointsSettingsCard .promo-form #createPromoBtn{margin-bottom:3.5px}
+}
+
 /* Botones uniformes · exclusivamente Configuración general de AvoPuntos */
 #pointsSettingsCard button,
 #pointsSettingsCard .settings-grid #saveBaseRateBtn,
@@ -1000,7 +1005,7 @@ body.admin-achievement-modal-open{overflow:hidden}
           <span class="info-label">Tasa base · AP por $1.000</span>
           <input id="basePointsRate" type="number" min="0" max="100000" step="1" inputmode="numeric" aria-label="Tasa base de AvoPuntos">
         </div>
-        <button id="saveBaseRateBtn" class="primary" type="button">GUARDAR TASA</button>
+        <button id="saveBaseRateBtn" class="primary" type="button">GUARDAR</button>
       </div>
       <div class="payment-methods-block">
         <div class="panel-heading payment-methods-heading">
