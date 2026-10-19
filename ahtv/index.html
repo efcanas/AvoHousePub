@@ -165,7 +165,7 @@ body::before {
     <section class="card">
       <strong>Buscar canción</strong>
       <div id="availabilityMessage" class="msg availability-message" role="status" aria-live="polite" hidden></div>
-      <div class="search">
+      <div id="searchContainer" class="search">
         <input id="search" type="search" autocomplete="off" placeholder="Artista o canción…" />
       </div>
       <div id="results" class="results"></div>
@@ -190,6 +190,7 @@ body::before {
     });
 
     const searchInput = document.getElementById('search');
+    const searchContainerEl = document.getElementById('searchContainer');
     const resultsEl = document.getElementById('results');
     const mineEl = document.getElementById('mine');
     const recentEl = document.getElementById('recent');
@@ -214,10 +215,19 @@ body::before {
 
     function renderRequestAvailability() {
       availabilityMessageEl.hidden = requestsEnabled;
+      searchContainerEl.hidden = !requestsEnabled;
+      resultsEl.hidden = !requestsEnabled;
+
       availabilityMessageEl.textContent = requestsEnabled
         ? ''
-        : 'La solicitud de música no está habilitada en este momento.';
+        : 'Las solicitudes de música están cerradas en este momento. Podrás buscar canciones cuando vuelvan a habilitarse.';
       availabilityMessageEl.classList.toggle('error', !requestsEnabled);
+
+      if (!requestsEnabled) {
+        resultsEl.innerHTML = '';
+        messageEl.hidden = true;
+        messageEl.textContent = '';
+      }
     }
 
     async function loadRequestAvailability() {
@@ -349,6 +359,11 @@ body::before {
 
     function renderResults(songs) {
       resultsEl.innerHTML = '';
+      if (!requestsEnabled) {
+        resultsEl.hidden = true;
+        return;
+      }
+      resultsEl.hidden = false;
       if (!lastQuery || lastQuery.trim().length < 2) {
         resultsEl.innerHTML = '<div class="empty">Escribe al menos 2 caracteres para buscar.</div>';
         return;
