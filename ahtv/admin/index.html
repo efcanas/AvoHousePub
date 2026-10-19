@@ -202,6 +202,16 @@
       color: #fff;
     }
 
+    .mode-action-enable {
+      background: #baff87;
+      color: #111;
+    }
+
+    .mode-action-disable {
+      background: #ff6b6b;
+      color: #190b0b;
+    }
+
     button:disabled {
       opacity: .45;
       cursor: default;
@@ -676,7 +686,7 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-10" class="home-button active">AHtv</a>
+      <a href="../../ahtv/admin/?v=20261013-11" class="home-button active">AHtv</a>
       <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
       <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
       <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
@@ -1016,6 +1026,8 @@
     requestModeValueEl.classList.toggle("mode-value-on", automatico);
     requestModeValueEl.classList.toggle("mode-value-off", !automatico);
     requestModeBtn.textContent = automatico ? "PASAR A MANUAL" : "PASAR A AUTOMÁTICO";
+    requestModeBtn.classList.toggle("mode-action-disable", automatico);
+    requestModeBtn.classList.toggle("mode-action-enable", !automatico);
     requestModeBtn.disabled = false;
   }
 
@@ -1159,9 +1171,14 @@
   }
 
   function syncPromoButtonLabel() {
-    promoEnabledBtn.textContent = promoIntervalHasChanges()
+    const hasIntervalChanges = promoIntervalHasChanges();
+    promoEnabledBtn.textContent = hasIntervalChanges
       ? "OK"
       : (promoEnabled ? "DESACTIVAR" : "ACTIVAR");
+
+    const actionDisables = !hasIntervalChanges && promoEnabled;
+    promoEnabledBtn.classList.toggle("mode-action-disable", actionDisables);
+    promoEnabledBtn.classList.toggle("mode-action-enable", !actionDisables);
   }
 
   function renderPromoSettings() {
@@ -1244,6 +1261,8 @@
     requestsEnabledValueEl.classList.toggle("mode-value-on", requestsEnabled);
     requestsEnabledValueEl.classList.toggle("mode-value-off", !requestsEnabled);
     requestsEnabledBtn.textContent = requestsEnabled ? "BLOQUEAR" : "PERMITIR";
+    requestsEnabledBtn.classList.toggle("mode-action-disable", requestsEnabled);
+    requestsEnabledBtn.classList.toggle("mode-action-enable", !requestsEnabled);
     requestsEnabledBtn.disabled = false;
   }
 
