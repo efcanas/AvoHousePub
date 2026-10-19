@@ -185,6 +185,50 @@ button:disabled{opacity:.45;cursor:default}
   filter:brightness(.96);
   background:#111318;
 }
+
+/* Probar una plantilla · controles alineados con los estándares de AHP. */
+#testTemplateCard input[type="email"]{
+  height:44px;
+  min-height:44px;
+  box-sizing:border-box;
+  padding:12px 13px;
+  margin:4px 0 0;
+  line-height:18px;
+  border:1px solid #2c3038;
+  border-radius:11px;
+}
+#testTemplateCard select{
+  height:37px;
+  min-height:37px;
+  box-sizing:border-box;
+  padding:0 13px;
+  margin:4px 0 0;
+  line-height:normal;
+  border:1px solid #2c3038;
+  border-radius:11px;
+}
+#testTemplateCard button{
+  height:37px;
+  min-height:37px;
+  box-sizing:border-box;
+  padding:11px 15px;
+  font-size:13px;
+  line-height:13px;
+  border-radius:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0;
+}
+#testTemplateCard .grid-2{
+  gap:8px 12px;
+}
+#testTemplateCard .help{
+  margin:8px 0 0;
+}
+#testTemplateCard .editor-actions{
+  margin-top:8px;
+}
 @media(max-width:620px){
   #templatesCard,
   #newTemplateCard{
@@ -401,7 +445,7 @@ button:disabled{opacity:.45;cursor:default}
     </div>
   </section>
 
-  <section class="card">
+  <section id="testTemplateCard" class="card">
     <div class="panel-heading">
       <h2 class="panel-title">Probar una plantilla</h2>
       <span class="panel-tag">Envío individual</span>
