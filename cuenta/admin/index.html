@@ -938,6 +938,32 @@ body.admin-achievement-modal-open{overflow:hidden}
 }
 
 
+/* Altura y alineación estándar · únicamente Buscar cliente. */
+#searchForm{
+  align-items:center;
+}
+#searchForm #searchInput{
+  height:37px;
+  min-height:37px;
+  margin:0;
+  padding:0 12px;
+  box-sizing:border-box;
+  line-height:normal;
+  font-size:14px;
+}
+#searchForm #searchBtn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:37px;
+  min-height:37px;
+  margin:0;
+  padding:11px 15px;
+  box-sizing:border-box;
+  line-height:1;
+  white-space:nowrap;
+}
+
 /* Campos de promoción a la misma altura que el botón, solo en Configuración general de AP. */
 #pointsSettingsCard .promo-form .promotion-field input{
   height:37px;
@@ -1052,7 +1078,7 @@ body.admin-achievement-modal-open{overflow:hidden}
       <input id="searchInput" type="search" placeholder="Nickname, nombre, correo, documento o celular" autocomplete="off">
       <button id="searchBtn" type="submit" class="primary">BUSCAR</button>
     </form>
-    <div class="helper">La búsqueda requiere al menos 2 caracteres. Selecciona un cliente para abrir su información.</div>
+    <div class="helper">Selecciona un cliente para abrir su información.</div>
     <div id="results" class="results" style="margin-top:14px"></div>
   </section>
 
