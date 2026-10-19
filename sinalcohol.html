@@ -31,7 +31,101 @@ background:rgba(0,0,0,0.75);
 z-index:-1;
 }
 
-/* Encabezado compartido con Administración */
+/* ENCABEZADO Y NAVEGACIÓN: vista pública del menú */
+.header{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  z-index:1000;
+  text-align:center;
+  padding:25px 20px 15px;
+  background:rgba(0,0,0,.86);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.header .logo{
+  display:block;
+  width:260px;
+  max-width:90%;
+  height:auto;
+  margin:0 auto 8px;
+}
+.header-title{
+  margin:0 0 15px;
+  color:#d4af37;
+  font-size:1.4em;
+  line-height:1.2;
+  letter-spacing:3px;
+  white-space:nowrap;
+}
+.header-subtitle{
+  display:none;
+}
+.header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:nowrap;
+  gap:12px;
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:10px 0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.header-actions::-webkit-scrollbar{
+  display:none;
+}
+.home-button{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  padding:10px 18px;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:30px;
+  color:#fff;
+  background:transparent;
+  font-size:.85em;
+  line-height:1.2;
+  text-decoration:none;
+  white-space:nowrap;
+  transition:background .2s ease,color .2s ease,border-color .2s ease;
+}
+.home-button:hover{
+  background:#fff;
+  color:#111;
+}
+.home-button.active{
+  border-color:#d4af37;
+  background:rgba(212,175,55,.15);
+  color:#d4af37;
+  font-weight:600;
+}
+@media(max-width:640px){
+  .header{
+    padding:18px 0 12px;
+  }
+  .header .logo{
+    width:200px;
+    max-width:90%;
+    margin-bottom:8px;
+  }
+  .header-title{
+    margin-bottom:10px;
+    font-size:22px;
+    line-height:1.2;
+  }
+  .header-actions{
+    justify-content:flex-start;
+    gap:12px;
+    padding:10px 20px;
+  }
+}
 
 /* CONTENIDO */
 
@@ -166,7 +260,6 @@ color:white;
 }
 
 </style>
-<link rel="stylesheet" href="cuenta/admin/header.css?v=20261004-2">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
 </head>
