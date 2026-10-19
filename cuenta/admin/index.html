@@ -938,9 +938,13 @@ body.admin-achievement-modal-open{overflow:hidden}
 }
 
 
-/* Alinear verticalmente Crear promoción con los campos de su fila en escritorio. */
-@media(min-width:901px){
-  #pointsSettingsCard .promo-form #createPromoBtn{margin-bottom:3.5px}
+/* Campos de promoción a la misma altura que el botón, solo en Configuración general de AP. */
+#pointsSettingsCard .promo-form .promotion-field input{
+  height:37px;
+  min-height:37px;
+  padding-top:0;
+  padding-bottom:0;
+  box-sizing:border-box;
 }
 
 /* Botones uniformes · exclusivamente Configuración general de AvoPuntos */
