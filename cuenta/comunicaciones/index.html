@@ -459,14 +459,7 @@ async function api(action,payload={}){
 async function loadTemplates(){
   const body=await api('list');
   const listed=sortedData(body.templates);
-  templates=await Promise.all(listed.map(async t=>{
-    try{
-      const detail=await api('get',{id:t.id});
-      return {...t,...(detail.template||{})};
-    }catch(e){
-      return t;
-    }
-  }));
+  templates=listed;
   templates.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es'));
   renderTemplateList();
   fillSelect(els.testTemplate,templates,'Selecciona una plantilla');
@@ -480,10 +473,10 @@ function renderTemplateList(){
     const item=document.createElement('div');item.className='template-item';
     const main=document.createElement('div');main.className='template-main';
     const name=document.createElement('div');name.className='template-name';name.textContent=t.name||'Sin nombre';
-    const meta=document.createElement('div');meta.className='template-meta';meta.textContent=(templateCategory(t)+' · '+(t.subject||'Sin asunto')+' · '+(t.alias||'sin alias'));
+    const meta=document.createElement('div');meta.className='template-meta';meta.textContent=(templateCategory(t)+' · '+(t.subject||'Asunto disponible al editar')+' · '+(t.alias||'sin alias'));
     const badges=document.createElement('div');badges.className='template-badges';
     const status=document.createElement('span');status.className='badge '+(String(t.status).toLowerCase()==='published'?'live':'draft');status.textContent=String(t.status||'').toLowerCase()==='published'?'PUBLICADA':'BORRADOR';
-    const vars=document.createElement('span');vars.className='badge info';vars.textContent='Variables: '+((t.variables||[]).length);
+    const vars=document.createElement('span');vars.className='badge info';vars.textContent=Array.isArray(t.variables)?'Variables: '+t.variables.length:'Variables: disponibles al editar';
     const modified=document.createElement('span');modified.className='badge date';
     modified.textContent='Modificada: '+formatTemplateDate(t.updated_at||t.updatedAt||t.created_at||t.createdAt);
     badges.append(status,vars,modified);
