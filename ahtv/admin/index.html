@@ -31,7 +31,7 @@
     }
 
     body {
-      padding-top: 300px;
+      padding-top: 225px;
       position: relative;
     }
 
@@ -44,84 +44,10 @@
       pointer-events: none;
     }
 
-    .header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      z-index: 1000;
-      text-align: center;
-      padding: 25px 20px 15px;
-      background: rgba(0,0,0,.86);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-
     .logo {
       width: 260px;
       max-width: 90%;
       margin-bottom: 8px;
-    }
-
-    .header-title {
-      font-size: 1.35em;
-      letter-spacing: 3px;
-      margin-bottom: 6px;
-      color: #d4af37;
-      font-weight: 800;
-    }
-
-    .header-subtitle {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 14px;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .home-button,
-    .header button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      color: white;
-      padding: 10px 16px;
-      border: 1px solid rgba(255,255,255,.20);
-      border-radius: 30px;
-      font-size: .82em;
-      background: rgba(255,255,255,.04);
-    }
-
-    .home-button:hover,
-    .header button:hover {
-      background: white;
-      color: #111;
-    }
-
-    .home-button.active {
-      border-color: #b8ff39;
-      background: rgba(184,255,57,.14);
-      color: #b8ff39;
-      font-weight: 800;
-    }
-
-    #logoutBtn {
-      border-color: #ff5d5d;
-      color: #ff5d5d;
-      background: rgba(255,93,93,.08);
-    }
-
-    #logoutBtn:hover {
-      background: rgba(255,93,93,.15);
-      color: #ff5d5d;
-      border-color: #ff5d5d;
     }
 
     main {
@@ -551,19 +477,11 @@
       }
 
       body {
-        padding-top: 300px;
-      }
-
-      .header {
-        padding: 18px 15px 12px;
+        padding-top: 225px;
       }
 
       .logo {
         width: 200px;
-      }
-
-      .header-title {
-        font-size: 1.1em;
       }
 
       main {
@@ -600,85 +518,7 @@
         gap: 8px;
       }
     }
-  
-/* Encabezado Administración · normalización común */
-.header{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  z-index:1000;
-  text-align:center;
-  padding:25px 20px 15px;
-  background:rgba(0,0,0,.86);
-  backdrop-filter:blur(8px);
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-.header .logo{
-  width:260px;
-  max-width:90%;
-  height:auto;
-  margin:0 auto 8px;
-  display:block;
-}
-.header-title{
-  font-size:1.35em;
-  line-height:1.2;
-  letter-spacing:3px;
-  margin:0 0 6px;
-  color:#d4af37;
-  font-weight:800;
-}
-.header-subtitle{
-  color:#9ca3af;
-  font-size:13px;
-  line-height:15px;
-  height:30px;
-  margin:0 0 14px;
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  overflow:hidden;
-}
-.header-actions{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.home-button,.header button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  text-decoration:none;
-  color:#fff;
-  padding:10px 16px;
-  border:1px solid rgba(255,255,255,.20);
-  border-radius:30px;
-  font-size:.82em;
-  line-height:1.2;
-  background:rgba(255,255,255,.04);
-  cursor:pointer;
-}
-.home-button.active{
-  border-color:#b8ff39;
-  background:rgba(184,255,57,.14);
-  color:#b8ff39;
-  font-weight:800;
-}
 @media(max-width:640px){
-  .header{
-    padding:18px 15px 12px;
-  }
-  .header .logo{
-    width:200px;
-    max-width:90%;
-    margin-bottom:8px;
-  }
-  .header-title{
-    font-size:1.1em;
-  }
 }
 
 
@@ -687,24 +527,13 @@
 .session-gate-title{font-size:17px;font-weight:800}.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
 
 </style>
-  <link rel="stylesheet" href="../../cuenta/admin/header.css?v=20261004-2">
+  <link rel="stylesheet" href="../../cuenta/admin/header.css?v=20261019-1">
 </head>
 <body>
 <div id="sessionGate" class="session-gate" style="display:flex"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div id="sessionGateStatus" class="session-gate-status">Verificando sesión…</div></div></div>
 <main>
-  <header class="header">
-    <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
-    <div class="header-title">AHtv</div>
-    <div class="header-subtitle">Administración de solicitudes</div>
-    <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-12" class="home-button active">AHtv</a>
-      <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
-      <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
-      <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
-      <a href="../../cuenta/estadisticas/?v=20261007-1" class="home-button">ESTADÍSTICAS</a>
-      <button id="logoutBtn" class="danger hidden" type="button">CERRAR SESIÓN</button>
-    </div>
-  </header>
+  <div id="adminHeaderMount" data-section="ahtv"></div>
+<script src="../../cuenta/admin/header.js?v=20261019-1"></script>
 
   <section id="loginCard" class="card">
     <h2>Acceso</h2>
