@@ -59,7 +59,7 @@
     if (!header || !content) return;
 
     const desiredTop = header.getBoundingClientRect().bottom + 12;
-    const currentTop = content.getBoundingClientRect().top;
+    const currentTop = content.getBoundingClientRect().top + window.scrollY;
     const delta = desiredTop - currentTop;
 
     if (Math.abs(delta) < 0.5) return;
