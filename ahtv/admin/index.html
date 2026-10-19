@@ -202,14 +202,25 @@
       color: #fff;
     }
 
+    /* Botones de acción · misma estética que Añadir/Quitar AvoPuntos en CC */
     .mode-action-enable {
-      background: #baff87;
+      border: 0;
+      background: #b8ff39;
       color: #111;
     }
 
+    .mode-action-enable:hover:not(:disabled) {
+      filter: brightness(.96);
+    }
+
     .mode-action-disable {
-      background: #ff6b6b;
-      color: #190b0b;
+      border: 1px solid #ff5d5d;
+      background: rgba(255,93,93,.08);
+      color: #ff5d5d;
+    }
+
+    .mode-action-disable:hover:not(:disabled) {
+      background: rgba(255,93,93,.15);
     }
 
     button:disabled {
@@ -686,7 +697,7 @@
     <div class="header-title">AHtv</div>
     <div class="header-subtitle">Administración de solicitudes</div>
     <div class="header-actions">
-      <a href="../../ahtv/admin/?v=20261013-11" class="home-button active">AHtv</a>
+      <a href="../../ahtv/admin/?v=20261013-12" class="home-button active">AHtv</a>
       <a href="../../cuenta/admin/?v=20261004-2" class="home-button">CC</a>
       <a href="../../cuenta/comunicaciones/?v=20261004-2" class="home-button">COMUNICACIONES</a>
       <a href="../../cuenta/inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
