@@ -192,23 +192,7 @@ async function handleAction(ctx: any, body: any) {
 
   if (action === "list") {
     const listing = await resendRequest("/templates?limit=100");
-    const rows = Array.isArray(listing?.data) ? listing.data : [];
-    const enriched = await Promise.all(
-      rows.map(async (row: any) => {
-        try {
-          const detail = await resendRequest("/templates/" + encodeURIComponent(String(row?.id ?? "")));
-          return {
-            ...row,
-            variables: Array.isArray(detail?.variables) ? detail.variables : [],
-            subject: detail?.subject ?? row?.subject ?? "",
-            from: detail?.from ?? row?.from ?? "",
-          };
-        } catch {
-          return row;
-        }
-      }),
-    );
-    return { templates: { ...listing, data: enriched } };
+    return { templates: listing };
   }
 
   if (action === "get") {
