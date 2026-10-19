@@ -67,6 +67,18 @@
       font-size: 16px;
     }
     input:focus { border-color: var(--accent); }
+    input.search-closed,
+    input.search-closed:disabled {
+      border-color: rgba(255,93,93,.55);
+      background: rgba(255,93,93,.10);
+      color: #ffd0d0;
+      cursor: not-allowed;
+      opacity: 1;
+    }
+    input.search-closed::placeholder {
+      color: #ffb1b1;
+      opacity: 1;
+    }
     .results { margin-top: 10px; display: grid; gap: 8px; }
     .row {
       width: 100%;
@@ -98,7 +110,6 @@
     .mine-item .title { font-size: 14px; }
     .msg { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; background:#1b1e24; color:#d9dce2; }
     .msg.error { border:1px solid rgba(255,93,93,.4); color:#ffd0d0; }
-    .availability-message.error { background:rgba(255,93,93,.10); }
     .empty { color:var(--muted); text-align:center; padding:14px 8px; }
     .tiny { margin-top: 12px; color:#777f8b; font-size:11px; text-align:center; }
     @media (max-width: 520px) {
@@ -164,9 +175,8 @@ body::before {
 
     <section class="card">
       <strong>Buscar canción</strong>
-      <div id="availabilityMessage" class="msg availability-message" role="status" aria-live="polite" hidden></div>
-      <div id="searchContainer" class="search">
-        <input id="search" type="search" autocomplete="off" placeholder="Artista o canción…" />
+      <div class="search">
+        <input id="search" type="search" autocomplete="off" placeholder="Artista o canción…" aria-label="Buscar artista o canción" />
       </div>
       <div id="results" class="results"></div>
       <div id="message" class="msg" hidden></div>
@@ -190,12 +200,10 @@ body::before {
     });
 
     const searchInput = document.getElementById('search');
-    const searchContainerEl = document.getElementById('searchContainer');
     const resultsEl = document.getElementById('results');
     const mineEl = document.getElementById('mine');
     const recentEl = document.getElementById('recent');
     const counterEl = document.getElementById('counter');
-    const availabilityMessageEl = document.getElementById('availabilityMessage');
     const messageEl = document.getElementById('message');
 
     const TOKEN_KEY = 'ahtv_client_token';
@@ -214,16 +222,23 @@ body::before {
     let currentUsername = null;
 
     function renderRequestAvailability() {
-      availabilityMessageEl.hidden = requestsEnabled;
-      searchContainerEl.hidden = !requestsEnabled;
+      searchInput.disabled = !requestsEnabled;
+      searchInput.placeholder = requestsEnabled
+        ? 'Artista o canción…'
+        : 'Solicitudes no habilitadas';
+      searchInput.setAttribute(
+        'aria-label',
+        requestsEnabled ? 'Buscar artista o canción' : 'Solicitudes de música no habilitadas'
+      );
+      searchInput.title = requestsEnabled
+        ? ''
+        : 'Las solicitudes de música están cerradas en este momento.';
+      searchInput.classList.toggle('search-closed', !requestsEnabled);
       resultsEl.hidden = !requestsEnabled;
 
-      availabilityMessageEl.textContent = requestsEnabled
-        ? ''
-        : 'Las solicitudes de música están cerradas en este momento. Podrás buscar canciones cuando vuelvan a habilitarse.';
-      availabilityMessageEl.classList.toggle('error', !requestsEnabled);
-
       if (!requestsEnabled) {
+        searchInput.value = '';
+        lastQuery = '';
         resultsEl.innerHTML = '';
         messageEl.hidden = true;
         messageEl.textContent = '';
