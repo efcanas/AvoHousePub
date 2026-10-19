@@ -988,6 +988,44 @@ body.admin-achievement-modal-open{overflow:hidden}
   margin-top:8px;
 }
 
+/* Controles de Correos enviados: prevalecen sobre la altura global de botones de CC. */
+#emailHistoryCard .email-history-search{
+  align-items:center;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto;
+  gap:8px;
+  margin:0 0 8px;
+}
+#emailHistoryCard .email-history-search select{
+  width:100%;
+  height:37px;
+  min-height:37px;
+  margin:0;
+  padding:0 12px;
+  box-sizing:border-box;
+  font-size:14px;
+  line-height:normal;
+  align-self:center;
+}
+#emailHistoryCard .email-history-search button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  height:37px;
+  min-height:37px;
+  margin:0;
+  padding:11px 15px;
+  box-sizing:border-box;
+  font-size:13px;
+  line-height:13px;
+  white-space:nowrap;
+  align-self:center;
+}
+@media(max-width:620px){
+  #emailHistoryCard .email-history-search{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #emailHistoryCard .email-history-search button{width:100%}
+}
+
 /* Campos de promoción a la misma altura que el botón, solo en Configuración general de AP. */
 #pointsSettingsCard .promo-form .promotion-field input{
   height:37px;
