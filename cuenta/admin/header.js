@@ -34,4 +34,32 @@
         '<button id="logoutBtn" class="hidden" type="button">CERRAR SESIÓN</button>' +
       '</nav>' +
     '</header>';
+
+  /*
+   * Las cuatro áreas administrativas distintas de AHtv reciben una separación
+   * calculada desde el borde inferior real del encabezado, no una altura fija.
+   * Así se mantiene el hueco en escritorio y cuando la navegación ocupa varias
+   * filas en pantallas móviles.
+   */
+  function syncContentOffset() {
+    if (activeSection === "ahtv") return;
+
+    const page = mount.closest(".page");
+    const header = mount.querySelector(".header");
+    if (!page || !header) return;
+
+    const gap = 12;
+    const height = Math.ceil(header.getBoundingClientRect().height);
+    page.style.paddingTop = (height + gap) + "px";
+  }
+
+  syncContentOffset();
+  window.addEventListener("load", syncContentOffset);
+  window.addEventListener("resize", syncContentOffset);
+
+  if ("ResizeObserver" in window) {
+    const headerObserver = new ResizeObserver(syncContentOffset);
+    const header = mount.querySelector(".header");
+    if (header) headerObserver.observe(header);
+  }
 })();
