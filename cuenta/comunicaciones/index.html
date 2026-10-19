@@ -9,18 +9,8 @@
 html{scroll-behavior:smooth}
 body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f5f5f5;background:url('../../Fondo.webp') center/cover fixed no-repeat;position:relative;overflow-x:hidden;font-size:16px}
 body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.64);z-index:0;pointer-events:none}
-.page{position:relative;z-index:1;min-height:100vh;padding:300px 18px 40px}
+.page{position:relative;z-index:1;min-height:100vh;padding:225px 18px 40px}
 .shell{width:100%;max-width:1180px;margin:0 auto}
-.header{position:fixed;top:0;left:0;width:100%;z-index:1000;text-align:center;padding:25px 20px 15px;background:rgba(0,0,0,.86);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
-.header .logo{width:260px;max-width:90%;margin:0 auto 8px;display:block}
-.header-title{font-size:1.35em;letter-spacing:3px;margin-bottom:6px;color:#d4af37;font-weight:800}
-.header-subtitle{color:#9ca3af;font-size:13px;margin-bottom:14px}
-.header-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
-.home-button,.header button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;padding:10px 16px;border:1px solid rgba(255,255,255,.20);border-radius:30px;font-size:.82em;background:rgba(255,255,255,.04);cursor:pointer}
-.home-button:hover,.header button:hover{background:#fff;color:#111}
-.home-button.active{border-color:#b8ff39;background:rgba(184,255,57,.14);color:#b8ff39;font-weight:800}
-#logoutBtn{border-color:#ff5d5d;color:#ff5d5d;background:rgba(255,93,93,.08)}
-#logoutBtn:hover{background:rgba(255,93,93,.15);color:#ff5d5d;border-color:#ff5d5d}
 .card{background:rgba(21,23,28,.95);border:1px solid #2c3038;border-radius:18px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25);margin:12px 0}
 .auth-card{max-width:470px;margin-left:auto;margin-right:auto}
 .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
@@ -256,94 +246,13 @@ button:disabled{opacity:.45;cursor:default}
   .grid-2{grid-template-columns:1fr}
 }
 @media(max-width:620px){
-  .header{padding:18px 15px 12px}
-  .header .logo{width:200px}
-  .header-title{font-size:1.1em}
-  .page{padding:270px 12px 28px}
+  .page{padding:225px 12px 28px}
   .template-item{grid-template-columns:1fr}
   .template-actions{justify-content:flex-start}
   .mass-grid{grid-template-columns:1fr}
   .history-item{grid-template-columns:1fr}
 }
-
-/* Encabezado Administración · normalización común */
-.header{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  z-index:1000;
-  text-align:center;
-  padding:25px 20px 15px;
-  background:rgba(0,0,0,.86);
-  backdrop-filter:blur(8px);
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-.header .logo{
-  width:260px;
-  max-width:90%;
-  height:auto;
-  margin:0 auto 8px;
-  display:block;
-}
-.header-title{
-  font-size:1.35em;
-  line-height:1.2;
-  letter-spacing:3px;
-  margin:0 0 6px;
-  color:#d4af37;
-  font-weight:800;
-}
-.header-subtitle{
-  color:#9ca3af;
-  font-size:13px;
-  line-height:15px;
-  height:30px;
-  margin:0 0 14px;
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  overflow:hidden;
-}
-.header-actions{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.home-button,.header button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  text-decoration:none;
-  color:#fff;
-  padding:10px 16px;
-  border:1px solid rgba(255,255,255,.20);
-  border-radius:30px;
-  font-size:.82em;
-  line-height:1.2;
-  background:rgba(255,255,255,.04);
-  cursor:pointer;
-}
-.home-button.active{
-  border-color:#b8ff39;
-  background:rgba(184,255,57,.14);
-  color:#b8ff39;
-  font-weight:800;
-}
 @media(max-width:640px){
-  .header{
-    padding:18px 15px 12px;
-  }
-  .header .logo{
-    width:200px;
-    max-width:90%;
-    margin-bottom:8px;
-  }
-  .header-title{
-    font-size:1.1em;
-  }
 }
 
 
@@ -451,24 +360,13 @@ button:disabled{opacity:.45;cursor:default}
 }
 
 </style>
-  <link rel="stylesheet" href="../admin/header.css?v=20261004-2">
+  <link rel="stylesheet" href="../admin/header.css?v=20261019-1">
 </head>
 <body>
 <div id="sessionGate" class="session-gate" style="display:flex"><div class="session-gate-card"><div class="session-gate-title">Administración</div><div class="session-gate-status">Verificando sesión…</div></div></div>
 <main class="page">
-<header class="header">
-  <img src="../../LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
-  <div class="header-title">Comunicaciones</div>
-  <div class="header-subtitle">Plantillas, envíos y seguimiento de correo</div>
-  <div class="header-actions">
-    <a href="../../ahtv/admin/?v=20261004-2" class="home-button">AHtv</a>
-    <a href="../admin/?v=20261004-2" class="home-button">CC</a>
-    <a href="../comunicaciones/?v=20261004-2" class="home-button active">COMUNICACIONES</a>
-    <a href="../inventario/?v=20261004-2" class="home-button">INVENTARIO</a>
-    <a href="../estadisticas/?v=20261007-1" class="home-button">ESTADÍSTICAS</a>
-    <button id="logoutBtn" class="hidden" type="button">CERRAR SESIÓN</button>
-  </div>
-</header>
+<div id="adminHeaderMount" data-section="communications"></div>
+<script src="../admin/header.js?v=20261019-1"></script>
 
 <div class="shell">
 <section id="loginCard" class="card hidden auth-card">
