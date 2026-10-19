@@ -311,7 +311,7 @@ button:disabled{opacity:.45;cursor:default}
       <h2 class="panel-title">Nueva comunicación</h2>
       <span class="panel-tag">Envío masivo</span>
     </div>
-    <p class="section-intro">El envío masivo se limita a clientes con correo confirmado y autorización publicitaria vigente. No utiliza tarjetas ni otros canales.</p>
+    <p class="section-intro">Solo se permiten plantillas habilitadas expresamente para campañas publicitarias; las plantillas transaccionales y de cuenta quedan excluidas. El envío se limita a clientes con correo confirmado y autorización publicitaria vigente.</p>
     <div class="mass-grid">
       <label><span class="field-label">Plantilla para envío masivo</span><select id="massTemplate"></select></label>
       <button id="countRecipientsBtn" class="ghost" type="button">ACTUALIZAR DESTINATARIOS</button>
@@ -367,6 +367,10 @@ const els={
   historyList:document.getElementById('historyList'),refreshHistoryBtn:document.getElementById('refreshHistoryBtn')
 };
 
+// Permitir únicamente alias habilitados expresamente para campañas publicitarias.
+// Las plantillas transaccionales permanecen excluidas de los envíos masivos.
+const MASS_CAMPAIGN_TEMPLATE_ALIASES = new Set([]);
+
 let templates=[];
 
 function showNotice(message,type=''){
@@ -394,6 +398,8 @@ function formatTemplateDate(value){
   return new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Bogota'}).format(d);
 }
 function massEligibility(t){
+  const alias=String(t?.alias||'').trim();
+  if(!MASS_CAMPAIGN_TEMPLATE_ALIASES.has(alias))return {ok:false,reason:'Esta plantilla no está habilitada explícitamente para campañas publicitarias.'};
   const vars=Array.isArray(t?.variables)?t.variables:[];
   const unsupported=vars.map(v=>String(v?.key||'').trim()).filter(Boolean).filter(k=>k!=='CUSTOMER_NAME');
   if(unsupported.length)return {ok:false,reason:'No apta para envío masivo automático: requiere '+unsupported.join(', ')+'.'};
