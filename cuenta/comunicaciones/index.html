@@ -351,6 +351,71 @@ button:disabled{opacity:.45;cursor:default}
 .session-gate-card{width:min(460px,100%);padding:22px 24px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(21,23,28,.96);box-shadow:0 20px 60px rgba(0,0,0,.45);text-align:center}
 .session-gate-title{font-size:17px;font-weight:800}.session-gate-status{margin-top:7px;color:#9ca3af;font-size:13px;line-height:1.45}
 
+/* Nueva comunicación · controles compactos y tonos estándar de AHP. */
+#massCommunicationCard{
+  padding:16px;
+}
+#massCommunicationCard .panel-heading{
+  padding-bottom:10px;
+  margin-bottom:10px;
+}
+#massCommunicationCard select{
+  height:37px;
+  min-height:37px;
+  box-sizing:border-box;
+  padding:0 13px;
+  margin:0;
+  line-height:normal;
+  border:1px solid #2c3038;
+  border-radius:11px;
+}
+#massCommunicationCard button{
+  height:37px;
+  min-height:37px;
+  box-sizing:border-box;
+  padding:11px 15px;
+  font-size:13px;
+  line-height:13px;
+  border-radius:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0;
+}
+#massCommunicationCard .mass-grid{
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px 12px;
+  align-items:end;
+}
+#massCommunicationCard .mass-grid label{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+#massCommunicationCard .mass-grid .field-label{
+  margin:0;
+}
+#massCommunicationCard .section-intro,
+#massCommunicationCard .mass-preview{
+  display:none;
+}
+#massCommunicationCard .mass-note{
+  margin-top:6px;
+  line-height:1.4;
+}
+#massCommunicationCard .editor-actions{
+  margin-top:8px;
+}
+@media(max-width:620px){
+  #massCommunicationCard .mass-grid{
+    grid-template-columns:1fr;
+  }
+  #massCommunicationCard #countRecipientsBtn{
+    width:100%;
+  }
+}
+
 </style>
   <link rel="stylesheet" href="../admin/header.css?v=20261004-2">
 </head>
@@ -473,12 +538,11 @@ button:disabled{opacity:.45;cursor:default}
     </div>
   </section>
 
-  <section class="card">
+  <section id="massCommunicationCard" class="card">
     <div class="panel-heading">
       <h2 class="panel-title">Nueva comunicación</h2>
       <span class="panel-tag">Envío masivo</span>
     </div>
-    <p class="section-intro">Solo se permiten plantillas habilitadas expresamente para campañas publicitarias; las plantillas transaccionales y de cuenta quedan excluidas. El envío se limita a clientes con correo confirmado y autorización publicitaria vigente.</p>
     <div class="mass-grid">
       <label><span class="field-label">Plantilla para envío masivo</span><select id="massTemplate"></select></label>
       <button id="countRecipientsBtn" class="ghost" type="button">ACTUALIZAR DESTINATARIOS</button>
@@ -630,7 +694,12 @@ async function loadTemplates(){
   templates.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es'));
   fillSelect(els.templateSelector,templates,'Selecciona una plantilla');
   fillSelect(els.testTemplate,templates,'Selecciona una plantilla');
-  fillSelect(els.massTemplate,templates,'Selecciona una plantilla');
+  const massEligibleTemplates=templates.filter(t=>massEligibility(t).ok);
+  fillSelect(
+    els.massTemplate,
+    massEligibleTemplates,
+    massEligibleTemplates.length?'Selecciona una plantilla':'No hay plantillas habilitadas para envío masivo'
+  );
   updateMassState();
 }
 async function openEditor(id){
