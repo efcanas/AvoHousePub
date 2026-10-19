@@ -178,11 +178,11 @@ button:disabled{opacity:.45;cursor:default}
 .special-rule-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .special-rule-actions button{width:100%}
 .special-rule-status{margin-top:8px;min-height:18px;font-size:12px;text-align:center}
-/* Uniformidad de controles dentro del recuadro de AvoPuntos del cliente. */
+/* Controles uniformes y alineados dentro del recuadro de AvoPuntos del cliente. */
 #clientArea .balance-card .points-adjust-row input,
 #clientArea .balance-card .special-rule-grid input{
-  height:46px;
-  min-height:46px;
+  height:37px;
+  min-height:37px;
   box-sizing:border-box;
   padding:0 12px;
   margin:0;
@@ -190,13 +190,15 @@ button:disabled{opacity:.45;cursor:default}
 }
 #clientArea .balance-card .points-adjust-actions button,
 #clientArea .balance-card .special-rule-actions button{
-  height:46px;
-  min-height:46px;
+  height:37px;
+  min-height:37px;
   box-sizing:border-box;
+  padding:11px 15px;
   display:flex;
   align-items:center;
   justify-content:center;
-  line-height:1.2;
+  font-size:13px;
+  line-height:13px;
 }
 
 @media(max-width:820px){
@@ -742,14 +744,14 @@ button.hidden{display:none!important}
 
 /* Ajustes de AvoPuntos del cliente: controles alineados y espacios compactos. */
 
-/* Restaurar el centrado vertical del valor en los campos de vigencia (escritorio y móvil). */
+/* Centrado vertical de fechas con la altura estándar (escritorio y móvil). */
 #clientArea .balance-card #customerRuleStart,
 #clientArea .balance-card #customerRuleEnd{
-  height:46px;
-  min-height:46px;
+  height:37px;
+  min-height:37px;
   padding-top:0;
   padding-bottom:0;
-  line-height:46px;
+  line-height:normal;
   vertical-align:middle;
 }
 #clientArea .balance-card #customerRuleStart::-webkit-date-and-time-value,
@@ -828,7 +830,8 @@ button.hidden{display:none!important}
   #clientArea .balance-card{padding:16px 12px}
   #clientArea .balance-card .special-rule-grid{grid-template-columns:minmax(0,1fr)}
   #clientArea .balance-card .points-adjust-actions{gap:7px}
-  #clientArea .balance-card .points-adjust-actions button{padding:11px 8px;font-size:13px}
+  #clientArea .balance-card .points-adjust-actions button{padding:11px 8px;font-size:12px}
+  #clientArea .balance-card .special-rule-actions button{padding:11px 8px;font-size:12px}
   #clientArea .balance-card .special-rule-grid .full{grid-column:auto}
 }
 
