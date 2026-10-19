@@ -36,22 +36,51 @@
     '</header>';
 
   /*
-   * Las cuatro áreas distintas de AHtv reproducen su inicio de contenido.
-   * En AHtv, el contenido comienza a 255 px en escritorio y 251 px en móvil:
-   * padding superior de 225 px, más el padding de main (18/14 px) y los 12 px
-   * de margen de la primera tarjeta. Aquí la tarjeta ya aporta esos 12 px,
-   * por eso el padding de .page es 243/239 px. AHtv no se modifica.
+   * Conserva exactamente 12 px entre el borde inferior del encabezado fijo
+   * y el primer bloque visible de cada apartado. Se mide el bloque real para
+   * descontar sus márgenes CSS (por ejemplo, el margen superior de las tarjetas).
    */
+  const contentContainer = mount.closest(".page") || mount.closest("main") || document.body;
+
+  function getFirstVisibleContent() {
+    const candidates = contentContainer.querySelectorAll(".card, .notice:not([hidden])");
+    for (const element of candidates) {
+      if (mount.contains(element)) continue;
+      const style = window.getComputedStyle(element);
+      if (style.display === "none" || style.visibility === "hidden" || element.hidden) continue;
+      if (element.getClientRects().length) return element;
+    }
+    return null;
+  }
+
   function syncContentOffset() {
-    if (activeSection === "ahtv") return;
+    const header = mount.querySelector(".header");
+    const content = getFirstVisibleContent();
+    if (!header || !content) return;
 
-    const page = mount.closest(".page");
-    if (!page) return;
+    const desiredTop = header.getBoundingClientRect().bottom + 12;
+    const currentTop = content.getBoundingClientRect().top;
+    const delta = desiredTop - currentTop;
 
-    const topPadding = window.matchMedia("(max-width: 640px)").matches ? 239 : 243;
-    page.style.paddingTop = topPadding + "px";
+    if (Math.abs(delta) < 0.5) return;
+
+    const currentPadding = parseFloat(window.getComputedStyle(contentContainer).paddingTop) || 0;
+    contentContainer.style.paddingTop = (currentPadding + delta) + "px";
   }
 
   syncContentOffset();
+  window.addEventListener("load", syncContentOffset);
   window.addEventListener("resize", syncContentOffset);
+
+  if ("ResizeObserver" in window) {
+    const headerObserver = new ResizeObserver(syncContentOffset);
+    headerObserver.observe(mount.querySelector(".header"));
+  }
+
+  const contentObserver = new MutationObserver(syncContentOffset);
+  contentObserver.observe(contentContainer, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class", "hidden", "style"]
+  });
 })();
