@@ -227,21 +227,23 @@ button:disabled{opacity:.45;cursor:default}
   padding-bottom:10px;
   margin-bottom:10px;
 }
-#testTemplateCard .grid-2{
+#testTemplateCard .test-template-row{
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto;
   gap:8px 12px;
   align-items:end;
 }
-#testTemplateCard .grid-2 label{
+#testTemplateCard .test-template-row label{
   display:flex;
   flex-direction:column;
   gap:4px;
   min-width:0;
 }
-#testTemplateCard .grid-2 .field-label{
+#testTemplateCard .test-template-row .field-label{
   margin:0;
 }
-#testTemplateCard .editor-actions{
-  margin-top:8px;
+#testTemplateCard .test-template-row button{
+  white-space:nowrap;
 }
 @media(max-width:620px){
   #templatesCard,
@@ -464,11 +466,11 @@ button:disabled{opacity:.45;cursor:default}
       <h2 class="panel-title">Probar una plantilla</h2>
       <span class="panel-tag">Envío individual</span>
     </div>
-    <div class="grid-2">
+    <div class="test-template-row">
       <label><span class="field-label">Plantilla</span><select id="testTemplate"></select></label>
       <label><span class="field-label">Enviar a</span><input id="testTo" type="email" placeholder="correo de prueba"></label>
+      <button id="sendTestBtn" class="primary" type="button">ENVIAR PRUEBA</button>
     </div>
-    <div class="editor-actions"><button id="sendTestBtn" class="ghost" type="button">ENVIAR PRUEBA</button></div>
   </section>
 
   <section class="card">
