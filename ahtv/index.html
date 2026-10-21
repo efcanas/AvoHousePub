@@ -468,10 +468,15 @@ body::before {
 
       myRequests.push({ song_id: song.id, artist: song.artist, title: song.title });
       updateMine();
-      button.textContent = 'YA PEDIDA';
-      button.disabled = true;
+
+      // Limpiar la búsqueda tras enviar correctamente la solicitud
+      // y devolver el foco para facilitar la selección de otra canción.
+      searchInput.value = '';
+      lastQuery = '';
+      resultsEl.innerHTML = '';
+      searchInput.focus();
+
       showMessage('Solicitud enviada correctamente.');
-      renderResults(await fetchSongs(lastQuery));
     }
 
     async function initAhtvPage(){
