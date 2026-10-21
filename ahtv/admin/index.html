@@ -968,6 +968,15 @@
     status.textContent = `“${song.artist} — ${song.title}” añadida a la cola en la posición ${data?.queue_position || "?"}.`;
     button.disabled = false;
     button.textContent = "PONER EN COLA";
+
+    // Limpiar la búsqueda solo después de añadir correctamente la canción.
+    const searchInput = document.getElementById("adminSongSearch");
+    const searchResults = document.getElementById("adminSongResults");
+    clearTimeout(adminSongSearchTimer);
+    searchInput.value = "";
+    searchResults.innerHTML = "";
+    searchInput.focus();
+
     await loadRequests();
   }
 
