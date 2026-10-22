@@ -732,6 +732,7 @@
   let accessKeyData = null;
   let accessKeyLoading = false;
   let accessKeyCountdownTimer = null;
+  let accessKeyPollTimer = null;
   let accessKeyRefreshPending = false;
 
   let currentRequestMode = "automatico";
@@ -813,6 +814,10 @@
     if (accessKeyCountdownTimer) {
       clearInterval(accessKeyCountdownTimer);
       accessKeyCountdownTimer = null;
+    }
+    if (accessKeyPollTimer) {
+      clearInterval(accessKeyPollTimer);
+      accessKeyPollTimer = null;
     }
     const adminSearchInput = document.getElementById("adminSongSearch");
     if (adminSearchInput) {
@@ -1853,6 +1858,9 @@ async function init() {
       await loadNowPlaying();
       await loadRequests();
       await loadAccessKey();
+      if (!accessKeyPollTimer) {
+        accessKeyPollTimer = window.setInterval(loadAccessKey, 30000);
+      }
       await startRealtime();
     } else {
       showLogin();
