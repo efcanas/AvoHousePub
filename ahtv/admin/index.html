@@ -275,6 +275,43 @@
       margin: 14px 0 18px;
     }
 
+    .admin-access-card {
+      margin: 14px 0 18px;
+      border-color: rgba(184,255,57,.3);
+    }
+    .access-key-value {
+      margin-top: 12px;
+      color: var(--accent);
+      font-size: clamp(23px, 5vw, 31px);
+      font-weight: 800;
+      letter-spacing: .035em;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .access-key-meta {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .access-key-footer {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .access-key-countdown {
+      font-size: 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .access-key-refresh { flex: 0 0 auto; }
+    @media (max-width: 480px) {
+      .access-key-footer { align-items: stretch; flex-direction: column; }
+      .access-key-refresh { width: 100%; }
+    }
+
     .admin-song-search {
       display: block;
       margin-top: 12px;
@@ -591,6 +628,20 @@
       </div>
       <div id="adminSongResults" class="admin-song-results"></div>
       <div id="adminSongStatus" class="admin-song-status"></div>
+    </div>
+
+    <div class="card admin-access-card">
+      <div class="topline">
+        <h3 style="margin:0;">Clave de acceso AHtv</h3>
+        <span class="muted">ROTACIÓN AUTOMÁTICA</span>
+      </div>
+      <div id="accessKeyValue" class="access-key-value">Cargando clave…</div>
+      <div id="accessKeyMeta" class="access-key-meta">Consultando la clave vigente.</div>
+      <div class="access-key-footer">
+        <div id="accessKeyCountdown" class="access-key-countdown">Calculando renovación…</div>
+        <button id="refreshAccessKeyBtn" class="secondary access-key-refresh" type="button">ACTUALIZAR</button>
+      </div>
+      <div id="accessKeyError" class="error" role="status" aria-live="polite" style="margin-top:8px;"></div>
     </div>
 
     <div id="nowPlayingCard" class="now-card">
