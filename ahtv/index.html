@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AHtv · Solicita tu canción</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // El QR incluye la clave en la URL. Guardarla antes de que app.js gestione
+    // el inicio de sesión, retirar el parámetro de la barra y continuar el flujo.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const qrCode = params.get('access');
+      if (qrCode && /^[a-z-]{1,80}$/i.test(qrCode)) {
+        sessionStorage.setItem('ahtv_pending_access_code', qrCode);
+        params.delete('access');
+        const cleanQuery = params.toString();
+        window.history.replaceState(
+          null,
+          '',
+          window.location.pathname + (cleanQuery ? '?' + cleanQuery : '') + window.location.hash
+        );
+      }
+    } catch (_) {}
+  </script>
   <script src="../app.js"></script>
   <style>
     :root {
@@ -108,6 +126,14 @@
     .mine-item { padding:12px 13px; border-radius:12px; background:#111318; border:1px solid var(--line); }
     .mine-item .artist { font-size: 14px; }
     .mine-item .title { font-size: 14px; }
+    .access-panel { margin-bottom: 16px; padding: 14px; border: 1px solid rgba(184,255,57,.28); border-radius: 13px; background: rgba(184,255,57,.045); }
+    .access-panel h3 { margin: 0 0 6px; font-size: 15px; }
+    .access-panel p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .access-form { display: flex; gap: 8px; margin-top: 10px; }
+    .access-form input { flex: 1 1 auto; min-width: 0; text-transform: lowercase; }
+    .access-form button { flex: 0 0 auto; }
+    .access-active { margin: 0 0 12px; color: var(--accent); font-size: 12px; line-height: 1.4; }
+    .access-panel[hidden], .access-active[hidden] { display: none !important; }
     .msg { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; background:#1b1e24; color:#d9dce2; }
     .msg.error { border:1px solid rgba(255,93,93,.4); color:#ffd0d0; }
     .empty { color:var(--muted); text-align:center; padding:14px 8px; }
@@ -125,6 +151,8 @@
       .title { font-size: 14px; }
       .brand h1 { font-size: 30px; }
       .counter strong { font-size: 16px; }
+      .access-form { flex-direction: column; }
+      .access-form button { width: 100%; }
     }
   </style>
 
@@ -174,6 +202,16 @@ body::before {
     </section>
 
     <section class="card">
+      <div id="accessPanel" class="access-panel">
+        <h3>Acceso a música</h3>
+        <p>Escanea el QR que aparece en AvoHouse o introduce la clave vigente que ves en las pantallas.</p>
+        <form id="accessForm" class="access-form" autocomplete="off">
+          <input id="accessCode" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="80" placeholder="Ej.: perro-agua-aguacate" aria-label="Clave de acceso a música">
+          <button id="accessSubmit" class="request" type="submit">VALIDAR CLAVE</button>
+        </form>
+        <div id="accessStatus" class="msg" role="status" aria-live="polite" hidden></div>
+      </div>
+      <div id="accessActive" class="access-active" hidden>Acceso habilitado. Podrás solicitar música hasta la próxima rotación de clave.</div>
       <strong>Buscar canción</strong>
       <div class="search">
         <input id="search" type="search" autocomplete="off" placeholder="Artista o canción…" aria-label="Buscar artista o canción" />
@@ -205,6 +243,12 @@ body::before {
     const recentEl = document.getElementById('recent');
     const counterEl = document.getElementById('counter');
     const messageEl = document.getElementById('message');
+    const accessPanelEl = document.getElementById('accessPanel');
+    const accessFormEl = document.getElementById('accessForm');
+    const accessCodeEl = document.getElementById('accessCode');
+    const accessSubmitEl = document.getElementById('accessSubmit');
+    const accessStatusEl = document.getElementById('accessStatus');
+    const accessActiveEl = document.getElementById('accessActive');
 
     const TOKEN_KEY = 'ahtv_client_token';
     let clientToken = localStorage.getItem(TOKEN_KEY);
@@ -220,26 +264,47 @@ body::before {
     let lastQuery = '';
     let currentUser = null;
     let currentUsername = null;
+    let hasVenueAccess = false;
+    let accessStatusLoading = false;
+
+    function showAccessMessage(text, error = false) {
+      accessStatusEl.hidden = !text;
+      accessStatusEl.textContent = text || '';
+      accessStatusEl.classList.toggle('error', error);
+    }
 
     function renderRequestAvailability() {
-      searchInput.disabled = !requestsEnabled;
-      searchInput.placeholder = requestsEnabled
-        ? 'Artista o canción…'
-        : 'Solicitudes no habilitadas';
+      const canSearch = requestsEnabled && hasVenueAccess;
+      searchInput.disabled = !canSearch;
+      searchInput.placeholder = !requestsEnabled
+        ? 'Solicitudes no habilitadas'
+        : hasVenueAccess
+          ? 'Artista o canción…'
+          : 'Valida el acceso para solicitar música';
       searchInput.setAttribute(
         'aria-label',
-        requestsEnabled ? 'Buscar artista o canción' : 'Solicitudes de música no habilitadas'
+        !requestsEnabled
+          ? 'Solicitudes de música no habilitadas'
+          : hasVenueAccess
+            ? 'Buscar artista o canción'
+            : 'Valida el acceso antes de buscar canciones'
       );
-      searchInput.title = requestsEnabled
-        ? ''
-        : 'Las solicitudes de música están cerradas en este momento.';
+      searchInput.title = !requestsEnabled
+        ? 'Las solicitudes de música están cerradas en este momento.'
+        : hasVenueAccess
+          ? ''
+          : 'Escanea el QR o introduce la clave visible en AvoHouse.';
       searchInput.classList.toggle('search-closed', !requestsEnabled);
-      resultsEl.hidden = !requestsEnabled;
+      resultsEl.hidden = !canSearch;
+      accessPanelEl.hidden = !requestsEnabled || hasVenueAccess;
+      accessActiveEl.hidden = !requestsEnabled || !hasVenueAccess;
 
-      if (!requestsEnabled) {
+      if (!canSearch) {
         searchInput.value = '';
         lastQuery = '';
         resultsEl.innerHTML = '';
+      }
+      if (!requestsEnabled) {
         messageEl.hidden = true;
         messageEl.textContent = '';
       }
@@ -256,6 +321,78 @@ body::before {
       if (lastQuery) {
         const songs = await fetchSongs(lastQuery);
         renderResults(songs);
+      }
+    }
+
+    async function loadAccessStatus() {
+      if (!currentUser || accessStatusLoading) return;
+      accessStatusLoading = true;
+      const previousAccess = hasVenueAccess;
+      try {
+        const { data, error } = await db.rpc('ahtv_mi_estado_acceso');
+        if (error) {
+          console.error(error);
+          hasVenueAccess = false;
+          showAccessMessage('No se pudo comprobar tu acceso. Inténtalo de nuevo en unos segundos.', true);
+        } else {
+          hasVenueAccess = data?.authorized === true;
+          if (hasVenueAccess) {
+            showAccessMessage('');
+            accessActiveEl.textContent = 'Acceso habilitado. Podrás solicitar música hasta la próxima rotación de clave.';
+          } else if (previousAccess) {
+            showAccessMessage('El acceso venció. Escanea el nuevo QR o introduce la clave vigente que aparece en el local.', true);
+          }
+        }
+        renderRequestAvailability();
+        if (previousAccess !== hasVenueAccess) {
+          const songs = lastQuery ? await fetchSongs(lastQuery) : [];
+          renderResults(songs);
+        }
+      } finally {
+        accessStatusLoading = false;
+      }
+    }
+
+    async function validateAccess(codeOverride = null) {
+      const code = String(codeOverride ?? accessCodeEl.value ?? '').trim().toLowerCase();
+      if (!code) {
+        showAccessMessage('Introduce la clave que aparece actualmente en AvoHouse.', true);
+        accessCodeEl.focus();
+        return false;
+      }
+      accessSubmitEl.disabled = true;
+      accessSubmitEl.textContent = 'VALIDANDO…';
+      showAccessMessage('Validando acceso…');
+      try {
+        const { data, error } = await db.rpc('ahtv_validar_clave_acceso', {
+          p_code: code
+        });
+        if (error) {
+          console.error(error);
+          showAccessMessage('No fue posible validar la clave. Comprueba tu conexión e inténtalo nuevamente.', true);
+          return false;
+        }
+        if (data?.ok === true) {
+          hasVenueAccess = true;
+          accessCodeEl.value = '';
+          showAccessMessage('');
+          renderRequestAvailability();
+          renderResults([]);
+          searchInput.focus();
+          showMessage('Acceso habilitado. Ya puedes solicitar música.');
+          return true;
+        }
+        hasVenueAccess = false;
+        renderRequestAvailability();
+        showAccessMessage(data?.message || 'No se pudo validar la clave. Revisa la que aparece en AvoHouse.', true);
+        return false;
+      } catch (error) {
+        console.error(error);
+        showAccessMessage('No fue posible validar la clave. Inténtalo nuevamente.', true);
+        return false;
+      } finally {
+        accessSubmitEl.disabled = false;
+        accessSubmitEl.textContent = 'VALIDAR CLAVE';
       }
     }
 
@@ -425,6 +562,11 @@ body::before {
     }
 
     async function requestSong(song, button) {
+      if (!hasVenueAccess) {
+        renderRequestAvailability();
+        showAccessMessage('Valida el acceso con la clave vigente que aparece en AvoHouse.', true);
+        return;
+      }
       button.disabled = true;
       button.textContent = 'ENVIANDO…';
       showMessage('');
@@ -455,6 +597,10 @@ body::before {
           showMessage('Ya tienes 2 solicitudes activas. Espera a que suenen para pedir otra.', true);
         } else if (msg.includes('Esta canción ya está solicitada')) {
           showMessage('Esa canción ya está en tus solicitudes.', true);
+        } else if (msg.toLowerCase().includes('clave vigente') || msg.toLowerCase().includes('acceso ahtv')) {
+          hasVenueAccess = false;
+          renderRequestAvailability();
+          showAccessMessage('El acceso venció. Escanea el nuevo QR o introduce la clave vigente que aparece en el local.', true);
         } else if (msg.includes('ya fue reproducida hace menos de una hora')) {
           showMessage('Esa canción fue escuchada recientemente. Podrás pedirla de nuevo más adelante.', true);
         } else {
@@ -497,8 +643,27 @@ body::before {
 
       currentUsername = profile.username;
       await loadRequestAvailability();
+      await loadAccessStatus();
+
+      let pendingCode = null;
+      try {
+        pendingCode = sessionStorage.getItem('ahtv_pending_access_code');
+        if (pendingCode) sessionStorage.removeItem('ahtv_pending_access_code');
+      } catch (_) {}
+      if (pendingCode && !hasVenueAccess) {
+        await validateAccess(pendingCode);
+      }
+
       await loadMine();
     }
+
+    accessFormEl.addEventListener('submit', event => {
+      event.preventDefault();
+      validateAccess();
+    });
+    accessCodeEl.addEventListener('input', () => {
+      accessCodeEl.value = accessCodeEl.value.toLowerCase().replace(/\\s+/g, '');
+    });
 
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimer);
@@ -525,6 +690,11 @@ body::before {
       loadMine();
       loadRequestAvailability();
     }, 5000);
+
+    // Refrescar autorización para reflejar la caducidad tras la rotación.
+    setInterval(() => {
+      loadAccessStatus();
+    }, 15000);
   </script>
 
 <script>
