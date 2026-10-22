@@ -504,7 +504,7 @@ body::before {
 
     function renderResults(songs) {
       resultsEl.innerHTML = '';
-      if (!requestsEnabled) {
+      if (!requestsEnabled || !hasVenueAccess) {
         resultsEl.hidden = true;
         return;
       }
