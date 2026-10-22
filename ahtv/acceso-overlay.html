@@ -5,97 +5,134 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AHtv · Acceso a música</title>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box !important; }
     html, body {
-      width: 600px;
-      height: 178px;
-      min-width: 600px;
-      min-height: 178px;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: transparent;
-      color: #fff;
-      font-family: Arial, Helvetica, sans-serif;
+      width: 600px !important;
+      height: 178px !important;
+      min-width: 600px !important;
+      min-height: 178px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      background: transparent !important;
+      background-color: transparent !important;
+      color: #fff !important;
+      font-family: Arial, Helvetica, sans-serif !important;
     }
     .panel {
-      width: 600px;
-      height: 178px;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 12px;
-      padding: 10px 12px;
-      overflow: hidden;
-      border: 1px solid rgba(184,255,57,.55);
-      border-radius: 13px;
-      background: rgba(8,10,13,.96);
-      box-shadow: 0 5px 18px rgba(0,0,0,.24);
-      color: #fff;
+      position: relative !important;
+      display: block !important;
+      width: 600px !important;
+      height: 178px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      border: 1px solid rgba(184,255,57,.55) !important;
+      border-radius: 13px !important;
+      background: rgba(8,10,13,.96) !important;
+      background-color: rgba(8,10,13,.96) !important;
+      box-shadow: 0 5px 18px rgba(0,0,0,.24) !important;
+      color: #fff !important;
     }
-    #qr {
-      position: relative;
-      flex: 0 0 132px;
-      width: 132px;
-      min-width: 132px;
-      height: 132px;
-      min-height: 132px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      padding: 6px;
-      border-radius: 7px;
-      background: #fff;
-      color: #111;
-      line-height: 0;
+    html body .panel #qr {
+      position: absolute !important;
+      left: 9px !important;
+      top: 2px !important;
+      display: block !important;
+      width: 172px !important;
+      min-width: 172px !important;
+      max-width: 172px !important;
+      height: 172px !important;
+      min-height: 172px !important;
+      max-height: 172px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      border-radius: 7px !important;
+      background: #fff !important;
+      background-color: #fff !important;
+      color: #111 !important;
+      line-height: 0 !important;
     }
     html body .panel #qr canvas,
     html body .panel #qr img {
+      position: absolute !important;
+      left: 18px !important;
+      top: 18px !important;
       display: block !important;
       flex: none !important;
-      width: 120px !important;
-      min-width: 120px !important;
-      max-width: 120px !important;
-      height: 120px !important;
-      min-height: 120px !important;
-      max-height: 120px !important;
+      width: 136px !important;
+      min-width: 136px !important;
+      max-width: 136px !important;
+      height: 136px !important;
+      min-height: 136px !important;
+      max-height: 136px !important;
+      margin: 0 !important;
+      padding: 0 !important;
       object-fit: contain !important;
-      image-rendering: pixelated;
+      image-rendering: pixelated !important;
     }
-    .details { min-width: 0; flex: 1 1 auto; color: #fff; }
+    .details {
+      position: absolute !important;
+      left: 194px !important;
+      top: 27px !important;
+      right: 12px !important;
+      display: block !important;
+      width: auto !important;
+      height: 128px !important;
+      min-width: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      color: #fff !important;
+    }
     .brand {
-      color: #b8ff39;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin: 0 0 5px;
+      color: #b8ff39 !important;
+      font-size: 10px !important;
+      font-weight: 700 !important;
+      letter-spacing: 2px !important;
+      line-height: 12px !important;
+      text-transform: uppercase !important;
+      margin: 0 0 5px !important;
+      padding: 0 !important;
     }
     .title {
-      color: #fff;
-      font-size: 18px;
-      line-height: 1.15;
-      font-weight: 800;
-      margin: 0 0 5px;
+      color: #fff !important;
+      font-size: 18px !important;
+      line-height: 21px !important;
+      font-weight: 800 !important;
+      margin: 0 0 5px !important;
+      padding: 0 !important;
     }
     .hint {
-      color: #d0d4da;
-      font-size: 11px;
-      line-height: 1.3;
-      margin: 0 0 6px;
+      color: #d0d4da !important;
+      font-size: 11px !important;
+      line-height: 14px !important;
+      margin: 0 0 6px !important;
+      padding: 0 !important;
     }
     .code {
-      color: #fff;
-      font-size: 20px;
-      line-height: 1.15;
-      letter-spacing: .15px;
-      font-weight: 800;
-      overflow-wrap: anywhere;
+      color: #fff !important;
+      font-size: 20px !important;
+      line-height: 23px !important;
+      letter-spacing: .15px !important;
+      font-weight: 800 !important;
+      overflow-wrap: anywhere !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-    .foot { color: #a0a6af; font-size: 9px; margin-top: 5px; }
-    .error { color: #ffb8b8; font-size: 12px; line-height: 1.2; }
+    .foot {
+      color: #a0a6af !important;
+      font-size: 9px !important;
+      line-height: 11px !important;
+      margin: 5px 0 0 !important;
+      padding: 0 !important;
+    }
+    .error {
+      color: #ffb8b8 !important;
+      font-size: 12px !important;
+      line-height: 14px !important;
+    }
   </style>
 </head>
 <body>
@@ -123,6 +160,7 @@
         qrEl.textContent = 'QR no disponible';
         qrEl.style.color = '#111';
         qrEl.style.fontSize = '11px';
+        qrEl.style.lineHeight = 'normal';
         qrEl.style.textAlign = 'center';
         return;
       }
@@ -131,17 +169,12 @@
       const target = new URL('/ahtv/index.html', window.location.origin);
       target.searchParams.set('access', code);
 
-      qrEl.style.setProperty('width', '132px', 'important');
-      qrEl.style.setProperty('min-width', '132px', 'important');
-      qrEl.style.setProperty('height', '132px', 'important');
-      qrEl.style.setProperty('min-height', '132px', 'important');
-      qrEl.style.setProperty('overflow', 'hidden', 'important');
-      qrEl.style.setProperty('position', 'relative', 'important');
-
+      // The surrounding white area provides a clear quiet zone for phone cameras.
+      qrEl.replaceChildren();
       new QRCode(qrEl, {
         text: target.toString(),
-        width: 120,
-        height: 120,
+        width: 136,
+        height: 136,
         colorDark: '#0c0d10',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
@@ -149,15 +182,20 @@
 
       const lockQrSize = function () {
         qrEl.querySelectorAll('canvas, img').forEach(function (node) {
+          node.style.setProperty('position', 'absolute', 'important');
+          node.style.setProperty('left', '18px', 'important');
+          node.style.setProperty('top', '18px', 'important');
           ['width', 'min-width', 'max-width'].forEach(function (prop) {
-            node.style.setProperty(prop, '120px', 'important');
+            node.style.setProperty(prop, '136px', 'important');
           });
           ['height', 'min-height', 'max-height'].forEach(function (prop) {
-            node.style.setProperty(prop, '120px', 'important');
+            node.style.setProperty(prop, '136px', 'important');
           });
           node.style.setProperty('flex', 'none', 'important');
           node.style.setProperty('object-fit', 'contain', 'important');
           node.style.setProperty('display', 'block', 'important');
+          node.style.setProperty('margin', '0', 'important');
+          node.style.setProperty('padding', '0', 'important');
         });
       };
 
