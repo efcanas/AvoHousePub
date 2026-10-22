@@ -804,6 +804,16 @@
     nowTitleEl.textContent = "";
     nowMetaEl.textContent = "";
     nowMetaEl.className = "now-meta";
+    accessKeyData = null;
+    accessKeyValueEl.textContent = "";
+    accessKeyMetaEl.textContent = "";
+    accessKeyCountdownEl.textContent = "";
+    accessKeyErrorEl.textContent = "";
+    accessKeyRefreshPending = false;
+    if (accessKeyCountdownTimer) {
+      clearInterval(accessKeyCountdownTimer);
+      accessKeyCountdownTimer = null;
+    }
     const adminSearchInput = document.getElementById("adminSongSearch");
     if (adminSearchInput) {
       adminSearchInput.value = "";
@@ -1842,6 +1852,7 @@ async function init() {
       await loadRequestMode();
       await loadNowPlaying();
       await loadRequests();
+      await loadAccessKey();
       await startRealtime();
     } else {
       showLogin();
@@ -1865,7 +1876,9 @@ async function init() {
     await loadRequestMode();
     await loadNowPlaying();
     await loadRequests();
+    await loadAccessKey();
   });
+  refreshAccessKeyBtn.addEventListener("click", loadAccessKey);
   logoutBtn.addEventListener("click", logout);
   requestModeBtn.addEventListener("click", toggleRequestMode);
   requestsEnabledBtn.addEventListener("click", toggleRequestsEnabled);
