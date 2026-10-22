@@ -662,7 +662,7 @@ body::before {
       validateAccess();
     });
     accessCodeEl.addEventListener('input', () => {
-      accessCodeEl.value = accessCodeEl.value.toLowerCase().replace(/\\s+/g, '');
+      accessCodeEl.value = accessCodeEl.value.toLowerCase().replace(/\s+/g, '');
     });
 
     searchInput.addEventListener('input', () => {
