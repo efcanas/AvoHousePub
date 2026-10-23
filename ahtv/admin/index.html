@@ -794,6 +794,7 @@
   const songSuggestionsCountEl = document.getElementById("songSuggestionsCount");
   const songSuggestionsStatusEl = document.getElementById("songSuggestionsStatus");
   const songSuggestionsListEl = document.getElementById("songSuggestionsList");
+  const songSuggestionsCardEl = document.querySelector(".admin-suggestions-card");
 
   let songSuggestionsLoading = false;
   let songSuggestionsPollTimer = null;
@@ -1187,6 +1188,7 @@
       }
 
       const items = Array.isArray(data) ? data : [];
+      songSuggestionsCardEl.style.display = items.length ? "" : "none";
       songSuggestionsCountEl.textContent =
         items.length + (items.length === 1 ? " sugerencia" : " sugerencias");
       songSuggestionsStatusEl.className = "meta";
