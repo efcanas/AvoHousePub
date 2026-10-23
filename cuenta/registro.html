@@ -396,16 +396,6 @@ registerForm.addEventListener('submit',async e=>{
     return;
   }
 
-  if(data.session?.access_token&&data.session?.refresh_token){
-    const {error:sessionError}=await supabaseClient.auth.setSession({
-      access_token:data.session.access_token,
-      refresh_token:data.session.refresh_token
-    });
-    if(sessionError)throw sessionError;
-    window.location.href='../index.html';
-    return;
-  }
-
   document.getElementById('registerTitle').textContent='Solicitud recibida';
   document.getElementById('registerSubtitle').textContent='Revisa tu correo electrónico.';
   registerForm.style.display='none';
