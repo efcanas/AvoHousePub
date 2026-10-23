@@ -363,6 +363,110 @@
       display: none;
     }
 
+    .song-suggestions-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .song-suggestion-item {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 12px;
+      background: rgba(255,255,255,.035);
+    }
+    .suggestion-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .suggestion-song-name {
+      font-size: 14px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .suggestion-song-title {
+      margin-top: 3px;
+      color: #d4d7dd;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    .suggestion-status {
+      flex: 0 0 auto;
+      padding: 4px 7px;
+      border-radius: 999px;
+      background: #292d35;
+      color: #e5e7eb;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .suggestion-status-pendiente { background: rgba(255,193,7,.13); color: #ffd76a; }
+    .suggestion-status-en_revision { background: rgba(96,165,250,.14); color: #93c5fd; }
+    .suggestion-status-aprobada { background: rgba(184,255,57,.12); color: var(--accent); }
+    .suggestion-status-incorporada { background: rgba(74,222,128,.13); color: #86efac; }
+    .suggestion-status-rechazada { background: rgba(255,93,93,.12); color: #ffaaaa; }
+    .suggestion-details {
+      margin-top: 8px;
+      color: #9ca3af;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .suggestion-reference {
+      display: inline-block;
+      margin-top: 7px;
+      color: var(--accent);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .suggestion-note-label {
+      display: block;
+      margin-top: 12px;
+      color: #aeb4bf;
+      font-size: 12px;
+    }
+    .suggestion-note {
+      display: block;
+      width: 100%;
+      min-height: 66px;
+      resize: vertical;
+      margin-top: 6px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #101217;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+    }
+    .suggestion-note:focus { outline: 1px solid var(--accent); }
+    .suggestion-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .suggestion-actions button {
+      margin: 0;
+      min-height: 37px;
+      padding: 8px 11px;
+      font-size: 11px;
+    }
+    .suggestion-action-muted { background: #292d35; color: #f4f4f5; }
+    .suggestion-action-danger {
+      border: 1px solid rgba(255,93,93,.75);
+      background: rgba(255,93,93,.08);
+      color: #ffaaaa;
+    }
+    .suggestion-action-danger:hover:not(:disabled) { background: rgba(255,93,93,.16); }
+    .suggestions-empty {
+      padding: 12px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     @media (max-width: 640px) {
       .admin-song-row {
         align-items: flex-start;
@@ -372,6 +476,8 @@
       .admin-song-row button {
         width: 100%;
       }
+      .suggestion-head { flex-direction: column; }
+      .suggestion-actions button { flex: 1 1 auto; }
     }
 
     .now-card {
@@ -621,6 +727,16 @@
       <div id="adminSongStatus" class="admin-song-status"></div>
     </div>
 
+    <div class="card admin-suggestions-card">
+      <div class="topline">
+        <h3 style="margin:0;">Buzón de sugerencias</h3>
+        <span id="songSuggestionsCount" class="muted">Cargando…</span>
+      </div>
+      <div class="meta">Las sugerencias no entran a la cola musical. Marca una como incorporada solo después de añadir y comprobar el archivo en la biblioteca local.</div>
+      <div id="songSuggestionsStatus" class="meta" aria-live="polite"></div>
+      <div id="songSuggestionsList" class="song-suggestions-list"></div>
+    </div>
+
     <div class="card admin-access-card">
       <div class="topline">
         <h3 style="margin:0;">Clave de acceso AHtv</h3>
@@ -717,7 +833,12 @@
   const accessKeyMetaEl = document.getElementById("accessKeyMeta");
   const accessKeyCountdownEl = document.getElementById("accessKeyCountdown");
   const accessKeyErrorEl = document.getElementById("accessKeyError");
+  const songSuggestionsCountEl = document.getElementById("songSuggestionsCount");
+  const songSuggestionsStatusEl = document.getElementById("songSuggestionsStatus");
+  const songSuggestionsListEl = document.getElementById("songSuggestionsList");
 
+  let songSuggestionsLoading = false;
+  let songSuggestionsPollTimer = null;
   let accessKeyData = null;
   let accessKeyLoading = false;
   let accessKeyCountdownTimer = null;
@@ -794,6 +915,15 @@
     nowTitleEl.textContent = "";
     nowMetaEl.textContent = "";
     nowMetaEl.className = "now-meta";
+    songSuggestionsCountEl.textContent = "";
+    songSuggestionsStatusEl.textContent = "";
+    songSuggestionsStatusEl.className = "meta";
+    songSuggestionsListEl.innerHTML = "";
+    if (songSuggestionsPollTimer) {
+      clearInterval(songSuggestionsPollTimer);
+      songSuggestionsPollTimer = null;
+    }
+    songSuggestionsLoading = false;
     accessKeyData = null;
     accessKeyValueEl.textContent = "";
     accessKeyMetaEl.textContent = "";
@@ -870,6 +1000,10 @@
     await loadRequestMode();
     await loadNowPlaying();
     await loadRequests();
+    await loadSongSuggestions();
+    if (!songSuggestionsPollTimer) {
+      songSuggestionsPollTimer = window.setInterval(loadSongSuggestions, 30000);
+    }
     await startRealtime();
   }
 
@@ -1043,6 +1177,207 @@
     searchInput.focus();
 
     await loadRequests();
+  }
+
+  function suggestionStatusLabel(status) {
+    const labels = {
+      pendiente: "PENDIENTE",
+      en_revision: "EN REVISIÓN",
+      aprobada: "APROBADA",
+      incorporada: "INCORPORADA",
+      rechazada: "RECHAZADA"
+    };
+    return labels[status] || "SIN ESTADO";
+  }
+
+  function suggestionDateLabel(value) {
+    if (!value) return "Fecha no disponible";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Fecha no disponible";
+    return date.toLocaleString("es-CO", {
+      timeZone: "America/Bogota",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function suggestionReferenceUrl(value) {
+    try {
+      const url = new URL(value);
+      if (url.protocol === "https:" || url.protocol === "http:") return url.href;
+    } catch (_) {}
+    return null;
+  }
+
+  async function updateSongSuggestion(item, nextStatus, note, button) {
+    if (nextStatus === "rechazada" &&
+        !window.confirm("¿Rechazar la sugerencia de “" + item.title + "”?")) {
+      return;
+    }
+    const oldLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "GUARDANDO…";
+    songSuggestionsStatusEl.className = "meta";
+    songSuggestionsStatusEl.textContent = "Guardando cambios de la sugerencia…";
+
+    const { data, error } = await db.rpc("ahtv_admin_actualizar_sugerencia_cancion", {
+      p_suggestion_id: item.id,
+      p_status: nextStatus,
+      p_admin_note: note.trim() || null
+    });
+
+    if (error || !data?.ok) {
+      console.error(error || data);
+      songSuggestionsStatusEl.className = "error";
+      songSuggestionsStatusEl.textContent = "No fue posible guardar los cambios. Comprueba la conexión e inténtalo de nuevo.";
+      button.disabled = false;
+      button.textContent = oldLabel;
+      return;
+    }
+
+    await loadSongSuggestions();
+    songSuggestionsStatusEl.className = "ok";
+    songSuggestionsStatusEl.textContent = "Cambios guardados.";
+  }
+
+  async function loadSongSuggestions() {
+    if (songSuggestionsLoading) return;
+    songSuggestionsLoading = true;
+    try {
+      const { data, error } = await db.rpc("ahtv_admin_listar_sugerencias_cancion");
+      if (error) {
+        console.error(error);
+        songSuggestionsStatusEl.className = "error";
+        songSuggestionsStatusEl.textContent = "No se pudo cargar el buzón. Se intentará actualizar nuevamente.";
+        if (!songSuggestionsListEl.childElementCount) {
+          songSuggestionsCountEl.textContent = "No disponible";
+        }
+        return;
+      }
+
+      const items = Array.isArray(data) ? data : [];
+      const pendingCount = items.filter(item => item.status === "pendiente").length;
+      const reviewCount = items.filter(item => item.status === "en_revision").length;
+      songSuggestionsCountEl.textContent =
+        pendingCount + " pendiente" + (pendingCount === 1 ? "" : "s") +
+        (reviewCount ? " · " + reviewCount + " en revisión" : "") +
+        " · " + items.length + " total";
+      songSuggestionsStatusEl.className = "meta";
+      songSuggestionsStatusEl.textContent =
+        "Actualizado " + new Date().toLocaleTimeString("es-CO", {
+          timeZone: "America/Bogota",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      songSuggestionsListEl.innerHTML = "";
+
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "suggestions-empty";
+        empty.textContent = "Todavía no hay canciones sugeridas.";
+        songSuggestionsListEl.appendChild(empty);
+        return;
+      }
+
+      for (const item of items) {
+        const card = document.createElement("article");
+        card.className = "song-suggestion-item";
+
+        const heading = document.createElement("div");
+        heading.className = "suggestion-head";
+        const nameWrap = document.createElement("div");
+        nameWrap.style.minWidth = "0";
+        const artist = document.createElement("div");
+        artist.className = "suggestion-song-name";
+        artist.textContent = item.artist || "Artista desconocido";
+        const title = document.createElement("div");
+        title.className = "suggestion-song-title";
+        title.textContent = item.title || "Canción sin título";
+        nameWrap.append(artist, title);
+
+        const status = document.createElement("span");
+        status.className = "suggestion-status suggestion-status-" + String(item.status || "pendiente");
+        status.textContent = suggestionStatusLabel(item.status);
+        heading.append(nameWrap, status);
+        card.appendChild(heading);
+
+        const detail = document.createElement("div");
+        detail.className = "suggestion-details";
+        const votes = Number(item.vote_count || 0);
+        detail.textContent = votes + " cliente" + (votes === 1 ? "" : "s") +
+          " · Primera sugerencia: " + suggestionDateLabel(item.created_at);
+        card.appendChild(detail);
+
+        const names = Array.isArray(item.requester_names) ? item.requester_names.filter(Boolean) : [];
+        if (names.length) {
+          const requesters = document.createElement("div");
+          requesters.className = "suggestion-details";
+          const preview = names.slice(0, 5);
+          requesters.textContent = "Solicitada por: " + preview.join(", ") +
+            (names.length > preview.length ? " y " + (names.length - preview.length) + " más" : "");
+          card.appendChild(requesters);
+        }
+
+        const reference = suggestionReferenceUrl(item.reference_url);
+        if (reference) {
+          const link = document.createElement("a");
+          link.className = "suggestion-reference";
+          link.href = reference;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Abrir enlace de referencia";
+          card.appendChild(link);
+        }
+
+        const noteLabel = document.createElement("label");
+        noteLabel.className = "suggestion-note-label";
+        noteLabel.textContent = "Nota interna (opcional)";
+        const note = document.createElement("textarea");
+        note.className = "suggestion-note";
+        note.rows = 2;
+        note.maxLength = 500;
+        note.placeholder = "Motivo, detalles o acciones pendientes…";
+        note.value = item.admin_note || "";
+        noteLabel.appendChild(note);
+        card.appendChild(noteLabel);
+
+        const actions = document.createElement("div");
+        actions.className = "suggestion-actions";
+        function addAction(label, newStatus, className) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = className || "suggestion-action-muted";
+          button.textContent = label;
+          button.addEventListener("click", () =>
+            updateSongSuggestion(item, newStatus, note.value, button)
+          );
+          actions.appendChild(button);
+        }
+
+        if (item.status === "pendiente") {
+          addAction("REVISAR", "en_revision", "suggestion-action-muted");
+          addAction("APROBAR", "aprobada", "primary");
+          addAction("RECHAZAR", "rechazada", "suggestion-action-danger");
+        } else if (item.status === "en_revision") {
+          addAction("VOLVER A PENDIENTES", "pendiente", "suggestion-action-muted");
+          addAction("APROBAR", "aprobada", "primary");
+          addAction("RECHAZAR", "rechazada", "suggestion-action-danger");
+        } else if (item.status === "aprobada") {
+          addAction("MARCAR INCORPORADA", "incorporada", "primary");
+          addAction("RECHAZAR", "rechazada", "suggestion-action-danger");
+        } else {
+          addAction("REABRIR COMO PENDIENTE", "pendiente", "suggestion-action-muted");
+        }
+        addAction("GUARDAR NOTA", item.status, "suggestion-action-muted");
+        card.appendChild(actions);
+        songSuggestionsListEl.appendChild(card);
+      }
+    } finally {
+      songSuggestionsLoading = false;
+    }
   }
 
   function updateAccessKeyCountdown() {
@@ -1844,6 +2179,10 @@ async function init() {
       await loadRequestMode();
       await loadNowPlaying();
       await loadRequests();
+      await loadSongSuggestions();
+      if (!songSuggestionsPollTimer) {
+        songSuggestionsPollTimer = window.setInterval(loadSongSuggestions, 30000);
+      }
       await loadAccessKey();
       if (!accessKeyPollTimer) {
         accessKeyPollTimer = window.setInterval(loadAccessKey, 30000);
@@ -1871,6 +2210,7 @@ async function init() {
     await loadRequestMode();
     await loadNowPlaying();
     await loadRequests();
+    await loadSongSuggestions();
     await loadAccessKey();
   });
   logoutBtn.addEventListener("click", logout);
