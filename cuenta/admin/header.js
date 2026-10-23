@@ -59,7 +59,7 @@
     const content = getFirstVisibleContent();
     if (!header || !content) return;
 
-    const desiredTop = header.getBoundingClientRect().bottom + 12;
+    const desiredTop = header.getBoundingClientRect().bottom + window.scrollY + 12;
     const currentTop = content.getBoundingClientRect().top + window.scrollY;
     const delta = desiredTop - currentTop;
 
@@ -81,7 +81,12 @@
   const contentObserver = new MutationObserver(syncContentOffset);
   contentObserver.observe(contentContainer, {
     subtree: true,
+    childList: true,
     attributes: true,
     attributeFilter: ["class", "hidden", "style"]
   });
+
+  // Permite que los apartados con contenido que llega después de verificar la sesión
+  // soliciten el mismo cálculo de espaciado del encabezado centralizado.
+  window.ahAdminHeaderSyncContentOffset = syncContentOffset;
 })();
