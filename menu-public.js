@@ -249,13 +249,23 @@
 
   async function initialize() {
     if (!window.supabase?.createClient) {
-      body.classList.remove("menu-data-pending");
+      if (currentSectionId === "firma") {
+        document.querySelector(".spacer")?.style.setProperty("display", "none");
+        showMessage("No fue posible comprobar la disponibilidad de esta sección. Intenta recargar la página.");
+      } else {
+        body.classList.remove("menu-data-pending");
+      }
       return;
     }
 
     client = createClient();
     if (!client) {
-      body.classList.remove("menu-data-pending");
+      if (currentSectionId === "firma") {
+        document.querySelector(".spacer")?.style.setProperty("display", "none");
+        showMessage("No fue posible comprobar la disponibilidad de esta sección. Intenta recargar la página.");
+      } else {
+        body.classList.remove("menu-data-pending");
+      }
       return;
     }
 
