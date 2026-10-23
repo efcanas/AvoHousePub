@@ -206,6 +206,10 @@
     function openImage(image) {
       previousFocus = image;
       previousOverflow = document.body.style.overflow;
+      const visualClasses = Array.from(image.classList).filter(function (name) {
+        return name.startsWith("neon-");
+      });
+      enlarged.className = ["image-lightbox-image"].concat(visualClasses).join(" ");
       enlarged.src = image.currentSrc || image.src;
       enlarged.alt = image.alt || "";
       modal.hidden = false;
@@ -217,6 +221,7 @@
       modal.hidden = true;
       enlarged.removeAttribute("src");
       enlarged.alt = "";
+      enlarged.className = "image-lightbox-image";
       document.body.style.overflow = previousOverflow;
       if (previousFocus && document.contains(previousFocus)) {
         previousFocus.focus({ preventScroll: true });
