@@ -296,20 +296,11 @@
     }
     .access-key-footer {
       margin-top: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
     }
     .access-key-countdown {
       font-size: 13px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-    }
-    .access-key-refresh { flex: 0 0 auto; }
-    @media (max-width: 480px) {
-      .access-key-footer { align-items: stretch; flex-direction: column; }
-      .access-key-refresh { width: 100%; }
     }
 
     .admin-song-search {
@@ -639,7 +630,6 @@
       <div id="accessKeyMeta" class="access-key-meta">Consultando la clave vigente.</div>
       <div class="access-key-footer">
         <div id="accessKeyCountdown" class="access-key-countdown">Calculando renovación…</div>
-        <button id="refreshAccessKeyBtn" class="secondary access-key-refresh" type="button">ACTUALIZAR</button>
       </div>
       <div id="accessKeyError" class="error" role="status" aria-live="polite" style="margin-top:8px;"></div>
     </div>
@@ -727,7 +717,6 @@
   const accessKeyMetaEl = document.getElementById("accessKeyMeta");
   const accessKeyCountdownEl = document.getElementById("accessKeyCountdown");
   const accessKeyErrorEl = document.getElementById("accessKeyError");
-  const refreshAccessKeyBtn = document.getElementById("refreshAccessKeyBtn");
 
   let accessKeyData = null;
   let accessKeyLoading = false;
@@ -1080,14 +1069,13 @@
   async function loadAccessKey() {
     if (accessKeyLoading) return;
     accessKeyLoading = true;
-    refreshAccessKeyBtn.disabled = true;
     accessKeyErrorEl.textContent = "";
 
     try {
       const { data, error } = await db.rpc("ahtv_admin_obtener_clave_acceso");
       if (error) {
         console.error(error);
-        accessKeyErrorEl.textContent = "No se pudo cargar la clave vigente. Pulsa ACTUALIZAR para reintentar.";
+        accessKeyErrorEl.textContent = "No se pudo cargar la clave vigente. Se volverá a intentar automáticamente.";
         if (!accessKeyData) {
           accessKeyValueEl.textContent = "No disponible";
           accessKeyMetaEl.textContent = "Esperando conexión con Supabase.";
@@ -1095,7 +1083,7 @@
         return;
       }
       if (!data?.code || !data?.valid_until) {
-        accessKeyErrorEl.textContent = "Supabase no devolvió una clave válida.";
+        accessKeyErrorEl.textContent = "Supabase no devolvió una clave válida. Se volverá a consultar automáticamente.";
         return;
       }
 
@@ -1116,14 +1104,13 @@
       }
     } catch (error) {
       console.error(error);
-      accessKeyErrorEl.textContent = "No se pudo consultar la clave. Comprueba la conexión e inténtalo nuevamente.";
+      accessKeyErrorEl.textContent = "No se pudo consultar la clave. Se intentará de nuevo automáticamente.";
       if (!accessKeyData) {
         accessKeyValueEl.textContent = "No disponible";
         accessKeyMetaEl.textContent = "Esperando conexión con Supabase.";
       }
     } finally {
       accessKeyLoading = false;
-      refreshAccessKeyBtn.disabled = false;
     }
   }
 
@@ -1886,7 +1873,6 @@ async function init() {
     await loadRequests();
     await loadAccessKey();
   });
-  refreshAccessKeyBtn.addEventListener("click", loadAccessKey);
   logoutBtn.addEventListener("click", logout);
   requestModeBtn.addEventListener("click", toggleRequestMode);
   requestsEnabledBtn.addEventListener("click", toggleRequestsEnabled);
