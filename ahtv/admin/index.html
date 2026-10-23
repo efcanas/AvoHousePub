@@ -717,7 +717,7 @@
       <div id="nowMeta" class="now-meta"></div>
     </div>
 
-    <div class="card">
+    <div id="pendingRequestsCard" class="card" hidden>
       <div class="topline">
         <h3 style="margin:0;">Pendientes</h3>
         <span id="pendingCount" class="muted"></span>
@@ -725,7 +725,7 @@
       <div id="requests"></div>
     </div>
 
-    <div class="card">
+    <div id="queuedRequestsCard" class="card" hidden>
       <div class="topline">
         <h3 style="margin:0;">En cola</h3>
         <span id="queueCount" class="muted"></span>
@@ -771,7 +771,9 @@
 
   const adminStatus = document.getElementById("adminStatus");
   const requestsEl = document.getElementById("requests");
+  const pendingRequestsCardEl = document.getElementById("pendingRequestsCard");
   const queueEl = document.getElementById("queue");
+  const queuedRequestsCardEl = document.getElementById("queuedRequestsCard");
   const refreshBtn = document.getElementById("refreshBtn");
   const refreshInfo = document.getElementById("refreshInfo");
   const pendingCount = document.getElementById("pendingCount");
@@ -1681,6 +1683,9 @@
       });
 
     const queue = [...playing, ...acceptedQueue];
+
+    pendingRequestsCardEl.hidden = pending.length === 0;
+    queuedRequestsCardEl.hidden = queue.length === 0;
 
     pendingCount.textContent =
       pending.length === 1 ? "1" : `${pending.length}`;
