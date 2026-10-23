@@ -359,16 +359,16 @@
 
     .song-suggestions-list {
       display: grid;
-      gap: 10px;
-      margin-top: 12px;
+      gap: 6px;
+      margin-top: 8px;
     }
     .song-suggestion-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 10px;
       min-width: 0;
-      padding: 14px;
+      padding: 8px 10px;
       border: 1px solid rgba(255,255,255,.10);
       border-radius: 12px;
       background: rgba(255,255,255,.035);
@@ -389,23 +389,25 @@
       overflow-wrap: anywhere;
     }
     .suggestion-song-title {
-      margin-top: 3px;
+      margin-top: 1px;
       color: #d4d7dd;
       font-size: 13px;
+      line-height: 1.2;
       overflow-wrap: anywhere;
     }
     .suggestion-details {
-      margin-top: 8px;
+      margin-top: 3px;
       color: #9ca3af;
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.25;
       overflow-wrap: anywhere;
     }
     .suggestion-reference {
       display: inline-block;
-      margin-top: 7px;
+      margin-top: 3px;
       color: var(--accent);
       font-size: 12px;
+      line-height: 1.2;
       overflow-wrap: anywhere;
     }
     .suggestion-actions {
@@ -692,7 +694,6 @@
         <h3 style="margin:0;">Buzón de sugerencias</h3>
         <span id="songSuggestionsCount" class="muted">Cargando…</span>
       </div>
-      <div class="meta">Las sugerencias no entran automáticamente a la cola musical.</div>
       <div id="songSuggestionsStatus" class="meta" aria-live="polite"></div>
       <div id="songSuggestionsList" class="song-suggestions-list"></div>
     </div>
