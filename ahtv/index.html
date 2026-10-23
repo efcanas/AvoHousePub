@@ -137,6 +137,32 @@
     .msg { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; background:#1b1e24; color:#d9dce2; }
     .msg.error { border:1px solid rgba(255,93,93,.4); color:#ffd0d0; }
     .empty { color:var(--muted); text-align:center; padding:14px 8px; }
+    .suggestion-panel {
+      padding: 14px;
+      border: 1px solid rgba(184,255,57,.25);
+      border-radius: 13px;
+      background: rgba(184,255,57,.04);
+      display: grid;
+      gap: 10px;
+    }
+    .suggestion-prompt { color: #e5e7eb; font-size: 13px; line-height: 1.45; }
+    .suggestion-form { display: grid; gap: 9px; }
+    .suggestion-field { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+    .suggestion-form input {
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      margin: 0;
+      font-size: 15px;
+    }
+    .suggestion-help { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .suggestion-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .suggestion-actions button { margin: 0; }
+    .suggestion-cancel { color: #e5e7eb; background: #2a2d34; }
+    @media (max-width: 520px) {
+      .suggestion-actions { flex-direction: column; }
+      .suggestion-actions button { width: 100%; }
+    }
     .tiny { margin-top: 12px; color:#777f8b; font-size:11px; text-align:center; }
     @media (max-width: 520px) {
       body { padding-top: 220px; }
@@ -514,7 +540,130 @@ body::before {
         return;
       }
       if (!songs.length) {
-        resultsEl.innerHTML = '<div class="empty">No encontramos coincidencias.</div>';
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No encontramos coincidencias.';
+
+        const panel = document.createElement('div');
+        panel.className = 'suggestion-panel';
+
+        const prompt = document.createElement('div');
+        prompt.className = 'suggestion-prompt';
+        prompt.textContent = '¿No encuentras tu canción? Puedes sugerirla para que AHtv la revise.';
+
+        const openButton = document.createElement('button');
+        openButton.type = 'button';
+        openButton.className = 'request';
+        openButton.textContent = 'SUGERIR CANCIÓN';
+
+        panel.append(prompt, openButton);
+        openButton.addEventListener('click', () => {
+          if (panel.querySelector('form')) return;
+          openButton.hidden = true;
+
+          const form = document.createElement('form');
+          form.className = 'suggestion-form';
+          form.autocomplete = 'off';
+
+          function makeSuggestionField(labelText, type, placeholder, maxLength, required) {
+            const label = document.createElement('label');
+            label.className = 'suggestion-field';
+            const caption = document.createElement('span');
+            caption.textContent = labelText;
+            const input = document.createElement('input');
+            input.type = type;
+            input.placeholder = placeholder;
+            input.maxLength = maxLength;
+            input.required = required;
+            input.autocomplete = 'off';
+            label.append(caption, input);
+            return { label, input };
+          }
+
+          const artistField = makeSuggestionField('Artista', 'text', 'Nombre del artista', 120, true);
+          const titleField = makeSuggestionField('Canción', 'text', 'Título de la canción', 160, true);
+          const linkField = makeSuggestionField('Enlace de referencia (opcional)', 'url', 'https://…', 500, false);
+          titleField.input.value = lastQuery.trim();
+
+          const help = document.createElement('div');
+          help.className = 'suggestion-help';
+          help.textContent = 'La sugerencia no entra en la cola musical. La revisaremos antes de incorporarla a la biblioteca. Máximo cinco sugerencias diferentes cada 24 horas.';
+
+          const actions = document.createElement('div');
+          actions.className = 'suggestion-actions';
+          const send = document.createElement('button');
+          send.type = 'submit';
+          send.className = 'request';
+          send.textContent = 'ENVIAR SUGERENCIA';
+          const cancel = document.createElement('button');
+          cancel.type = 'button';
+          cancel.className = 'suggestion-cancel';
+          cancel.textContent = 'CANCELAR';
+
+          actions.append(send, cancel);
+          form.append(artistField.label, titleField.label, linkField.label, help, actions);
+          panel.appendChild(form);
+
+          cancel.addEventListener('click', () => {
+            form.remove();
+            openButton.hidden = false;
+          });
+
+          form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (send.disabled) return;
+
+            if (!currentUser || !currentUsername) {
+              showMessage('No pudimos identificar tu cuenta. Vuelve a ingresar e inténtalo nuevamente.', true);
+              return;
+            }
+            if (!hasVenueAccess || !requestsEnabled) {
+              renderRequestAvailability();
+              showMessage('Necesitas tener habilitado el acceso musical para enviar sugerencias.', true);
+              return;
+            }
+
+            send.disabled = true;
+            cancel.disabled = true;
+            send.textContent = 'ENVIANDO…';
+            showMessage('');
+
+            try {
+              const { data, error } = await db.rpc('ahtv_sugerir_cancion', {
+                p_artist: artistField.input.value.trim(),
+                p_title: titleField.input.value.trim(),
+                p_reference_url: linkField.input.value.trim() || null
+              });
+
+              if (error) {
+                console.error(error);
+                showMessage('No fue posible enviar la sugerencia. Comprueba tu conexión e inténtalo de nuevo.', true);
+                return;
+              }
+              if (!data || data.ok !== true) {
+                showMessage(data?.message || 'No fue posible registrar la sugerencia.', true);
+                return;
+              }
+
+              showMessage(data.message || 'Sugerencia registrada. AHtv la revisará antes de incorporarla.');
+              searchInput.value = '';
+              lastQuery = '';
+              form.remove();
+              openButton.hidden = false;
+              renderResults([]);
+            } catch (error) {
+              console.error(error);
+              showMessage('No fue posible enviar la sugerencia. Inténtalo de nuevo.', true);
+            } finally {
+              send.disabled = false;
+              cancel.disabled = false;
+              send.textContent = 'ENVIAR SUGERENCIA';
+            }
+          });
+          artistField.input.focus();
+        });
+
+        resultsEl.append(empty, panel);
         return;
       }
 
