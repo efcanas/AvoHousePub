@@ -280,7 +280,7 @@
       border-color: rgba(184,255,57,.3);
     }
     .access-key-value {
-      margin-top: 12px;
+      margin-top: 5px;
       color: var(--accent);
       font-size: clamp(23px, 5vw, 31px);
       font-weight: 800;
@@ -288,14 +288,8 @@
       line-height: 1.25;
       overflow-wrap: anywhere;
     }
-    .access-key-meta {
-      margin-top: 7px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
     .access-key-footer {
-      margin-top: 12px;
+      margin-top: 5px;
     }
     .access-key-countdown {
       font-size: 13px;
@@ -392,21 +386,6 @@
       font-size: 13px;
       overflow-wrap: anywhere;
     }
-    .suggestion-status {
-      flex: 0 0 auto;
-      padding: 4px 7px;
-      border-radius: 999px;
-      background: #292d35;
-      color: #e5e7eb;
-      font-size: 10px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-    .suggestion-status-pendiente { background: rgba(255,193,7,.13); color: #ffd76a; }
-    .suggestion-status-en_revision { background: rgba(96,165,250,.14); color: #93c5fd; }
-    .suggestion-status-aprobada { background: rgba(184,255,57,.12); color: var(--accent); }
-    .suggestion-status-incorporada { background: rgba(74,222,128,.13); color: #86efac; }
-    .suggestion-status-rechazada { background: rgba(255,93,93,.12); color: #ffaaaa; }
     .suggestion-details {
       margin-top: 8px;
       color: #9ca3af;
@@ -421,46 +400,18 @@
       font-size: 12px;
       overflow-wrap: anywhere;
     }
-    .suggestion-note-label {
-      display: block;
-      margin-top: 12px;
-      color: #aeb4bf;
-      font-size: 12px;
-    }
-    .suggestion-note {
-      display: block;
-      width: 100%;
-      min-height: 66px;
-      resize: vertical;
-      margin-top: 6px;
-      padding: 10px 11px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #101217;
-      color: var(--text);
-      font: inherit;
-      font-size: 13px;
-    }
-    .suggestion-note:focus { outline: 1px solid var(--accent); }
     .suggestion-actions {
       display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
+      justify-content: flex-end;
       margin-top: 10px;
     }
     .suggestion-actions button {
       margin: 0;
       min-height: 37px;
-      padding: 8px 11px;
-      font-size: 11px;
+      min-width: 88px;
+      padding: 8px 14px;
+      font-size: 12px;
     }
-    .suggestion-action-muted { background: #292d35; color: #f4f4f5; }
-    .suggestion-action-danger {
-      border: 1px solid rgba(255,93,93,.75);
-      background: rgba(255,93,93,.08);
-      color: #ffaaaa;
-    }
-    .suggestion-action-danger:hover:not(:disabled) { background: rgba(255,93,93,.16); }
     .suggestions-empty {
       padding: 12px 0;
       color: var(--muted);
@@ -477,7 +428,6 @@
         width: 100%;
       }
       .suggestion-head { flex-direction: column; }
-      .suggestion-actions button { flex: 1 1 auto; }
     }
 
     .now-card {
@@ -732,7 +682,7 @@
         <h3 style="margin:0;">Buzón de sugerencias</h3>
         <span id="songSuggestionsCount" class="muted">Cargando…</span>
       </div>
-      <div class="meta">Las sugerencias no entran a la cola musical. Marca una como incorporada solo después de añadir y comprobar el archivo en la biblioteca local.</div>
+      <div class="meta">Las sugerencias no entran automáticamente a la cola musical.</div>
       <div id="songSuggestionsStatus" class="meta" aria-live="polite"></div>
       <div id="songSuggestionsList" class="song-suggestions-list"></div>
     </div>
@@ -743,7 +693,6 @@
         <span class="muted">ROTACIÓN AUTOMÁTICA</span>
       </div>
       <div id="accessKeyValue" class="access-key-value">Cargando clave…</div>
-      <div id="accessKeyMeta" class="access-key-meta">Consultando la clave vigente.</div>
       <div class="access-key-footer">
         <div id="accessKeyCountdown" class="access-key-countdown">Calculando renovación…</div>
       </div>
@@ -830,7 +779,6 @@
   const promoEnabledBtn = document.getElementById("promoEnabledBtn");
   const promoIntervalInputEl = document.getElementById("promoIntervalInput");
   const accessKeyValueEl = document.getElementById("accessKeyValue");
-  const accessKeyMetaEl = document.getElementById("accessKeyMeta");
   const accessKeyCountdownEl = document.getElementById("accessKeyCountdown");
   const accessKeyErrorEl = document.getElementById("accessKeyError");
   const songSuggestionsCountEl = document.getElementById("songSuggestionsCount");
@@ -926,7 +874,6 @@
     songSuggestionsLoading = false;
     accessKeyData = null;
     accessKeyValueEl.textContent = "";
-    accessKeyMetaEl.textContent = "";
     accessKeyCountdownEl.textContent = "";
     accessKeyErrorEl.textContent = "";
     accessKeyRefreshPending = false;
@@ -1179,31 +1126,6 @@
     await loadRequests();
   }
 
-  function suggestionStatusLabel(status) {
-    const labels = {
-      pendiente: "PENDIENTE",
-      en_revision: "EN REVISIÓN",
-      aprobada: "APROBADA",
-      incorporada: "INCORPORADA",
-      rechazada: "RECHAZADA"
-    };
-    return labels[status] || "SIN ESTADO";
-  }
-
-  function suggestionDateLabel(value) {
-    if (!value) return "Fecha no disponible";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "Fecha no disponible";
-    return date.toLocaleString("es-CO", {
-      timeZone: "America/Bogota",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  }
-
   function suggestionReferenceUrl(value) {
     try {
       const url = new URL(value);
@@ -1212,27 +1134,23 @@
     return null;
   }
 
-  async function updateSongSuggestion(item, nextStatus, note, button) {
-    if (nextStatus === "rechazada" &&
-        !window.confirm("¿Rechazar la sugerencia de “" + item.title + "”?")) {
-      return;
-    }
+  async function updateSongSuggestion(item, button) {
     const oldLabel = button.textContent;
     button.disabled = true;
     button.textContent = "GUARDANDO…";
     songSuggestionsStatusEl.className = "meta";
-    songSuggestionsStatusEl.textContent = "Guardando cambios de la sugerencia…";
+    songSuggestionsStatusEl.textContent = "Retirando la sugerencia del buzón…";
 
     const { data, error } = await db.rpc("ahtv_admin_actualizar_sugerencia_cancion", {
       p_suggestion_id: item.id,
-      p_status: nextStatus,
-      p_admin_note: note.trim() || null
+      p_status: "archivada",
+      p_admin_note: item.admin_note || null
     });
 
     if (error || !data?.ok) {
       console.error(error || data);
       songSuggestionsStatusEl.className = "error";
-      songSuggestionsStatusEl.textContent = "No fue posible guardar los cambios. Comprueba la conexión e inténtalo de nuevo.";
+      songSuggestionsStatusEl.textContent = "No fue posible retirar la sugerencia. Comprueba la conexión e inténtalo de nuevo.";
       button.disabled = false;
       button.textContent = oldLabel;
       return;
@@ -1240,7 +1158,7 @@
 
     await loadSongSuggestions();
     songSuggestionsStatusEl.className = "ok";
-    songSuggestionsStatusEl.textContent = "Cambios guardados.";
+    songSuggestionsStatusEl.textContent = "Sugerencia retirada del buzón.";
   }
 
   async function loadSongSuggestions() {
@@ -1259,12 +1177,8 @@
       }
 
       const items = Array.isArray(data) ? data : [];
-      const pendingCount = items.filter(item => item.status === "pendiente").length;
-      const reviewCount = items.filter(item => item.status === "en_revision").length;
       songSuggestionsCountEl.textContent =
-        pendingCount + " pendiente" + (pendingCount === 1 ? "" : "s") +
-        (reviewCount ? " · " + reviewCount + " en revisión" : "") +
-        " · " + items.length + " total";
+        items.length + (items.length === 1 ? " sugerencia" : " sugerencias");
       songSuggestionsStatusEl.className = "meta";
       songSuggestionsStatusEl.textContent =
         "Actualizado " + new Date().toLocaleTimeString("es-CO", {
@@ -1298,18 +1212,8 @@
         title.textContent = item.title || "Canción sin título";
         nameWrap.append(artist, title);
 
-        const status = document.createElement("span");
-        status.className = "suggestion-status suggestion-status-" + String(item.status || "pendiente");
-        status.textContent = suggestionStatusLabel(item.status);
-        heading.append(nameWrap, status);
+        heading.appendChild(nameWrap);
         card.appendChild(heading);
-
-        const detail = document.createElement("div");
-        detail.className = "suggestion-details";
-        const votes = Number(item.vote_count || 0);
-        detail.textContent = votes + " cliente" + (votes === 1 ? "" : "s") +
-          " · Primera sugerencia: " + suggestionDateLabel(item.created_at);
-        card.appendChild(detail);
 
         const names = Array.isArray(item.requester_names) ? item.requester_names.filter(Boolean) : [];
         if (names.length) {
@@ -1332,46 +1236,14 @@
           card.appendChild(link);
         }
 
-        const noteLabel = document.createElement("label");
-        noteLabel.className = "suggestion-note-label";
-        noteLabel.textContent = "Nota interna (opcional)";
-        const note = document.createElement("textarea");
-        note.className = "suggestion-note";
-        note.rows = 2;
-        note.maxLength = 500;
-        note.placeholder = "Motivo, detalles o acciones pendientes…";
-        note.value = item.admin_note || "";
-        noteLabel.appendChild(note);
-        card.appendChild(noteLabel);
-
         const actions = document.createElement("div");
         actions.className = "suggestion-actions";
-        function addAction(label, newStatus, className) {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = className || "suggestion-action-muted";
-          button.textContent = label;
-          button.addEventListener("click", () =>
-            updateSongSuggestion(item, newStatus, note.value, button)
-          );
-          actions.appendChild(button);
-        }
-
-        if (item.status === "pendiente") {
-          addAction("REVISAR", "en_revision", "suggestion-action-muted");
-          addAction("APROBAR", "aprobada", "primary");
-          addAction("RECHAZAR", "rechazada", "suggestion-action-danger");
-        } else if (item.status === "en_revision") {
-          addAction("VOLVER A PENDIENTES", "pendiente", "suggestion-action-muted");
-          addAction("APROBAR", "aprobada", "primary");
-          addAction("RECHAZAR", "rechazada", "suggestion-action-danger");
-        } else if (item.status === "aprobada") {
-          addAction("MARCAR INCORPORADA", "incorporada", "primary");
-          addAction("RECHAZAR", "rechazada", "suggestion-action-danger");
-        } else {
-          addAction("REABRIR COMO PENDIENTE", "pendiente", "suggestion-action-muted");
-        }
-        addAction("GUARDAR NOTA", item.status, "suggestion-action-muted");
+        const done = document.createElement("button");
+        done.type = "button";
+        done.className = "primary";
+        done.textContent = "LISTO";
+        done.addEventListener("click", () => updateSongSuggestion(item, done));
+        actions.appendChild(done);
         card.appendChild(actions);
         songSuggestionsListEl.appendChild(card);
       }
@@ -1413,7 +1285,6 @@
         accessKeyErrorEl.textContent = "No se pudo cargar la clave vigente. Se volverá a intentar automáticamente.";
         if (!accessKeyData) {
           accessKeyValueEl.textContent = "No disponible";
-          accessKeyMetaEl.textContent = "Esperando conexión con Supabase.";
         }
         return;
       }
@@ -1424,13 +1295,6 @@
 
       accessKeyData = data;
       accessKeyValueEl.textContent = data.code;
-      const validUntil = new Date(data.valid_until);
-      accessKeyMetaEl.textContent =
-        "Válida hasta las " + validUntil.toLocaleTimeString("es-CO", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "America/Bogota"
-        }) + " · hora de Colombia. El QR de OBS usará esta misma clave.";
       accessKeyRefreshPending = false;
       updateAccessKeyCountdown();
 
@@ -1442,7 +1306,6 @@
       accessKeyErrorEl.textContent = "No se pudo consultar la clave. Se intentará de nuevo automáticamente.";
       if (!accessKeyData) {
         accessKeyValueEl.textContent = "No disponible";
-        accessKeyMetaEl.textContent = "Esperando conexión con Supabase.";
       }
     } finally {
       accessKeyLoading = false;
