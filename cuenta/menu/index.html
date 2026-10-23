@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>AvoHouse · Menú · Administración</title>
+<link rel="stylesheet" href="../admin/header.css?v=20261019-2">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:dark}
+body{margin:0;min-height:100vh;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#090b0e url("../../Fondo.webp") center/cover fixed no-repeat}
+body::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.79);z-index:-1}
+.hidden{display:none!important}
+.page{width:min(1420px,100%);margin:0 auto;padding:32px 24px 70px}
+.menu-intro{margin:0 0 20px}
+.menu-intro h1{margin:0 0 7px;font-size:clamp(23px,3vw,30px);letter-spacing:.5px}
+.menu-intro p{margin:0;color:#aeb5be;font-size:14px;line-height:1.55;max-width:850px}
+#menuNotice{margin:12px 0 18px;padding:12px 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.055);font-size:13px;line-height:1.5}
+#menuNotice[hidden]{display:none!important}
+#menuNotice[data-kind="error"]{border-color:rgba(255,108,108,.48);color:#ffc7c7}
+#menuNotice[data-kind="success"]{border-color:rgba(184,255,57,.35);color:#dfffad}
+.menu-sections-grid{display:grid;grid-template-columns:1fr;gap:16px}
+.menu-section-card{min-width:0;padding:0;overflow:hidden;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(13,16,21,.92);box-shadow:0 12px 32px rgba(0,0,0,.22)}
+.menu-section-card.is-hidden{border-color:rgba(255,188,91,.34);background:rgba(23,20,17,.94)}
+.section-card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px}
+.section-heading{display:flex;align-items:center;gap:12px;min-width:0}
+.section-heading h2{margin:0;font-size:18px;line-height:1.3}
+.section-heading p{margin:4px 0 0;color:#aeb5be;font-size:12px;line-height:1.4}
+.visibility-pill{display:inline-flex;align-items:center;gap:6px;margin-top:7px;color:#aeb5be;font-size:11px;letter-spacing:.45px;text-transform:uppercase}
+.visibility-pill::before{content:"";width:7px;height:7px;border-radius:100%;background:#b8ff39;box-shadow:0 0 8px rgba(184,255,57,.3)}
+.is-hidden .visibility-pill::before{background:#ffbc5b;box-shadow:none}
+.section-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:37px;margin:0;padding:0 14px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.055);color:#f5f5f5;font-family:inherit;font-size:13px;font-weight:650;line-height:1.15;text-align:center;white-space:nowrap;cursor:pointer;transition:background .15s ease,border-color .15s ease}
+.btn:hover:not(:disabled){background:rgba(255,255,255,.12)}
+.btn:disabled{opacity:.45;cursor:wait}
+.btn-toggle{border-color:rgba(184,255,57,.43);color:#c9ff76}
+.is-hidden .btn-toggle{border-color:rgba(255,188,91,.45);color:#ffd39a}
+.btn-primary{background:rgba(184,255,57,.12);border-color:rgba(184,255,57,.42);color:#d7ff9b}
+.btn-primary:hover:not(:disabled){background:rgba(184,255,57,.2)}
+.btn-small{min-height:33px;padding:0 12px;font-size:12px}
+.products-details{border-top:1px solid rgba(255,255,255,.09)}
+.products-details>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 20px;cursor:pointer;list-style:none;color:#e7e9ec;font-size:13px;font-weight:650}
+.products-details>summary::-webkit-details-marker{display:none}
+.products-details>summary::after{content:"＋";color:#b8ff39;font-size:17px;line-height:1}
+.products-details[open]>summary::after{content:"−"}
+.products-summary-note{color:#9aa3ad;font-size:12px;font-weight:400}
+.menu-items-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 14px 16px}
+.menu-item-editor{display:grid;grid-template-columns:92px minmax(0,1fr);gap:13px;min-width:0;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.025)}
+.item-preview-wrap{display:flex;align-items:center;justify-content:center;min-height:128px;padding:5px;border-radius:9px;background:rgba(0,0,0,.26)}
+.item-preview{display:block;max-width:100%;max-height:128px;width:auto;height:auto;object-fit:contain;border-radius:8px}
+.item-copy{min-width:0}
+.item-copy h3{margin:1px 0 4px;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.item-order{margin-bottom:10px;color:#8f98a3;font-size:11px}
+.price-form{display:flex;align-items:flex-end;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.price-field{display:block;flex:1 1 110px;min-width:0;color:#aeb5be;font-size:11px}
+.price-field input{display:block;width:100%;height:35px;margin-top:5px;padding:0 9px;border:1px solid rgba(255,255,255,.16);border-radius:8px;background:#11151b;color:#fff;font:inherit;font-size:13px}
+.price-field input:focus,.file-input:focus-visible,.btn:focus-visible{outline:2px solid #b8ff39;outline-offset:2px}
+.embedded-price-note{margin:0 0 12px;color:#aab3bd;font-size:11px;line-height:1.45}
+.image-upload-form{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.file-input{display:block;max-width:100%;width:100%;color:#bbc2cb;font-size:11px}
+.file-input::file-selector-button{min-height:31px;margin:0 8px 7px 0;padding:0 10px;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(255,255,255,.06);color:#f5f5f5;font:inherit;cursor:pointer}
+.upload-hint{margin:5px 0 0;color:#808a96;font-size:10px;line-height:1.4}
+.item-status{min-height:15px;margin-top:6px;color:#b8ff39;font-size:11px;line-height:1.4}
+.item-status[data-kind="error"]{color:#ffb6b6}
+.item-status[data-kind="working"]{color:#c1c8d0}
+.login-card{width:min(430px,100%);margin:0 auto;padding:24px;border:1px solid rgba(255,255,255,.16);border-radius:16px;background:rgba(17,20,26,.96);box-shadow:0 18px 50px rgba(0,0,0,.4)}
+.login-card h1{margin:0 0 7px;font-size:21px}
+.login-card p{margin:0 0 18px;color:#aeb5be;font-size:13px;line-height:1.5}
+.login-card label{display:block;margin:12px 0 5px;font-size:12px;font-weight:650}
+.login-card input{width:100%;height:42px;padding:0 12px;border:1px solid rgba(255,255,255,.2);border-radius:9px;background:#0b0e12;color:#fff;font:inherit}
+.login-card button{width:100%;margin-top:18px}
+#loginStatus{margin-top:12px;color:#ffb7b7;font-size:12px;line-height:1.4}
+.session-gate{position:fixed;inset:0;z-index:2500;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.65);backdrop-filter:blur(7px)}
+.session-gate-card{width:min(400px,100%);padding:22px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(19,22,28,.97);text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.session-gate-title{font-size:16px;font-weight:800}
+.session-gate-status{margin-top:6px;color:#9fa8b3;font-size:12px}
+.session-gate[hidden]{display:none!important}
+@media(max-width:760px){
+  .page{padding:22px 14px 45px}
+  .section-card-head{align-items:flex-start;padding:16px 14px;gap:10px}
+  .section-heading{align-items:flex-start;gap:9px}
+  .section-heading h2{font-size:16px}
+  .section-actions{flex-direction:column;align-items:flex-end}
+  .section-actions .btn{font-size:11px;padding:0 9px;min-height:35px}
+  .products-details>summary{padding:12px 14px}
+  .menu-items-list{grid-template-columns:1fr;padding:0 10px 12px}
+  .menu-item-editor{grid-template-columns:76px minmax(0,1fr);gap:10px;padding:10px}
+  .item-preview-wrap{min-height:110px}
+  .item-preview{max-height:110px}
+}
+@media(max-width:380px){
+  .menu-item-editor{grid-template-columns:64px minmax(0,1fr);gap:8px}
+  .section-card-head{flex-wrap:wrap}
+  .section-actions{flex-direction:row;align-items:center;width:100%;justify-content:flex-end}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div id="adminHeaderMount" data-section="menu"></div>
+  <script src="../admin/header.js?v=20261023-1"></script>
+
+  <div id="sessionGate" class="session-gate" role="status" aria-live="polite">
+    <div class="session-gate-card">
+      <div class="session-gate-title">Menú · Administración</div>
+      <div class="session-gate-status" id="sessionGateStatus">Verificando sesión administrativa…</div>
+    </div>
+  </div>
+
+  <section id="loginCard" class="login-card hidden">
+    <h1>Menú</h1>
+    <p>Inicia sesión con una cuenta autorizada para administrar el menú público de AvoHouse.</p>
+    <form id="loginForm">
+      <label for="adminEmail">Correo electrónico</label>
+      <input id="adminEmail" type="email" autocomplete="username" required>
+      <label for="adminPassword">Contraseña</label>
+      <input id="adminPassword" type="password" autocomplete="current-password" required>
+      <button class="btn btn-primary" type="submit" id="loginBtn">Iniciar sesión</button>
+      <div id="loginStatus" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <main id="adminArea" class="hidden">
+    <div class="menu-intro">
+      <h1>Menú</h1>
+      <p>Administra las cuatro categorías del menú público. Puedes ocultar o visibilizar cada sección, reemplazar imágenes y editar el precio donde este se muestra como texto. Las nuevas imágenes conservan el marco y los efectos visuales de su categoría.</p>
+    </div>
+    <div id="menuNotice" hidden role="status" aria-live="polite"></div>
+    <div id="menuSectionsGrid" class="menu-sections-grid"></div>
+  </main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const SUPABASE_URL = 'https://tjarildqqxtjmafpiyuz.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
+  const STORAGE_BUCKET = 'menu-images';
+  const MAX_FILE_SIZE = 8 * 1024 * 1024;
+  const MIME_EXTENSIONS = {
+    'image/webp':'webp',
+    'image/jpeg':'jpg',
+    'image/png':'png',
+    'image/avif':'avif'
+  };
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage,
+      storageKey: 'sb-tjarildqqxtjmafpiyuz-auth-token'
+    }
+  });
+
+  const $ = (id) => document.getElementById(id);
+  const state = { sections: [], items: [], openSections: new Set() };
+  let session = null;
+
+  function escapeHtml(value){
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[char]);
+  }
+
+  function formatPrice(value){
+    const n = Number(value);
+    return Number.isFinite(n) ? '$' + new Intl.NumberFormat('es-CO', {maximumFractionDigits:0}).format(n) : '—';
+  }
+
+  function adminImageUrl(path){
+    if(!path) return '';
+    if(path.startsWith('legacy:')) return new URL('../../' + path.slice(7), window.location.href).href;
+    return db.storage.from(STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+
+  function notice(message, kind='success'){
+    const el = $('menuNotice');
+    el.textContent = message;
+    el.dataset.kind = kind;
+    el.hidden = false;
+  }
+
+  function clearNotice(){
+    $('menuNotice').hidden = true;
+    $('menuNotice').textContent = '';
+    delete $('menuNotice').dataset.kind;
+  }
+
+  function itemEditor(item, section){
+    const priceControl = section.price_mode === 'editable'
+      ? '<div class="price-form">' +
+          '<label class="price-field" for="price-' + escapeHtml(item.id) + '">Precio (COP)' +
+            '<input id="price-' + escapeHtml(item.id) + '" type="number" min="1" step="500" inputmode="numeric" value="' + escapeHtml(item.price_amount ?? '') + '" data-price-input="' + escapeHtml(item.id) + '">' +
+          '</label>' +
+          '<button type="button" class="btn btn-small" data-action="save-price" data-item-id="' + escapeHtml(item.id) + '">Guardar precio</button>' +
+        '</div>'
+      : '<p class="embedded-price-note">El precio está incorporado en esta imagen. Para cambiarlo, carga una nueva versión que ya tenga el valor correcto.</p>';
+
+    return '<article class="menu-item-editor" data-item-row="' + escapeHtml(item.id) + '">' +
+      '<div class="item-preview-wrap"><img class="item-preview ' + escapeHtml(item.image_class || '') + '" src="' + escapeHtml(adminImageUrl(item.image_path)) + '" alt="' + escapeHtml(item.name) + '" loading="lazy"></div>' +
+      '<div class="item-copy">' +
+        '<h3>' + escapeHtml(item.name) + '</h3>' +
+        '<div class="item-order">Orden de presentación: ' + escapeHtml(item.display_order) + '</div>' +
+        priceControl +
+        '<div class="image-upload-form">' +
+          '<label class="file-input">Seleccionar imagen' +
+            '<input class="file-input" type="file" accept="image/webp,image/jpeg,image/png,image/avif" data-file-input="' + escapeHtml(item.id) + '">' +
+          '</label>' +
+          '<button type="button" class="btn btn-primary btn-small" data-action="upload-image" data-item-id="' + escapeHtml(item.id) + '">Subir nueva imagen</button>' +
+        '</div>' +
+        '<p class="upload-hint">JPG, PNG, WebP o AVIF · máximo 8 MB. Se conserva el marco y el efecto visual de esta categoría.</p>' +
+        '<div class="item-status" data-item-status="' + escapeHtml(item.id) + '" aria-live="polite"></div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function renderSections(){
+    const grid = $('menuSectionsGrid');
+    const fragment = document.createDocumentFragment();
+
+    state.sections.forEach((section) => {
+      const items = state.items.filter(item => item.section_id === section.id).sort((a,b)=>a.display_order-b.display_order);
+      const article = document.createElement('article');
+      article.className = 'menu-section-card card' + (section.visible ? '' : ' is-hidden');
+      const countLabel = items.length + (items.length === 1 ? ' producto' : ' productos');
+      const desc = section.price_mode === 'embedded'
+        ? 'Precio integrado en la imagen · reemplaza la imagen completa para cambiarlo.'
+        : (section.id === 'mezcladitas'
+            ? 'Imagen independiente y precio editable para cada mezcladita.'
+            : 'Imagen y precio editable para cada producto.');
+      article.innerHTML =
+        '<div class="section-card-head">' +
+          '<div class="section-heading"><div><h2>' + escapeHtml(section.title) + '</h2>' +
+            '<p>' + escapeHtml(desc) + '</p>' +
+            '<span class="visibility-pill">' + (section.visible ? 'Visible al público' : 'Oculta al público') + '</span>' +
+          '</div></div>' +
+          '<div class="section-actions">' +
+            '<button type="button" class="btn btn-toggle" data-action="toggle-section" data-section-id="' + escapeHtml(section.id) + '">' +
+              (section.visible ? 'Ocultar sección' : 'Visibilizar sección') +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<details class="products-details" data-details-section="' + escapeHtml(section.id) + '">' +
+          '<summary>Administrar productos <span class="products-summary-note">' + escapeHtml(countLabel) + '</span></summary>' +
+          '<div class="menu-items-list">' + items.map(item => itemEditor(item, section)).join('') + '</div>' +
+        '</details>';
+
+      const details = article.querySelector('details');
+      details.open = state.openSections.has(section.id);
+      details.addEventListener('toggle', () => {
+        if(details.open) state.openSections.add(section.id);
+        else state.openSections.delete(section.id);
+      });
+      fragment.appendChild(article);
+    });
+
+    grid.replaceChildren(fragment);
+  }
+
+  function setItemStatus(itemId, message, kind='success'){
+    const el = document.querySelector('[data-item-status="' + CSS.escape(itemId) + '"]');
+    if(!el) return;
+    el.textContent = message;
+    el.dataset.kind = kind;
+  }
+
+  async function loadMenu(){
+    clearNotice();
+    const [sectionsResponse, itemsResponse] = await Promise.all([
+      db.from('menu_sections').select('id,title,route,visible,sort_order,price_mode,show_names,updated_at').order('sort_order', {ascending:true}),
+      db.from('menu_items').select('id,section_id,name,image_path,price_amount,display_order,display_group,image_class,is_active,updated_at').order('section_id').order('display_order', {ascending:true})
+    ]);
+    if(sectionsResponse.error) throw sectionsResponse.error;
+    if(itemsResponse.error) throw itemsResponse.error;
+    state.sections = sectionsResponse.data || [];
+    state.items = itemsResponse.data || [];
+    renderSections();
+  }
+
+  async function checkAdmin(){
+    const {data: sessionData, error: sessionError} = await db.auth.getSession();
+    if(sessionError) throw sessionError;
+    session = sessionData?.session || null;
+    if(!session?.user) return false;
+
+    const {data: userData, error: userError} = await db.auth.getUser();
+    if(userError || !userData?.user) return false;
+
+    const {data: admin, error: adminError} = await db
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+    if(adminError) throw adminError;
+    return !!admin;
+  }
+
+  function showLogin(message=''){
+    $('loginCard').classList.remove('hidden');
+    $('adminArea').classList.add('hidden');
+    $('logoutBtn')?.classList.add('hidden');
+    $('sessionGate').hidden = true;
+    $('loginStatus').textContent = message;
+  }
+
+  async function enterAdmin(){
+    $('sessionGate').hidden = false;
+    $('sessionGateStatus').textContent = 'Verificando permisos administrativos…';
+    $('loginCard').classList.add('hidden');
+    $('adminArea').classList.add('hidden');
+    try{
+      const allowed = await checkAdmin();
+      if(!allowed){
+        if(session) await db.auth.signOut();
+        showLogin('Inicia sesión con una cuenta autorizada para administrar el menú.');
+        return;
+      }
+      $('sessionGate').hidden = true;
+      $('logoutBtn')?.classList.remove('hidden');
+      $('adminArea').classList.remove('hidden');
+      await loadMenu();
+    }catch(error){
+      showLogin('No fue posible verificar los permisos o cargar el menú. Revisa la conexión e inténtalo nuevamente.');
+      notice('Error de carga: ' + (error?.message || 'No fue posible consultar el catálogo.'), 'error');
+    }
+  }
+
+  $('loginForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearNotice();
+    $('loginBtn').disabled = true;
+    $('loginStatus').textContent = 'Iniciando sesión…';
+    try{
+      const {error} = await db.auth.signInWithPassword({
+        email: $('adminEmail').value.trim(),
+        password: $('adminPassword').value
+      });
+      if(error){
+        $('loginStatus').textContent = 'No fue posible iniciar sesión con esos datos.';
+        return;
+      }
+      await enterAdmin();
+    }catch(error){
+      $('loginStatus').textContent = 'No fue posible iniciar sesión. Inténtalo nuevamente.';
+    }finally{
+      $('loginBtn').disabled = false;
+    }
+  });
+
+  $('logoutBtn').addEventListener('click', async () => {
+    $('logoutBtn').disabled = true;
+    try{
+      await db.auth.signOut();
+      showLogin('La sesión se cerró correctamente.');
+    }finally{
+      $('logoutBtn').disabled = false;
+    }
+  });
+
+  $('menuSectionsGrid').addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-action]');
+    if(!button) return;
+    const action = button.dataset.action;
+
+    if(action === 'toggle-section'){
+      const section = state.sections.find(item => item.id === button.dataset.sectionId);
+      if(!section) return;
+      const newVisible = !section.visible;
+      button.disabled = true;
+      button.textContent = 'Guardando…';
+      try{
+        const {data,error} = await db.from('menu_sections')
+          .update({visible:newVisible,updated_at:new Date().toISOString()})
+          .eq('id',section.id)
+          .select('id,visible,updated_at')
+          .maybeSingle();
+        if(error || !data) throw error || new Error('No se pudo confirmar el cambio.');
+        section.visible = data.visible;
+        section.updated_at = data.updated_at;
+        renderSections();
+        notice(section.visible
+          ? section.title + ' ya está visible en el menú público.'
+          : section.title + ' está oculta para el público.');
+      }catch(error){
+        notice('No se pudo cambiar la visibilidad de la sección. ' + (error?.message || ''), 'error');
+        button.disabled = false;
+        button.textContent = section.visible ? 'Ocultar sección' : 'Visibilizar sección';
+      }
+      return;
+    }
+
+    if(action === 'save-price'){
+      const itemId = button.dataset.itemId;
+      const item = state.items.find(row => row.id === itemId);
+      const input = document.querySelector('[data-price-input="' + CSS.escape(itemId) + '"]');
+      const price = Number(input?.value);
+      if(!item || !Number.isFinite(price) || !Number.isInteger(price) || price <= 0 || price > 10000000){
+        setItemStatus(itemId, 'Ingresa un precio válido en pesos colombianos.', 'error');
+        return;
+      }
+      button.disabled = true;
+      setItemStatus(itemId, 'Guardando precio…', 'working');
+      try{
+        const {data,error} = await db.from('menu_items')
+          .update({price_amount:price,updated_at:new Date().toISOString()})
+          .eq('id',itemId)
+          .select('id,price_amount,updated_at')
+          .maybeSingle();
+        if(error || !data) throw error || new Error('No se pudo confirmar el precio guardado.');
+        item.price_amount = data.price_amount;
+        item.updated_at = data.updated_at;
+        input.value = String(data.price_amount);
+        setItemStatus(itemId, 'Precio actualizado: ' + formatPrice(data.price_amount) + '.');
+        notice('Precio actualizado para ' + item.name + '.');
+      }catch(error){
+        setItemStatus(itemId, 'No se pudo guardar el precio. Revisa la conexión e inténtalo de nuevo.', 'error');
+      }finally{
+        button.disabled = false;
+      }
+      return;
+    }
+
+    if(action === 'upload-image'){
+      const itemId = button.dataset.itemId;
+      const item = state.items.find(row => row.id === itemId);
+      const section = state.sections.find(row => row.id === item?.section_id);
+      const input = document.querySelector('[data-file-input="' + CSS.escape(itemId) + '"]');
+      const file = input?.files?.[0];
+      if(!item || !section || !file){
+        setItemStatus(itemId, 'Selecciona primero la nueva imagen.', 'error');
+        return;
+      }
+      if(!Object.prototype.hasOwnProperty.call(MIME_EXTENSIONS,file.type)){
+        setItemStatus(itemId, 'Formato no admitido. Usa JPG, PNG, WebP o AVIF.', 'error');
+        return;
+      }
+      if(file.size > MAX_FILE_SIZE){
+        setItemStatus(itemId, 'La imagen supera el límite de 8 MB.', 'error');
+        return;
+      }
+      button.disabled = true;
+      setItemStatus(itemId, 'Subiendo imagen y guardando referencia…', 'working');
+      let uploadedPath = null;
+      try{
+        const ext = MIME_EXTENSIONS[file.type];
+        const randomPart = (window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now());
+        uploadedPath = section.id + '/' + item.id + '/' + Date.now() + '-' + randomPart + '.' + ext;
+        const {error:uploadError} = await db.storage.from(STORAGE_BUCKET).upload(uploadedPath,file,{
+          cacheControl:'31536000',
+          contentType:file.type,
+          upsert:false
+        });
+        if(uploadError) throw uploadError;
+
+        const {data,error:updateError} = await db.from('menu_items')
+          .update({image_path:uploadedPath,updated_at:new Date().toISOString()})
+          .eq('id',itemId)
+          .select('id,image_path,updated_at')
+          .maybeSingle();
+        if(updateError || !data) throw updateError || new Error('La imagen se subió, pero no se pudo actualizar el catálogo.');
+        item.image_path = data.image_path;
+        item.updated_at = data.updated_at;
+        const row = document.querySelector('[data-item-row="' + CSS.escape(itemId) + '"]');
+        const preview = row?.querySelector('.item-preview');
+        if(preview) preview.src = adminImageUrl(data.image_path);
+        input.value = '';
+        setItemStatus(itemId, 'Imagen actualizada. Se conserva el marco y efecto visual original.');
+        notice('Imagen actualizada para ' + item.name + '.');
+      }catch(error){
+        setItemStatus(itemId, 'No se pudo completar el cambio de imagen. El catálogo conserva la imagen anterior.', 'error');
+        notice('No se pudo reemplazar la imagen. Revisa la conexión, el formato y los permisos.', 'error');
+      }finally{
+        button.disabled = false;
+      }
+    }
+  });
+
+  $('menuSectionsGrid').addEventListener('change', (event) => {
+    const input = event.target.closest('input[data-file-input]');
+    if(!input) return;
+    const itemId = input.dataset.fileInput;
+    const row = document.querySelector('[data-item-row="' + CSS.escape(itemId) + '"]');
+    const preview = row?.querySelector('.item-preview');
+    const file = input.files?.[0];
+    if(!file || !preview) return;
+    if(!Object.prototype.hasOwnProperty.call(MIME_EXTENSIONS,file.type) || file.size > MAX_FILE_SIZE){
+      setItemStatus(itemId, file.size > MAX_FILE_SIZE ? 'La imagen supera el límite de 8 MB.' : 'Formato no admitido. Usa JPG, PNG, WebP o AVIF.', 'error');
+      input.value = '';
+      return;
+    }
+    const previous = preview.dataset.localPreview;
+    if(previous) URL.revokeObjectURL(previous);
+    const localUrl = URL.createObjectURL(file);
+    preview.dataset.localPreview = localUrl;
+    preview.src = localUrl;
+    setItemStatus(itemId, 'Imagen lista para subir: ' + file.name, 'working');
+  });
+
+  window.addEventListener('load', enterAdmin);
+})();
+</script>
+</body>
+</html>
