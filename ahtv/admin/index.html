@@ -363,11 +363,19 @@
       margin-top: 12px;
     }
     .song-suggestion-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
       min-width: 0;
       padding: 14px;
       border: 1px solid rgba(255,255,255,.10);
       border-radius: 12px;
       background: rgba(255,255,255,.035);
+    }
+    .suggestion-content {
+      flex: 1 1 auto;
+      min-width: 0;
     }
     .suggestion-head {
       display: flex;
@@ -402,8 +410,10 @@
     }
     .suggestion-actions {
       display: flex;
+      flex: 0 0 auto;
       justify-content: flex-end;
-      margin-top: 10px;
+      align-self: center;
+      margin-top: 0;
     }
     .suggestion-actions button {
       margin: 0;
@@ -1200,6 +1210,8 @@
         const card = document.createElement("article");
         card.className = "song-suggestion-item";
 
+        const content = document.createElement("div");
+        content.className = "suggestion-content";
         const heading = document.createElement("div");
         heading.className = "suggestion-head";
         const nameWrap = document.createElement("div");
@@ -1213,7 +1225,7 @@
         nameWrap.append(artist, title);
 
         heading.appendChild(nameWrap);
-        card.appendChild(heading);
+        content.appendChild(heading);
 
         const names = Array.isArray(item.requester_names) ? item.requester_names.filter(Boolean) : [];
         if (names.length) {
@@ -1222,7 +1234,7 @@
           const preview = names.slice(0, 5);
           requesters.textContent = "Solicitada por: " + preview.join(", ") +
             (names.length > preview.length ? " y " + (names.length - preview.length) + " más" : "");
-          card.appendChild(requesters);
+          content.appendChild(requesters);
         }
 
         const reference = suggestionReferenceUrl(item.reference_url);
@@ -1233,9 +1245,10 @@
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           link.textContent = "Abrir enlace de referencia";
-          card.appendChild(link);
+          content.appendChild(link);
         }
 
+        card.appendChild(content);
         const actions = document.createElement("div");
         actions.className = "suggestion-actions";
         const done = document.createElement("button");
