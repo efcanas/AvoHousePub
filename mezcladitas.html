@@ -291,12 +291,30 @@ color:white;
   }
 }
 
+
+/* Estado y avisos del catálogo dinámico */
+body.menu-data-pending #menuContent{visibility:hidden}
+body.menu-data-pending[data-menu-section="firma"] .spacer{visibility:hidden}
+.menu-status{
+  margin:8px auto 24px;
+  padding:20px 18px;
+  max-width:720px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:12px;
+  background:rgba(0,0,0,.35);
+  color:#e8e8e8;
+  text-align:center;
+  font-size:14px;
+  line-height:1.55;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
+<script src="menu-public.js?v=20261023-1" defer></script>
 </head>
 
-<body>
+<body class="menu-data-pending" data-menu-section="mezcladitas">
 
 <header class="header">
   <img src="LogoPrincipal.png" class="logo" alt="AvoHouse Pub">
@@ -310,7 +328,7 @@ color:white;
   </nav>
 </header>
 
-<div class="container">
+<div class="container" id="menuContent">
 
 <!-- DORADA -->
 <div class="category dorada-title">DORADA</div>
@@ -398,73 +416,6 @@ color:white;
 
 
 
-<div id="productImageLightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-label="Imagen ampliada" hidden>
-  <div class="image-lightbox-content">
-    <img id="productImageLightboxImage" class="image-lightbox-image" alt="">
-  </div>
-</div>
-
-<script>
-(function(){
-  const lightbox = document.getElementById("productImageLightbox");
-  const enlargedImage = document.getElementById("productImageLightboxImage");
-  if (!lightbox || !enlargedImage) return;
-
-  let previousFocus = null;
-  let previousOverflow = "";
-
-  function getLabel(img){
-    const productName = img.closest(".product-card")?.querySelector(".product-name")?.textContent?.trim();
-    const alt = img.getAttribute("alt")?.trim();
-    let filename = (img.getAttribute("src") || "").split("/").pop() || "";
-    try { filename = decodeURIComponent(filename); } catch (_) {}
-    filename = filename.replace(/\.[^.]+$/, "").replace(/^CC(?=[A-Z])/, "CC ")
-      .replace(/([a-záéíóúñ])([A-ZÁÉÍÓÚÑ])/g, "$1 $2");
-    return productName || alt || filename || "Imagen del menú";
-  }
-
-  function openLightbox(img){
-    previousFocus = img;
-    previousOverflow = document.body.style.overflow;
-    const label = getLabel(img);
-    enlargedImage.src = img.currentSrc || img.src;
-    enlargedImage.alt = label;
-    lightbox.hidden = false;
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeLightbox(){
-    lightbox.hidden = true;
-    enlargedImage.removeAttribute("src");
-    enlargedImage.alt = "";
-    document.body.style.overflow = previousOverflow;
-    if (previousFocus && document.contains(previousFocus)) {
-      previousFocus.focus({preventScroll:true});
-    }
-  }
-
-  document.querySelectorAll(".product-card img").forEach(function(img){
-    img.tabIndex = 0;
-    img.setAttribute("role", "button");
-    img.setAttribute("aria-label", "Ampliar imagen: " + getLabel(img));
-    img.addEventListener("click", function(){ openLightbox(img); });
-    img.addEventListener("keydown", function(event){
-      if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
-        event.preventDefault();
-        openLightbox(img);
-      }
-    });
-  });
-
-  enlargedImage.addEventListener("click", closeLightbox);
-  lightbox.addEventListener("click", function(event){
-    if (event.target === lightbox) closeLightbox();
-  });
-  document.addEventListener("keydown", function(event){
-    if (!lightbox.hidden && event.key === "Escape") closeLightbox();
-  });
-})();
-</script>
 
 <script>
 if ('serviceWorker' in navigator) {
