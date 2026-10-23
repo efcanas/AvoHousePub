@@ -59,7 +59,7 @@
     const content = getFirstVisibleContent();
     if (!header || !content) return;
 
-    const desiredTop = header.getBoundingClientRect().bottom + window.scrollY + 12;
+    const desiredTop = header.offsetHeight + 12;
     const currentTop = content.getBoundingClientRect().top + window.scrollY;
     const delta = desiredTop - currentTop;
 
