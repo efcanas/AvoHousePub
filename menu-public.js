@@ -259,6 +259,8 @@
       return;
     }
 
+    if (currentSectionId) createImageLightbox();
+
     try {
       const { data: sections, error: sectionsError } = await client
         .from("menu_sections")
