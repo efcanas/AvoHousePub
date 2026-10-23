@@ -1,4 +1,4 @@
-/* Encabezado único compartido por AHtv, CC, Comunicaciones, Inventario y Estadísticas. */
+/* Encabezado único compartido por AHtv, CC, Comunicaciones, Inventario, Estadísticas y Menú. */
 (function () {
   "use strict";
 
@@ -11,7 +11,8 @@
     { id: "cc", label: "CC", title: "Centro de Control", href: "../../cuenta/admin/?v=20261019-1" },
     { id: "communications", label: "COMUNICACIONES", title: "Comunicaciones", href: "../../cuenta/comunicaciones/?v=20261019-1" },
     { id: "inventory", label: "INVENTARIO", title: "Inventario", href: "../../cuenta/inventario/?v=20261019-1" },
-    { id: "statistics", label: "ESTADÍSTICAS", title: "Estadísticas", href: "../../cuenta/estadisticas/?v=20261019-1" }
+    { id: "statistics", label: "ESTADÍSTICAS", title: "Estadísticas", href: "../../cuenta/estadisticas/?v=20261019-1" },
+    { id: "menu", label: "MENÚ", title: "Menú", href: "../../cuenta/menu/?v=20261023-1" }
   ];
 
   const current = sections.find(function (item) {
