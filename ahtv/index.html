@@ -529,6 +529,11 @@ body::before {
     }
 
     function renderResults(songs) {
+      // No destruir el formulario de sugerencia durante los refrescos automáticos.
+      // loadMine() y loadRequestAvailability() vuelven a renderizar resultados cada 5 s.
+      // Conservar el formulario mantiene los valores y el foco mientras el cliente escribe.
+      if (resultsEl.querySelector('.suggestion-form')) return;
+
       resultsEl.innerHTML = '';
       if (!requestsEnabled || !hasVenueAccess) {
         resultsEl.hidden = true;
