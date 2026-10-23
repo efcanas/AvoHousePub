@@ -88,11 +88,10 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 <div id="registerNotice" class="notice"></div>
 
 <div id="registerSuccess" class="success-state" aria-live="polite">
-  <p>Tu cuenta fue creada correctamente.</p>
-  <p>Te enviamos un correo de confirmación a:</p>
-  <p class="email" id="successEmail"></p>
-  <p>Busca el mensaje en tu <strong>bandeja de entrada</strong> para confirmar tu cuenta.</p>
-  <p class="hint">Si no lo encuentras, revisa también la carpeta de <strong>Spam / Correo no deseado</strong>. El correo puede llegar allí.</p>
+  <p>Solicitud recibida.</p>
+  <p>Si los datos permiten completar el registro, te enviaremos un correo de confirmación a la dirección indicada.</p>
+  <p>Revisa tu <strong>bandeja de entrada</strong> para confirmar la cuenta.</p>
+  <p class="hint">El correo solo se enviará si es posible continuar con el registro. Revisa también la carpeta de <strong>Spam / Correo no deseado</strong>.</p>
   <a class="success-button" href="ingresar.html">Ir a iniciar sesión</a>
 </div>
 
@@ -370,65 +369,50 @@ registerForm.addEventListener('submit',async e=>{
   const password=field('password').value;
   const marketing=field('publicidad').checked;
 
-  const nickCheck=await supabaseClient.rpc('ahtv_nickname_disponible',{p_username:username});
-  if(nickCheck.error){throw nickCheck.error;}
-  if(nickCheck.data!==true){
-    nicknameAvailable=false;
-    usernameStatus.className='small username-status bad';
-    usernameStatus.textContent='Ese nickname no está disponible. Elige otro.';
+  const {data,error}=await supabaseClient.functions.invoke('register-customer',{
+    body:{
+      fullName,
+      username,
+      documentType,
+      documentNumber,
+      email,
+      phone,
+      whatsapp,
+      whatsappSame:same,
+      birthDate:field('fecha_nacimiento').value,
+      password,
+      marketingAuthorized:marketing,
+      termsAccepted:field('terminos').checked,
+      emailRedirectTo:ACCOUNT_URL
+    }
+  });
+
+  if(error)throw error;
+  if(!data?.ok){
+    registerNotice.textContent=data?.message||'No fue posible completar el registro. Inténtalo nuevamente.';
+    registerNotice.classList.add('show');
     registerBtn.disabled=false;
     updateRegisterButton();
     return;
   }
 
-  const {data,error}=await supabaseClient.auth.signUp({
-    email,
-    password,
-    options:{
-      emailRedirectTo:ACCOUNT_URL,
-      data:{
-        full_name:fullName,
-        username,
-        document_type:documentType,
-        document_number:documentNumber,
-        phone,
-        whatsapp,
-        whatsapp_same:same,
-        birth_date:field('fecha_nacimiento').value,
-        terms_accepted:true,
-        data_authorized:true,
-        marketing_authorized:marketing,
-        terms_version:'1.0',
-        privacy_version:'1.0',
-        data_authorization_version:'1.0'
-      }
-    }
-  });
-
-  if(error){
-    const raw=String(error.message||'');
-    const friendly=raw.toLowerCase().includes('nickname ya está en uso')||raw.toLowerCase().includes('nickname no está disponible')
-      ? 'Ese nickname no está disponible. Elige otro.'
-      : 'No fue posible crear la cuenta. '+raw;
-    registerNotice.textContent=friendly;
-    registerNotice.classList.add('show');
-    registerBtn.disabled=false;
-    return;
-  }
-
-  if(data.session){
+  if(data.session?.access_token&&data.session?.refresh_token){
+    const {error:sessionError}=await supabaseClient.auth.setSession({
+      access_token:data.session.access_token,
+      refresh_token:data.session.refresh_token
+    });
+    if(sessionError)throw sessionError;
     window.location.href='../index.html';
     return;
   }
 
-  document.getElementById('registerTitle').textContent='Verifica tu correo';
-  document.getElementById('registerSubtitle').textContent='Un último paso antes de iniciar sesión.';
-  document.getElementById('successEmail').textContent=email;
+  document.getElementById('registerTitle').textContent='Solicitud recibida';
+  document.getElementById('registerSubtitle').textContent='Revisa tu correo electrónico.';
   registerForm.style.display='none';
   registerNotice.classList.remove('show');
   document.getElementById('registerSuccess').classList.add('show');
   }catch(error){
-    registerNotice.textContent='No fue posible completar el registro. '+(error?.message||'Verifica tu conexión e inténtalo nuevamente.');
+    registerNotice.textContent='No fue posible procesar el registro en este momento. Inténtalo nuevamente.';
     registerNotice.classList.add('show');
     registerBtn.disabled=false;
   }
