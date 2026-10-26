@@ -353,11 +353,31 @@ button:disabled{opacity:.45;cursor:default}
 .reward-admin-name{font-size:13px;font-weight:800}
 .reward-admin-meta{margin-top:3px;color:#999;font-size:10px;line-height:1.45}
 
-.instagram-admin-card{margin-top:18px}
-.instagram-admin-card .panel-heading{margin-bottom:14px}
 .instagram-admin-status{padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.035)}
 .instagram-admin-user{font-size:14px;font-weight:800;margin-bottom:6px}
-.facebook-admin-card{margin-top:18px}.whatsapp-admin-card{margin-top:18px}.verification-admin-card[hidden]{display:none!important}
+.whatsapp-admin-card{margin-top:18px}.verification-admin-card[hidden]{display:none!important}
+.social-networks-admin-card{margin:8px 0;padding:11px 14px}
+.social-networks-admin-card .panel-heading{padding-bottom:7px;margin-bottom:7px}
+.social-networks-admin-card .panel-title{font-size:16px}
+#socialNetworksAdminCard[hidden],.social-verification-row[hidden]{display:none!important}
+.social-verification-row{min-width:0;margin:0;padding:0}
+.social-verification-row+.social-verification-row{margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.08)}
+.social-verification-row .instagram-admin-status{margin:0;padding:0;border:0;border-radius:0;background:transparent}
+.social-verification-compact{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;min-width:0}
+.social-verification-account{display:flex;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap}
+.social-verification-network{flex:0 0 auto;color:#9ca3af;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.social-verification-user{min-width:0;color:#f5f5f5;font-size:13px;font-weight:700;overflow-wrap:anywhere}
+.social-verification-code{color:#aeb4bf;font-size:11px;white-space:nowrap}
+.social-verification-code strong{color:#e8d59a;font-size:15px;letter-spacing:1.5px}
+.social-verification-compact .verification-admin-btn{height:32px;min-height:32px;margin:0;padding:7px 11px;white-space:nowrap;font-size:10px}
+@media(max-width:620px){
+  .social-networks-admin-card{padding:10px 12px}
+  .social-networks-admin-card .panel-heading{padding-bottom:6px;margin-bottom:6px}
+  .social-verification-compact{grid-template-columns:minmax(0,1fr) auto;gap:5px 8px}
+  .social-verification-account{grid-column:1/-1;gap:7px}
+  .social-verification-code{grid-column:1}
+  .social-verification-compact .verification-admin-btn{grid-column:2;justify-self:end}
+}
 @media(max-width:640px){
 }
 
@@ -1259,28 +1279,15 @@ body.admin-achievement-modal-open{overflow:hidden}
       </div>
     </section>
 
-    <section id="instagramAdminCard" class="card instagram-admin-card verification-admin-card" hidden>
+    <section id="socialNetworksAdminCard" class="card social-networks-admin-card verification-admin-card" hidden>
       <div class="panel-heading">
-        <div>
-          <h2 class="panel-title">Verificación de Instagram</h2>
-          <div class="history-summary">Validación manual de la cuenta de Instagram</div>
-        </div>
-        <span id="instagramAdminMode" class="panel-tag">—</span>
+        <h2 class="panel-title">Verificación RR.SS.</h2>
       </div>
-      <div id="instagramAdminStatus" class="instagram-admin-status">
-        <div class="instagram-admin-help">Selecciona un cliente.</div>
+      <div id="instagramAdminCard" class="social-verification-row" hidden>
+        <div id="instagramAdminStatus" class="instagram-admin-status"></div>
       </div>
-    </section>
-    <section id="facebookAdminCard" class="card facebook-admin-card verification-admin-card" hidden>
-      <div class="panel-heading">
-        <div>
-          <h2 class="panel-title">Verificación de Facebook</h2>
-          <div class="history-summary">Validación manual del seguimiento a AvoHouse</div>
-        </div>
-        <span id="facebookAdminMode" class="panel-tag">—</span>
-      </div>
-      <div id="facebookAdminStatus" class="instagram-admin-status">
-        <div class="instagram-admin-help">Selecciona un cliente.</div>
+      <div id="facebookAdminCard" class="social-verification-row" hidden>
+        <div id="facebookAdminStatus" class="instagram-admin-status"></div>
       </div>
     </section>
 
@@ -2576,6 +2583,14 @@ async function verifySelectedWhatsapp(){
   }
 }
 
+function updateSocialNetworksAdminCard(){
+  const card=$('socialNetworksAdminCard');
+  const instagram=$('instagramAdminCard');
+  const facebook=$('facebookAdminCard');
+  if(!card)return;
+  card.hidden=!selectedProfile||(!instagram||instagram.hidden)&&(!facebook||facebook.hidden);
+}
+
 function renderInstagramVerificationAdmin(data){
   const area=$('instagramAdminStatus');
   const mode=$('instagramAdminMode');
@@ -2584,6 +2599,7 @@ function renderInstagramVerificationAdmin(data){
 
   area.dataset.verificationId=String(data?.id||'');
   if(card)card.hidden=!(data && data.status==='pending');
+  updateSocialNetworksAdminCard();
 
   const base=String(data?.contact_value||selectedProfile?.instagram||'No registrado');
   setAdminVerificationInfo('infoInstagram',base,data);
@@ -2605,11 +2621,11 @@ function renderInstagramVerificationAdmin(data){
   }
 
   const code=String(data.code||'');
-  area.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Instagram')+'</div>'+
-    '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-    '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-    '<div class="instagram-admin-help">Comprueba manualmente que la cuenta corresponde al usuario registrado y que el código coincide con el enviado por DM. Después valida.</div>'+
-    '<button id="validateInstagramBtn" class="verification-admin-btn" type="button">VALIDAR INSTAGRAM</button>';
+  area.innerHTML='<div class="social-verification-compact">'+
+    '<div class="social-verification-account"><span class="social-verification-network">Instagram</span><span class="social-verification-user">'+escapeHtml(data.contact_value||selectedProfile?.instagram||'No registrado')+'</span></div>'+
+    '<div class="social-verification-code">Código <strong>'+escapeHtml(code||'—')+'</strong></div>'+
+    '<button id="validateInstagramBtn" class="verification-admin-btn" type="button">VALIDAR</button>'+
+    '</div>';
 
   if(mode)mode.textContent='Pendiente';
 }
@@ -2681,6 +2697,7 @@ function renderFacebookVerificationAdmin(data){
 
   area.dataset.verificationId=String(data?.id||'');
   if(card)card.hidden=!(data && data.status==='pending');
+  updateSocialNetworksAdminCard();
 
   const base=String(data?.contact_value||'No registrado');
   setAdminVerificationInfo('infoFacebook',base,data);
@@ -2702,11 +2719,11 @@ function renderFacebookVerificationAdmin(data){
   }
 
   const code=String(data.code||'');
-  area.innerHTML='<div class="instagram-admin-user">'+escapeHtml(data.contact_value||'Facebook')+'</div>'+
-    '<div class="verification-admin-line"><span class="verification-admin-badge pending">⏳ Pendiente</span></div>'+
-    '<div class="verification-admin-code">Código mostrado al cliente: <strong>'+escapeHtml(code)+'</strong></div>'+
-    '<div class="instagram-admin-help">Comprueba manualmente que la cuenta/persona corresponde al cliente y que sigue a AvoHouse en Facebook. Confirma además que el código coincide con el recibido por mensaje directo.</div>'+
-    '<button id="validateFacebookBtn" class="verification-admin-btn" type="button">VALIDAR FACEBOOK</button>';
+  area.innerHTML='<div class="social-verification-compact">'+
+    '<div class="social-verification-account"><span class="social-verification-network">Facebook</span><span class="social-verification-user">'+escapeHtml(data.contact_value||'No registrado')+'</span></div>'+
+    '<div class="social-verification-code">Código <strong>'+escapeHtml(code||'—')+'</strong></div>'+
+    '<button id="validateFacebookBtn" class="verification-admin-btn" type="button">VALIDAR</button>'+
+    '</div>';
 
   if(mode)mode.textContent='Pendiente';
 }
@@ -3071,6 +3088,15 @@ async function loadClient(profile){
   closeCustomerAchievementModalAdmin();
   selectedProfile=profile;
   loadMarketingConsentIndicator(profile.id);
+  $('socialNetworksAdminCard').hidden=true;
+  ['instagramAdminCard','facebookAdminCard'].forEach(id=>{
+    const wrapper=$(id);
+    if(wrapper)wrapper.hidden=true;
+  });
+  ['instagramAdminStatus','facebookAdminStatus'].forEach(id=>{
+    const area=$(id);
+    if(area){area.dataset.verificationId='';area.innerHTML='';}
+  });
   setCustomerEditMode(false);
   $('clientArea').classList.remove('hidden');
 
