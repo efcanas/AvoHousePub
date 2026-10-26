@@ -356,7 +356,7 @@ button:disabled{opacity:.45;cursor:default}
 .instagram-admin-status{margin:0;padding:0;border:0;border-radius:0;background:transparent}
 .instagram-admin-user{font-size:14px;font-weight:800;margin-bottom:6px}
 .whatsapp-admin-card{margin-top:18px}.verification-admin-card[hidden]{display:none!important}
-.social-networks-admin-card{margin:0 0 12px;padding:12px 14px}
+.social-networks-admin-card{margin:18px 0 12px;padding:12px 14px}
 .social-networks-admin-card .panel-heading{padding-bottom:7px;margin-bottom:7px}
 .social-networks-admin-card .panel-title{font-size:16px}
 #socialNetworksAdminCard[hidden],.social-verification-row[hidden]{display:none!important}
@@ -3083,11 +3083,11 @@ async function loadClient(profile){
   selectedProfile=profile;
   loadMarketingConsentIndicator(profile.id);
   $('socialNetworksAdminCard').hidden=true;
-  ['instagramAdminCard','facebookAdminCard'].forEach(id=>{
+  ['whatsappAdminCard','instagramAdminCard','facebookAdminCard'].forEach(id=>{
     const wrapper=$(id);
     if(wrapper)wrapper.hidden=true;
   });
-  ['instagramAdminStatus','facebookAdminStatus'].forEach(id=>{
+  ['whatsappAdminStatus','instagramAdminStatus','facebookAdminStatus'].forEach(id=>{
     const area=$(id);
     if(area){area.dataset.verificationId='';area.innerHTML='';}
   });
