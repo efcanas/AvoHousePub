@@ -2302,11 +2302,13 @@ function renderCustomerRules(rules){
     list.innerHTML='<div class="helper muted">No hay beneficios individuales.</div>';
     return;
   }
+  const todayParts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const today=todayParts.find(p=>p.type==='year')?.value+'-'+todayParts.find(p=>p.type==='month')?.value+'-'+todayParts.find(p=>p.type==='day')?.value;
   list.innerHTML=rules.map(rule=>{
     const multiplier=Number(rule.multiplier).toLocaleString('es-CO',{maximumFractionDigits:2});
     const range=formatBenefitDate(rule.start_date)+' → '+(rule.end_date?formatBenefitDate(rule.end_date):'sin fecha final');
     const name=String(rule.reason||'Beneficio individual');
-    const expired=rule.validity_status==='Vencido';
+    const expired=rule.validity_status==='Vencido'||Boolean(rule.end_date&&rule.end_date<today);
     const toggle=expired?'':'<button class="customer-rule-toggle" type="button" data-rule-toggle="'+escapeHtml(rule.id)+'" data-next-active="'+(rule.active?'0':'1')+'">'+(rule.active?'DESACTIVAR':'ACTIVAR')+'</button>';
     return '<div class="customer-rule-row">'+
       '<div class="customer-rule-copy">'+
