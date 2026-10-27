@@ -1195,7 +1195,8 @@ function renderRewards(rewards){
   const catalog=specialCodes.has(reward.code)?{...catalogBase,title:reward.name||catalogBase.title}:catalogBase;
   const selected=selectedAchievementCode===reward.code;
   const label={claimed:'Obtenido',pending:'En revisión',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
-  return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span>'+renderAchievementProgress(reward,true)+'</button>';
+  const progressMarkup=status==='claimed'?'':renderAchievementProgress(reward,true);
+  return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span>'+progressMarkup+'</button>';
  };
 
  const bindGrid=targetGrid=>{
