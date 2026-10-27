@@ -782,6 +782,7 @@ button.hidden{display:none!important}
 #clientArea .balance-card .special-rule-status{margin-top:0;min-height:0}
 #clientArea .balance-card .special-rule-status:not(:empty){margin-top:6px;min-height:16px}
 #customerRuleSummary:empty{display:none}
+#customerPilotSummary:empty{display:none}
 @media(max-width:820px){
   #clientArea .balance-card .special-rule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -1238,7 +1239,8 @@ body.admin-achievement-modal-open{overflow:hidden}
         </div>
         <div class="special-rule">
           <div class="special-rule-title">Beneficio individual de ganancia</div>
-          <div id="customerRuleSummary" class="helper">Sin beneficio individual activo.</div>
+          <div id="customerRuleSummary" class="helper">Sin beneficio individual asignado.</div>
+          <div id="customerPilotSummary" class="helper muted"></div>
           <div class="special-rule-grid">
             <div><span class="info-label">Multiplicador</span><input id="customerMultiplier" type="number" min="0.01" max="100" step="0.01" placeholder="Ej. 2" aria-label="Multiplicador individual"></div>
             <div><span class="info-label">Desde</span><input id="customerRuleStart" type="date"></div>
@@ -1710,7 +1712,9 @@ function emailEventLabel(type){
     transactional:'Correo transaccional',
     marketing:'Comunicación',
     profile_update:'Cambio de datos',
-    points_adjustment:'Ajuste de AvoPuntos'
+    points_adjustment:'Ajuste de AvoPuntos',
+    customer_benefit_assigned:'Beneficio individual de AvoPuntos',
+    customer_benefit_ended:'Finalización de beneficio individual'
   })[type]||'Correo enviado';
 }
 function formatDateBogota(value,withTime=true){
@@ -2280,9 +2284,12 @@ async function loadCustomerRule(){
   if(!selectedProfile)return;
   const profileId=selectedProfile.id;
   const summary=$('customerRuleSummary');
+  const pilotSummary=$('customerPilotSummary');
   summary.dataset.ruleId='';
   summary.textContent='';
   summary.className='helper muted';
+  pilotSummary.textContent='Consultando estado de Piloto…';
+  pilotSummary.className='helper muted';
   $('disableCustomerRuleBtn').disabled=true;
 
   const {data:result,error}=await db.rpc('avopuntos_admin_get_customer_rule',{
@@ -2295,13 +2302,41 @@ async function loadCustomerRule(){
   if(error){
     summary.textContent='No se pudo consultar el beneficio individual: '+(error.message||'Error desconocido.');
     summary.className='helper error';
+    pilotSummary.textContent='No se pudo consultar el estado de Piloto.';
+    pilotSummary.className='helper error';
     $('disableCustomerRuleBtn').disabled=true;
     return;
   }
 
-  const data=result?.rule||null;
+  const formatIsoDate=value=>{
+    const match=String(value||'').match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+    return match?match[3]+'/'+match[2]+'/'+match[1]:String(value||'');
+  };
+  const pilot=result?.pilot||null;
+  const currentRule=result?.current_rule||null;
+
+  if(pilot?.active){
+    const startLabel=formatIsoDate(pilot.start_date);
+    const endLabel=formatIsoDate(pilot.end_date);
+    pilotSummary.innerHTML='<strong>Piloto ×2 · Activo</strong> desde '+escapeHtml(startLabel)+' hasta '+escapeHtml(endLabel)+'.'+
+      (currentRule
+        ?'<br>También está vigente, pero el beneficio individual tiene prioridad y es el criterio aplicado hoy.'
+        :'<br>Es el criterio aplicado hoy porque no hay un beneficio individual vigente.');
+    pilotSummary.className='helper ok';
+  }else if(pilot?.status==='Finalizado'){
+    pilotSummary.innerHTML='<strong>Piloto ×2 · Finalizado</strong> el '+escapeHtml(formatIsoDate(pilot.end_date))+'.';
+    pilotSummary.className='helper muted';
+  }else if(pilot?.status==='Programado'){
+    pilotSummary.innerHTML='<strong>Piloto ×2 · Programado</strong> desde '+escapeHtml(formatIsoDate(pilot.start_date))+'.';
+    pilotSummary.className='helper muted';
+  }else{
+    pilotSummary.textContent='Piloto ×2: no aplica a esta cuenta.';
+    pilotSummary.className='helper muted';
+  }
+
+  const data=currentRule||result?.rule||null;
   if(!data){
-    summary.textContent='';
+    summary.textContent='Sin beneficio individual asignado.';
     summary.className='helper';
     summary.dataset.ruleId='';
     $('customerRuleStatus').textContent='';
@@ -2309,11 +2344,19 @@ async function loadCustomerRule(){
     return;
   }
 
-  const range=data.start_date+(data.end_date?' → '+data.end_date:' → sin fecha final');
-  summary.innerHTML='<strong>'+Number(data.multiplier).toLocaleString('es-CO',{maximumFractionDigits:2})+'×</strong> · '+range+' · '+(data.active?'Activo':'Inactivo')+'<br>Motivo: '+escapeHtml(data.reason);
+  const range=formatIsoDate(data.start_date)+(data.end_date?' → '+formatIsoDate(data.end_date):' → sin fecha final');
+  const state=String(data.validity_status||(data.active?'Vigente':'Desactivado'));
+  const multiplier=Number(data.multiplier).toLocaleString('es-CO',{maximumFractionDigits:2});
+  summary.innerHTML='<strong>'+(currentRule?'Criterio individual aplicado hoy: ':'Beneficio individual: ')+multiplier+'×</strong> · '+range+' · '+escapeHtml(state)+
+    '<br>Motivo: '+escapeHtml(data.reason||'—');
+  const activeRulesCount=Number(result?.active_rules_count||0);
+  if(activeRulesCount>1){
+    summary.innerHTML+='<br>Hay '+activeRulesCount+' beneficios individuales vigentes a la vez. Solo se aplica el de inicio más reciente; si empatan, el último registrado. No se combinan.';
+  }
   summary.className='helper';
-  summary.dataset.ruleId=data.id;
-  $('disableCustomerRuleBtn').disabled=!data.active;
+  summary.dataset.ruleId=data.id||'';
+  const canDisable=Boolean(data.active)&&!['Vencido','Desactivado','No vigente'].includes(state);
+  $('disableCustomerRuleBtn').disabled=!canDisable;
 }
 async function saveCustomerRule(){
   if(!selectedProfile)return;
@@ -2330,7 +2373,7 @@ async function saveCustomerRule(){
   $('disableCustomerRuleBtn').disabled=true;
   $('customerRuleStatus').textContent='Guardando…';
   $('customerRuleStatus').className='special-rule-status muted';
-  const {error}=await db.rpc('avopuntos_admin_set_customer_multiplier',{
+  const {data:result,error}=await db.rpc('avopuntos_admin_set_customer_multiplier',{
     p_profile_id:selectedProfile.id,
     p_multiplier:multiplier,
     p_start_date:start,
@@ -2348,15 +2391,20 @@ async function saveCustomerRule(){
   $('customerRuleStart').value='';
   $('customerRuleEnd').value='';
   $('customerRuleReason').value='';
-  $('customerRuleStatus').textContent='Beneficio guardado correctamente.';
-  $('customerRuleStatus').className='special-rule-status ok';
+  if(result?.email_queued===true){
+    $('customerRuleStatus').textContent='Beneficio guardado. Notificación por correo encolada.';
+    $('customerRuleStatus').className='special-rule-status ok';
+  }else{
+    $('customerRuleStatus').textContent='Beneficio guardado, pero no se pudo encolar la notificación por correo.';
+    $('customerRuleStatus').className='special-rule-status error';
+  }
   await loadCustomerRule();
 }
 async function disableCustomerRule(){
   const ruleId=$('customerRuleSummary').dataset.ruleId;
   if(!ruleId)return;
   $('disableCustomerRuleBtn').disabled=true;
-  const {error}=await db.rpc('avopuntos_admin_set_customer_rule_active',{
+  const {data:result,error}=await db.rpc('avopuntos_admin_set_customer_rule_active',{
     p_rule_id:ruleId,p_active:false
   });
   if(error){
@@ -2365,8 +2413,13 @@ async function disableCustomerRule(){
     $('disableCustomerRuleBtn').disabled=false;
     return;
   }
-  $('customerRuleStatus').textContent='Beneficio individual desactivado.';
-  $('customerRuleStatus').className='special-rule-status ok';
+  if(result?.email_queued===true){
+    $('customerRuleStatus').textContent='Beneficio individual desactivado. Notificación por correo encolada.';
+    $('customerRuleStatus').className='special-rule-status ok';
+  }else{
+    $('customerRuleStatus').textContent='Beneficio desactivado, pero no se pudo encolar la notificación por correo.';
+    $('customerRuleStatus').className='special-rule-status error';
+  }
   await loadCustomerRule();
 }
 
