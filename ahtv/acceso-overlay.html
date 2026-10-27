@@ -27,123 +27,245 @@
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
-      border: 1px solid rgba(184,255,57,.55) !important;
-      border-radius: 13px !important;
-      background: rgba(8,10,13,.96) !important;
-      background-color: rgba(8,10,13,.96) !important;
+      border: 0 !important;
+      border-radius: 27px !important;
+      background: rgba(3,4,5,.96) !important;
+      background-color: rgba(3,4,5,.96) !important;
       box-shadow: 0 5px 18px rgba(0,0,0,.24) !important;
       color: #fff !important;
     }
-    html body .panel #qr {
+    .neon-frame {
       position: absolute !important;
-      left: 9px !important;
-      top: 2px !important;
+      inset: 0 !important;
       display: block !important;
-      width: 172px !important;
-      min-width: 172px !important;
-      max-width: 172px !important;
-      height: 172px !important;
-      min-height: 172px !important;
-      max-height: 172px !important;
+      width: 600px !important;
+      height: 178px !important;
+      overflow: visible !important;
+      pointer-events: none !important;
+      z-index: 1 !important;
+    }
+    .frame-glow-green {
+      fill: none;
+      stroke: #25ff08;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: url(#greenGlow);
+    }
+    .frame-core-green {
+      fill: none;
+      stroke: #efffe9;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .frame-glow-orange {
+      fill: none;
+      stroke: #ff5b00;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: url(#orangeGlow);
+    }
+    .frame-core-orange {
+      fill: none;
+      stroke: #fff0d8;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .copy {
+      position: absolute !important;
+      left: 23px !important;
+      top: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      width: 249px !important;
+      height: 178px !important;
+      min-width: 0 !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
-      border-radius: 7px !important;
+      z-index: 2 !important;
+    }
+    .title {
+      margin: 0 0 7px !important;
+      padding: 0 !important;
+      color: #fff !important;
+      font-size: 27px !important;
+      line-height: 32px !important;
+      font-weight: 800 !important;
+      letter-spacing: -.8px !important;
+      white-space: nowrap !important;
+    }
+    .title .ah {
+      color: #38ff08 !important;
+    }
+    .title .tv {
+      color: #ff6400 !important;
+    }
+    .hint {
+      margin: 0 !important;
+      padding: 0 !important;
+      color: #f0f1f3 !important;
+      font-size: 11.5px !important;
+      line-height: 15px !important;
+      font-weight: 400 !important;
+      overflow-wrap: normal !important;
+    }
+    .divider {
+      position: absolute !important;
+      left: 282px !important;
+      top: 32px !important;
+      display: block !important;
+      width: 2px !important;
+      height: 114px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #36ff15 !important;
+      box-shadow: 0 0 7px rgba(40,255,15,.72) !important;
+      z-index: 2 !important;
+    }
+    html body .panel #qr {
+      position: absolute !important;
+      left: 294px !important;
+      top: 33px !important;
+      display: block !important;
+      width: 112px !important;
+      min-width: 112px !important;
+      max-width: 112px !important;
+      height: 112px !important;
+      min-height: 112px !important;
+      max-height: 112px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      border: 1px solid rgba(225,255,225,.9) !important;
+      border-radius: 8px !important;
       background: #fff !important;
       background-color: #fff !important;
+      box-shadow: 0 0 10px rgba(30,255,10,.72) !important;
       color: #111 !important;
       line-height: 0 !important;
+      z-index: 2 !important;
     }
     html body .panel #qr canvas,
     html body .panel #qr img {
       position: absolute !important;
-      left: 18px !important;
-      top: 18px !important;
+      left: 7px !important;
+      top: 7px !important;
       display: block !important;
       flex: none !important;
-      width: 136px !important;
-      min-width: 136px !important;
-      max-width: 136px !important;
-      height: 136px !important;
-      min-height: 136px !important;
-      max-height: 136px !important;
+      width: 96px !important;
+      min-width: 96px !important;
+      max-width: 96px !important;
+      height: 96px !important;
+      min-height: 96px !important;
+      max-height: 96px !important;
       margin: 0 !important;
       padding: 0 !important;
       object-fit: contain !important;
       image-rendering: pixelated !important;
     }
-    .details {
+    .key-area {
       position: absolute !important;
-      left: 194px !important;
-      top: 27px !important;
-      right: 12px !important;
+      left: 420px !important;
+      top: 54px !important;
       display: block !important;
-      width: auto !important;
-      height: 128px !important;
+      width: 160px !important;
+      height: 70px !important;
       min-width: 0 !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
-      color: #fff !important;
+      z-index: 2 !important;
     }
-    .brand {
-      color: #b8ff39 !important;
-      font-size: 10px !important;
+    .key-label {
+      display: block !important;
+      margin: 0 0 5px !important;
+      padding: 0 !important;
+      color: #fff !important;
+      font-size: 13px !important;
+      line-height: 16px !important;
       font-weight: 700 !important;
-      letter-spacing: 2px !important;
-      line-height: 12px !important;
-      text-transform: uppercase !important;
-      margin: 0 0 5px !important;
-      padding: 0 !important;
     }
-    .title {
-      color: #fff !important;
-      font-size: 18px !important;
-      line-height: 21px !important;
-      font-weight: 800 !important;
-      margin: 0 0 5px !important;
-      padding: 0 !important;
-    }
-    .hint {
-      color: #d0d4da !important;
-      font-size: 11px !important;
-      line-height: 14px !important;
-      margin: 0 0 6px !important;
-      padding: 0 !important;
+    .key-box {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 160px !important;
+      height: 47px !important;
+      margin: 0 !important;
+      padding: 0 6px !important;
+      overflow: hidden !important;
+      border: 2px solid transparent !important;
+      border-radius: 9px !important;
+      background:
+        linear-gradient(rgba(3,5,6,.98), rgba(3,5,6,.98)) padding-box,
+        linear-gradient(100deg, #25ff08 0%, #8fff27 49%, #ff6500 54%, #ff4b00 100%) border-box !important;
+      box-shadow: 0 0 8px rgba(35,255,10,.47), 0 0 7px rgba(255,83,0,.35) !important;
     }
     .code {
-      color: #fff !important;
-      font-size: 20px !important;
-      line-height: 23px !important;
-      letter-spacing: .15px !important;
-      font-weight: 800 !important;
-      overflow-wrap: anywhere !important;
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
-    }
-    .foot {
-      color: #a0a6af !important;
-      font-size: 9px !important;
-      line-height: 11px !important;
-      margin: 5px 0 0 !important;
-      padding: 0 !important;
+      color: #b8ff39 !important;
+      font-size: 12px !important;
+      line-height: 16px !important;
+      letter-spacing: 0 !important;
+      font-weight: 800 !important;
+      text-align: center !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: clip !important;
+      overflow-wrap: normal !important;
     }
     .error {
       color: #ffb8b8 !important;
-      font-size: 12px !important;
-      line-height: 14px !important;
+      font-size: 10px !important;
+      line-height: 13px !important;
+      white-space: normal !important;
     }
   </style>
 </head>
 <body>
   <div class="panel">
+    <svg class="neon-frame" viewBox="0 0 600 178" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <filter id="greenGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.2" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="orangeGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.2" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <path class="frame-glow-green" d="M 548 10 H 30 Q 10 10 10 30 V 126"/>
+      <path class="frame-core-green" d="M 548 10 H 30 Q 10 10 10 30 V 126"/>
+      <path class="frame-glow-orange" d="M 10 126 V 148 Q 10 168 30 168 H 570 Q 590 168 590 148 V 30 Q 590 10 570 10 H 558"/>
+      <path class="frame-core-orange" d="M 10 126 V 148 Q 10 168 30 168 H 570 Q 590 168 590 148 V 30 Q 590 10 570 10 H 558"/>
+    </svg>
+    <div class="copy">
+      <div class="title">Activa <span class="ah">AH</span><span class="tv">tv</span></div>
+      <div class="hint">Escanea el código QR o ingresa la clave en tu dispositivo para enviar tu canción.</div>
+    </div>
+    <div class="divider" aria-hidden="true"></div>
     <div id="qr" aria-label="Código QR para solicitar música"></div>
-    <div class="details">
-      <div class="brand">AvoHouse · AHtv</div>
-      <div class="title">¿Quieres pedir una canción?</div>
-      <div class="hint">Escanea el QR o escribe esta clave en AHtv.</div>
-      <div id="accessCode" class="code">Cargando clave…</div>
-      <div class="foot">El acceso se renueva automáticamente cada dos horas.</div>
+    <div class="key-area">
+      <div class="key-label">Clave:</div>
+      <div class="key-box">
+        <div id="accessCode" class="code">Cargando clave…</div>
+      </div>
     </div>
   </div>
   <script src="vendor/qrcode.min.js"></script>
@@ -173,8 +295,8 @@
       qrEl.replaceChildren();
       new QRCode(qrEl, {
         text: target.toString(),
-        width: 136,
-        height: 136,
+        width: 96,
+        height: 96,
         colorDark: '#0c0d10',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
@@ -186,10 +308,10 @@
           node.style.setProperty('left', '18px', 'important');
           node.style.setProperty('top', '18px', 'important');
           ['width', 'min-width', 'max-width'].forEach(function (prop) {
-            node.style.setProperty(prop, '136px', 'important');
+            node.style.setProperty(prop, '96px', 'important');
           });
           ['height', 'min-height', 'max-height'].forEach(function (prop) {
-            node.style.setProperty(prop, '136px', 'important');
+            node.style.setProperty(prop, '96px', 'important');
           });
           node.style.setProperty('flex', 'none', 'important');
           node.style.setProperty('object-fit', 'contain', 'important');
