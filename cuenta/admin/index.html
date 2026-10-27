@@ -2316,14 +2316,14 @@ function renderCustomerRules(rules){
         '<div class="customer-rule-dates">'+escapeHtml(range)+'</div>'+
       '</div>'+
       '<div class="customer-rule-actions">'+toggle+
-      '<button class="customer-rule-remove" type="button" data-rule-remove="'+escapeHtml(rule.id)+'" data-rule-active="'+(rule.active?'1':'0')+'" title="Quitar beneficio" aria-label="Quitar beneficio '+escapeHtml(name)+'">×</button>'+
+      '<button class="customer-rule-remove" type="button" data-rule-remove="'+escapeHtml(rule.id)+'" data-rule-email-expected="'+(rule.active&&(!rule.end_date||rule.end_date>=today)?'1':'0')+'" title="Quitar beneficio" aria-label="Quitar beneficio '+escapeHtml(name)+'">×</button>'+
       '</div></div>';
   }).join('');
   list.querySelectorAll('[data-rule-toggle]').forEach(button=>{
     button.addEventListener('click',()=>toggleCustomerRule(button.dataset.ruleToggle,button.dataset.nextActive==='1',button));
   });
   list.querySelectorAll('[data-rule-remove]').forEach(button=>{
-    button.addEventListener('click',()=>removeCustomerRule(button.dataset.ruleRemove,button.dataset.ruleActive==='1',button));
+    button.addEventListener('click',()=>removeCustomerRule(button.dataset.ruleRemove,button.dataset.ruleEmailExpected==='1',button));
   });
 }
 async function loadCustomerRule(){
@@ -2421,7 +2421,7 @@ async function toggleCustomerRule(ruleId,nextActive,button){
   }
   await loadCustomerRule();
 }
-async function removeCustomerRule(ruleId,wasActive,button){
+async function removeCustomerRule(ruleId,emailExpected,button){
   if(!ruleId||!selectedProfile)return;
   const ruleName=button?.closest('.customer-rule-row')?.querySelector('.customer-rule-titleline')?.textContent||'este beneficio';
   if(!window.confirm('¿Quitar '+ruleName+' de la cuenta? Esta acción no se puede deshacer.'))return;
@@ -2435,7 +2435,7 @@ async function removeCustomerRule(ruleId,wasActive,button){
     if(button)button.disabled=false;
     return;
   }
-  if(wasActive){
+  if(emailExpected){
     $('customerRuleStatus').textContent=result?.email_queued===true?'Beneficio quitado. Correo de desactivación encolado.':'Beneficio quitado, pero no se pudo encolar el correo de desactivación.';
     $('customerRuleStatus').className=result?.email_queued===true?'special-rule-status ok':'special-rule-status error';
   }else{
