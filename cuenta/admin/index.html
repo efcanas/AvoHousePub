@@ -1709,7 +1709,8 @@ function emailEventLabel(type){
     verification:'Verificación',
     transactional:'Correo transaccional',
     marketing:'Comunicación',
-    profile_update:'Cambio de datos'
+    profile_update:'Cambio de datos',
+    points_adjustment:'Ajuste de AvoPuntos'
   })[type]||'Correo enviado';
 }
 function formatDateBogota(value,withTime=true){
@@ -2422,8 +2423,14 @@ async function adjustSelectedPoints(deltaMultiplier){
   $('summaryTag').textContent='Saldo '+Number(pointsBalance).toLocaleString('es-CO')+' AP';
   pointsInput.value='';
   reasonInput.value='';
-  statusEl.textContent=(delta>0?'+':'')+delta.toLocaleString('es-CO')+' AP aplicados correctamente.';
-  statusEl.className='points-adjust-status ok';
+  const pointsMessage=(delta>0?'+':'')+delta.toLocaleString('es-CO')+' AP aplicados correctamente.';
+  if(data?.email_queued===true){
+    statusEl.textContent=pointsMessage+' Notificación por correo encolada.';
+    statusEl.className='points-adjust-status ok';
+  }else{
+    statusEl.textContent=pointsMessage+' Atención: no se pudo encolar el correo.';
+    statusEl.className='points-adjust-status error';
+  }
 
   await loadRecentHistory();
   await refreshHistoryYears();
