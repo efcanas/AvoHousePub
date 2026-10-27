@@ -2943,8 +2943,10 @@ function renderCustomerAchievementGridAdmin(rewards){
     const base=customerAchievementCatalogAdmin[reward.code]||{title:reward.name||'Logro AH',icon:'../../assets/logros-ah/bienvenido.svg'};
     const catalog=specialCodes.has(reward.code)?{...base,title:reward.name||base.title}:base;
     const selected=selectedCustomerAchievementCodeAdmin===reward.code;
+    const tileTitle=reward.code==='first_redemption'?'1er movimiento':catalog.title;
     const label={claimed:'Obtenido',pending:'En revisión',available:'Por desbloquear',revoked:'No disponible'}[status]||'Por desbloquear';
-    return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(catalog.title)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(catalog.title)+'</span><span class="achievement-state">'+label+'</span>'+renderCustomerAchievementProgressAdmin(reward,true)+'</button>';
+    const progressMarkup=status==='claimed'?'':renderCustomerAchievementProgressAdmin(reward,true);
+    return '<button type="button" class="achievement-tile" data-achievement="'+escapeHtml(reward.code)+'" data-status="'+escapeHtml(status)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+(selected?'Cerrar detalle de ':'Ver detalle de ')+escapeHtml(tileTitle)+'"><img class="achievement-emblem'+(status==='claimed'?'':' is-locked')+'" src="'+escapeHtml(catalog.icon)+'" alt="" width="512" height="512" loading="eager" decoding="async"><span class="achievement-title">'+escapeHtml(tileTitle)+'</span><span class="achievement-state">'+label+'</span>'+progressMarkup+'</button>';
   };
 
   const bindGrid=targetGrid=>{
