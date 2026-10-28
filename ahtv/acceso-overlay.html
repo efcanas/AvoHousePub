@@ -6,19 +6,16 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>AHtv · Acceso a música</title>
+  <title>AHtv · Activación</title>
 </head>
 <body>
-  <p>Actualizando el recuadro de activación de AHtv…</p>
   <script>
     (function () {
-      const destination = new URL('/ahtv/acceso-overlay-v2.html', window.location.origin);
+      const destination = new URL('/ahtv/acceso-overlay-v3.html', window.location.origin);
       destination.search = window.location.search;
       window.location.replace(destination.toString());
     })();
   </script>
-  <noscript>
-    <a href="/ahtv/acceso-overlay-v2.html">Abrir el recuadro de activación de AHtv</a>
-  </noscript>
+  <noscript><a href="/ahtv/acceso-overlay-v3.html">Abrir el recuadro de activación de AHtv</a></noscript>
 </body>
 </html>
