@@ -275,6 +275,7 @@
       const validCodePattern = /^[a-z]+(?:-[a-z]+){2}$/;
       const fallbackCode = String(new URLSearchParams(window.location.search).get('code') || '').trim().toLowerCase();
       let currentCode = '';
+      let qrInstance = null;
       let refreshInProgress = false;
 
       function fitCodeToBox(value) {
@@ -295,30 +296,30 @@
         const nextCode = String(value || '').trim().toLowerCase();
         if (!validCodePattern.test(nextCode) || typeof QRCode === 'undefined') return false;
 
-        if (nextCode === currentCode && qrEl.childElementCount > 0) {
-          codeEl.textContent = nextCode;
-          fitCodeToBox(nextCode);
-          return true;
-        }
-
-        // Solo reconstruye QR y clave cuando cambia realmente el código.
-        currentCode = nextCode;
         codeEl.classList.remove('error');
         codeEl.textContent = nextCode;
         fitCodeToBox(nextCode);
 
+        // No se eliminan ni se vuelven a crear el canvas/la imagen.
+        // La misma instancia conserva el tamaño y la posición definidos por CSS.
+        if (nextCode === currentCode && qrInstance) return true;
+
+        currentCode = nextCode;
         const target = new URL('/ahtv/index.html', window.location.origin);
         target.searchParams.set('access', nextCode);
 
-        qrEl.replaceChildren();
-        new QRCode(qrEl, {
-          text: target.toString(),
-          width: 96,
-          height: 96,
-          colorDark: '#0c0d10',
-          colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M
-        });
+        if (!qrInstance) {
+          qrInstance = new QRCode(qrEl, {
+            text: target.toString(),
+            width: 96,
+            height: 96,
+            colorDark: '#0c0d10',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } else {
+          qrInstance.makeCode(target.toString());
+        }
         return true;
       }
 
