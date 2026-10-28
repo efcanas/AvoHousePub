@@ -266,11 +266,16 @@
   <script src="vendor/qrcode.min.js"></script>
   <script>
     (function () {
-      const code = String(new URLSearchParams(window.location.search).get('code') || '').trim().toLowerCase();
+      // Consulta únicamente la clave pública vigente; no utiliza permisos administrativos.
+      const SUPABASE_URL = 'https://tjarildqqxtjmafpiyuz.supabase.co';
+      const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Clp6KIiLE-gKHGu3Lp8E2A_DxYhFBdT';
       const codeEl = document.getElementById('accessCode');
       const qrEl = document.getElementById('qr');
       const keyBox = codeEl.parentElement;
-      const valid = /^[a-z]+(?:-[a-z]+){2}$/.test(code);
+      const validCodePattern = /^[a-z]+(?:-[a-z]+){2}$/;
+      const fallbackCode = String(new URLSearchParams(window.location.search).get('code') || '').trim().toLowerCase();
+      let currentCode = '';
+      let refreshInProgress = false;
 
       function fitCodeToBox(value) {
         if (!value || !keyBox || !codeEl) return;
@@ -286,33 +291,95 @@
         codeEl.style.fontSize = size + 'px';
       }
 
-      if (!valid || typeof QRCode === 'undefined') {
-        codeEl.textContent = 'Clave no disponible';
+      function renderAccessCode(value) {
+        const nextCode = String(value || '').trim().toLowerCase();
+        if (!validCodePattern.test(nextCode) || typeof QRCode === 'undefined') return false;
+
+        if (nextCode === currentCode && qrEl.childElementCount > 0) {
+          codeEl.textContent = nextCode;
+          fitCodeToBox(nextCode);
+          return true;
+        }
+
+        // Solo reconstruye QR y clave cuando cambia realmente el código.
+        currentCode = nextCode;
+        codeEl.classList.remove('error');
+        codeEl.textContent = nextCode;
+        fitCodeToBox(nextCode);
+
+        const target = new URL('/ahtv/index.html', window.location.origin);
+        target.searchParams.set('access', nextCode);
+
+        qrEl.replaceChildren();
+        new QRCode(qrEl, {
+          text: target.toString(),
+          width: 96,
+          height: 96,
+          colorDark: '#0c0d10',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        return true;
+      }
+
+      async function refreshCurrentCode() {
+        if (refreshInProgress || typeof QRCode === 'undefined') return;
+        refreshInProgress = true;
+
+        try {
+          const response = await fetch(
+            SUPABASE_URL + '/rest/v1/rpc/ahtv_overlay_obtener_clave_acceso',
+            {
+              method: 'POST',
+              cache: 'no-store',
+              headers: {
+                'apikey': SUPABASE_PUBLISHABLE_KEY,
+                'Content-Type': 'application/json'
+              },
+              body: '{}'
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error('Respuesta HTTP ' + response.status);
+          }
+
+          const data = await response.json();
+          const nextCode = String(data && data.code || '').trim().toLowerCase();
+          if (!validCodePattern.test(nextCode) || !data.valid_until) {
+            throw new Error('Supabase no devolvió una clave vigente válida.');
+          }
+
+          renderAccessCode(nextCode);
+        } catch (error) {
+          // Si la red falla temporalmente, se conserva la última clave y su QR.
+          console.warn('AHtv: no fue posible actualizar la clave en este intento.', error);
+        } finally {
+          refreshInProgress = false;
+        }
+      }
+
+      if (typeof QRCode === 'undefined') {
+        codeEl.textContent = 'QR no disponible';
         codeEl.classList.add('error');
         qrEl.textContent = 'QR no disponible';
-        fitCodeToBox(codeEl.textContent);
         return;
       }
 
-      codeEl.textContent = code;
-      fitCodeToBox(code);
+      // El parámetro code permite mostrar algo inmediatamente; Supabase lo reemplaza
+      // en cuanto responde con la clave real, aunque la URL de OBS no cambie.
+      if (!renderAccessCode(fallbackCode)) {
+        codeEl.textContent = 'Consultando clave…';
+      }
 
-      const target = new URL('/ahtv/index.html', window.location.origin);
-      target.searchParams.set('access', code);
-
-      qrEl.replaceChildren();
-      new QRCode(qrEl, {
-        text: target.toString(),
-        width: 96,
-        height: 96,
-        colorDark: '#0c0d10',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      // Keep the key readable if its text or the rendered width changes.
+      refreshCurrentCode();
+      window.setInterval(refreshCurrentCode, 15000);
+      window.addEventListener('focus', refreshCurrentCode);
       window.addEventListener('resize', function () {
-        fitCodeToBox(codeEl.textContent);
+        if (currentCode) fitCodeToBox(currentCode);
+      });
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) refreshCurrentCode();
       });
     })();
   </script>
