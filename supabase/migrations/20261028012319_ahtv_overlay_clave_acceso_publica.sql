@@ -39,3 +39,5 @@ $function$;
 
 revoke all on function public.ahtv_overlay_obtener_clave_acceso() from public;
 grant execute on function public.ahtv_overlay_obtener_clave_acceso() to anon, authenticated;
+
+notify pgrst, 'reload schema';
