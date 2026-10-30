@@ -2,7 +2,7 @@ DO $repair$
 DECLARE
   v_definition text;
   v_old text := 'email_change=null,email_change_token_new=null';
-  v_new text := 'email_change='''' ,email_change_token_new=''''';
+  v_new text := 'email_change='''',email_change_token_new=''''';
   v_repaired text;
 BEGIN
   v_definition := pg_get_functiondef(
