@@ -80,7 +80,7 @@
       top: 0 !important;
       bottom: 0 !important;
       display: grid !important;
-      grid-template-columns: minmax(0, 1fr) 2px 123px 150px !important;
+      grid-template-columns: minmax(0, 1fr) 2px 123px 180px !important;
       column-gap: 12px !important;
       align-items: center !important;
       margin: 0 !important;
@@ -175,7 +175,7 @@
       flex-direction: column !important;
       justify-content: center !important;
       min-width: 0 !important;
-      width: 150px !important;
+      width: 180px !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: visible !important;
@@ -193,7 +193,7 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 150px !important;
+      width: 180px !important;
       min-width: 0 !important;
       height: 47px !important;
       margin: 0 !important;
@@ -214,8 +214,8 @@
       margin: 0 !important;
       padding: 0 !important;
       color: #b8ff39 !important;
-      font-size: 16px;
-      line-height: 20px !important;
+      font-size: 20px;
+      line-height: 24px !important;
       letter-spacing: 0 !important;
       font-weight: 800 !important;
       text-align: center !important;
@@ -253,7 +253,7 @@
     <div class="layout">
       <div class="copy">
         <div class="title">Activa <span class="ah">AH</span><span class="tv">tv</span></div>
-        <div class="hint">Escanea el código QR o ingresa la clave en tu dispositivo para enviar tu canción.</div>
+        <div class="hint">Escanea el código QR o ingresa<br>la clave en tu dispositivo para<br>enviar tu canción.</div>
       </div>
       <div class="divider" aria-hidden="true"></div>
       <div id="qr" aria-label="Código QR para solicitar música"></div>
@@ -283,7 +283,7 @@
         const measure = document.createElement('canvas').getContext('2d');
         if (!measure) return;
         const availableWidth = Math.max(10, keyBox.clientWidth - 12);
-        let size = 16;
+        let size = 20;
         while (size > 7.5) {
           measure.font = '800 ' + size + 'px Arial';
           if (measure.measureText(value).width <= availableWidth) break;
