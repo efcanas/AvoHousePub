@@ -3464,13 +3464,16 @@ function renderCustomerDirectoryPagination(pagination){
 async function loadCustomerDirectory(options={}){
   if(options.resetPage===true)customerDirectoryPage=1;
   const term=$('searchInput').value.trim();
+  const refresh=$('customerDirectoryRefreshBtn');
   if(term.length===1){
+    customerDirectoryRequest++;
+    $('searchBtn').disabled=false;
+    refresh.disabled=false;
     $('results').innerHTML='<div class="empty">Escribe al menos 2 caracteres o borra el texto para ver todos los clientes.</div>';
     return;
   }
 
   const requestId=++customerDirectoryRequest;
-  const refresh=$('customerDirectoryRefreshBtn');
   $('searchBtn').disabled=true;
   refresh.disabled=true;
   $('searchStatus').textContent='Cargando…';
@@ -3680,6 +3683,7 @@ async function login(event){
 }
 
 async function logout(){
+  customerDirectoryRequest++;
   await db.auth.signOut();
   selectedProfile=null;
   pointsBalance=0;
