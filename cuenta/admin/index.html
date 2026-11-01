@@ -3409,7 +3409,7 @@ function renderCustomerDirectoryRows(customers){
     const fullName=escapeHtml(p.full_name||'');
     const email=escapeHtml(p.email||'Sin correo registrado');
     const balance=formatDirectoryCount(p.balance)+' AP';
-    const registered=escapeHtml(formatDate(p.created_at));
+    const registered=escapeHtml(p.created_at?new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(p.created_at)):'—');
     const emailBadge=p.email_confirmed
       ? '<span class="customer-directory-badge good">Correo confirmado</span>'
       : '<span class="customer-directory-badge pending">Correo pendiente</span>';
