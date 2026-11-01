@@ -1079,6 +1079,62 @@ body.admin-achievement-modal-open{overflow:hidden}
   #pointsSettingsCard .promo-form #createPromoBtn{margin-top:4px}
 }
 
+
+/* Directorio de clientes CC: estadísticas compactas, gráfica y controles responsive. */
+.customer-directory-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.customer-directory-refresh{height:34px;min-height:34px;padding:8px 12px;font-size:11px;line-height:1}
+.customer-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.customer-stat-card{min-width:0;padding:13px 14px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.025);display:flex;flex-direction:column;gap:5px}
+.customer-stat-label{font-size:10px;line-height:1.35;letter-spacing:.055em;color:#9ca3af;font-weight:800}
+.customer-stat-value{font-size:25px;line-height:1.15;color:#fff;font-weight:850;font-variant-numeric:tabular-nums}
+.customer-stat-note{font-size:11px;color:#858c98;line-height:1.35}
+.customer-growth-card{padding:13px 14px 10px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.02);margin-bottom:15px}
+.customer-growth-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.customer-growth-heading strong{font-size:13px}
+.customer-growth-heading span{font-size:11px;color:#8f96a3}
+.customer-growth-chart{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));align-items:end;gap:7px;min-height:126px;padding-top:10px}
+.customer-growth-col{min-width:0;height:114px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px}
+.customer-growth-value{height:12px;font-size:9px;line-height:12px;color:#aeb4bf;font-variant-numeric:tabular-nums}
+.customer-growth-bar-area{height:78px;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.customer-growth-bar{width:min(100%,25px);min-height:2px;border-radius:5px 5px 2px 2px;background:#a7d94c;opacity:.9}
+.customer-growth-label{font-size:9px;line-height:12px;color:#9097a2;text-transform:capitalize}
+.customer-directory-tools{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.customer-directory-select{display:flex;flex-direction:column;gap:5px;color:#9ca3af;font-size:11px;font-weight:700}
+.customer-directory-select select{width:100%;height:37px;min-height:37px;margin:0;padding:0 11px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:#171a20;color:#fff;font:inherit;font-size:13px}
+.customer-result-main{min-width:0;flex:1}
+.customer-result-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px;white-space:nowrap}
+.customer-result-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.customer-directory-badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:20px;font-size:10px;line-height:1.2;border:1px solid rgba(255,255,255,.15);color:#9ca3af}
+.customer-directory-badge.good{color:#b8f5b8;border-color:rgba(184,245,184,.28)}
+.customer-directory-badge.pending{color:#e8d59a;border-color:rgba(232,213,154,.3)}
+.customer-pagination{margin-top:12px}
+.customer-pagination-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.customer-pagination-summary{color:#9ca3af;font-size:11px}
+.customer-pagination-controls{display:flex;align-items:center;gap:7px}
+.customer-page-button{height:34px;min-height:34px;padding:7px 11px;font-size:11px;line-height:1}
+.customer-page-label{font-size:11px;color:#b8bec8;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:760px){
+  .customer-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .customer-stat-card{padding:11px 12px}
+  .customer-stat-value{font-size:23px}
+  .customer-growth-chart{gap:3px}
+  .customer-growth-label{font-size:8px}
+}
+@media(max-width:480px){
+  .customer-directory-heading-actions{gap:5px}
+  .customer-directory-refresh{padding:7px 8px;font-size:10px}
+  .customer-growth-card{padding:11px 9px 8px}
+  .customer-directory-tools{grid-template-columns:1fr 1fr;gap:7px}
+  .customer-directory-select select{font-size:12px;padding:0 7px}
+  .result-item{gap:8px;padding:11px 10px}
+  .result-user{font-size:14px}
+  .result-sub{font-size:11px}
+  .result-balance{font-size:14px}
+  .customer-result-meta{gap:3px}
+  .customer-pagination-inner{align-items:flex-start}
+  .customer-pagination-controls{width:100%;justify-content:flex-end}
+}
+
 </style>
   <link rel="stylesheet" href="./header.css?v=20261019-2">
 </head>
@@ -1144,17 +1200,77 @@ body.admin-achievement-modal-open{overflow:hidden}
     </section>
 
 
-  <section class="card">
+  <section class="card" id="customerDirectoryCard">
     <div class="panel-heading">
-      <h2 class="panel-title">Buscar cliente</h2>
-      <span id="searchStatus" class="panel-tag">Admin</span>
+      <h2 class="panel-title">Clientes</h2>
+      <div class="customer-directory-heading-actions">
+        <span id="searchStatus" class="panel-tag">Cargando…</span>
+        <button id="customerDirectoryRefreshBtn" class="ghost customer-directory-refresh" type="button">ACTUALIZAR</button>
+      </div>
     </div>
+
+    <div class="customer-stats-grid" aria-live="polite">
+      <div class="customer-stat-card">
+        <span class="customer-stat-label">CLIENTES REGISTRADOS</span>
+        <strong id="directoryStatTotal" class="customer-stat-value">—</strong>
+        <span class="customer-stat-note">Cuentas creadas</span>
+      </div>
+      <div class="customer-stat-card">
+        <span class="customer-stat-label">NUEVOS · 30 DÍAS</span>
+        <strong id="directoryStatRecent" class="customer-stat-value">—</strong>
+        <span class="customer-stat-note">Registros recientes</span>
+      </div>
+      <div class="customer-stat-card">
+        <span class="customer-stat-label">CORREOS CONFIRMADOS</span>
+        <strong id="directoryStatConfirmed" class="customer-stat-value">—</strong>
+        <span class="customer-stat-note">Cuentas verificadas</span>
+      </div>
+      <div class="customer-stat-card">
+        <span class="customer-stat-label">CON SALDO AP</span>
+        <strong id="directoryStatWithAp" class="customer-stat-value">—</strong>
+        <span class="customer-stat-note">Saldo disponible mayor a cero</span>
+      </div>
+    </div>
+
+    <div class="customer-growth-card">
+      <div class="customer-growth-heading">
+        <strong>Registros por mes</strong>
+        <span>Últimos 12 meses</span>
+      </div>
+      <div id="customerGrowthChart" class="customer-growth-chart" role="img" aria-label="Registros mensuales de clientes">
+        <div class="empty">Cargando estadísticas…</div>
+      </div>
+    </div>
+
     <form id="searchForm" class="search-row" onsubmit="return false;">
-      <input id="searchInput" type="search" placeholder="Nickname, nombre, correo, documento o celular" autocomplete="off">
+      <input id="searchInput" type="search" placeholder="Buscar por nickname, nombre, correo, documento o celular" autocomplete="off">
       <button id="searchBtn" type="submit" class="primary">BUSCAR</button>
     </form>
-    <div class="helper">Selecciona un cliente para abrir su información.</div>
+    <div class="customer-directory-tools">
+      <label class="customer-directory-select">
+        <span>Filtrar</span>
+        <select id="customerFilter">
+          <option value="all">Todos los clientes</option>
+          <option value="recent">Nuevos · últimos 30 días</option>
+          <option value="with_ap">Con saldo AP</option>
+          <option value="without_ap">Sin saldo AP</option>
+          <option value="pending_email">Correo pendiente</option>
+          <option value="marketing">Aceptan publicidad</option>
+        </select>
+      </label>
+      <label class="customer-directory-select">
+        <span>Ordenar por</span>
+        <select id="customerSort">
+          <option value="newest">Más recientes</option>
+          <option value="oldest">Más antiguos</option>
+          <option value="name">Nombre</option>
+          <option value="balance">Mayor saldo AP</option>
+        </select>
+      </label>
+    </div>
+    <div class="helper">Selecciona un cliente para abrir su ficha y administrar su información.</div>
     <div id="results" class="results" style="margin-top:14px"></div>
+    <div id="customerPagination" class="customer-pagination" aria-live="polite"></div>
   </section>
 
   <section id="clientArea" class="hidden">
@@ -1450,6 +1566,9 @@ let historyMovements=[];
 let emailHistoryMode='recent';
 let emailHistoryRows=[];
 let customerEditing=false;
+let customerDirectoryPage=1;
+let customerDirectoryRequest=0;
+const CUSTOMER_DIRECTORY_PAGE_SIZE=25;
 const $=id=>document.getElementById(id);
 
 function showNotice(message,error=false){
@@ -3240,66 +3359,167 @@ async function refreshHistoryYears(){
   populateHistoryYears(data||[]);
 }
 
-async function searchClients(){
-  const term=$('searchInput').value.trim();
+function formatDirectoryCount(value){
+  return Number(value||0).toLocaleString('es-CO');
+}
+
+function renderCustomerDirectoryStats(stats){
+  const values=stats||{};
+  setText('directoryStatTotal',formatDirectoryCount(values.total));
+  setText('directoryStatRecent',formatDirectoryCount(values.recent_30_days));
+  setText('directoryStatConfirmed',formatDirectoryCount(values.confirmed_emails));
+  setText('directoryStatWithAp',formatDirectoryCount(values.with_ap));
+}
+
+function renderCustomerGrowthChart(months){
+  const chart=$('customerGrowthChart');
+  const rows=Array.isArray(months)?months:[];
+  if(!rows.length){
+    chart.innerHTML='<div class="empty">Todavía no hay registros para mostrar.</div>';
+    return;
+  }
+  const maxValue=Math.max(0,...rows.map(row=>Number(row.count)||0));
+  chart.innerHTML=rows.map(row=>{
+    const count=Math.max(0,Number(row.count)||0);
+    const month=String(row.month||'');
+    let label=month;
+    if(/^\d{4}-\d{2}$/.test(month)){
+      const [year,monthNumber]=month.split('-').map(Number);
+      label=new Date(year,monthNumber-1,15).toLocaleDateString('es-CO',{month:'short'}).replace('.','');
+    }
+    const height=maxValue>0?(count>0?Math.max(8,Math.round(count/maxValue*100)):3):3;
+    return '<div class="customer-growth-col" title="'+escapeHtml(label)+': '+formatDirectoryCount(count)+' registros">'+
+      '<span class="customer-growth-value">'+formatDirectoryCount(count)+'</span>'+
+      '<div class="customer-growth-bar-area"><div class="customer-growth-bar" style="height:'+height+'%"></div></div>'+
+      '<span class="customer-growth-label">'+escapeHtml(label)+'</span>'+
+    '</div>';
+  }).join('');
+}
+
+function renderCustomerDirectoryRows(customers){
   const results=$('results');
-
-  if(term.length<2){
-    results.innerHTML=term?'<div class="empty">Escribe al menos 2 caracteres.</div>':'';
-    $('searchStatus').textContent='Admin';
+  const rows=Array.isArray(customers)?customers:[];
+  if(!rows.length){
+    results.innerHTML='<div class="empty">No hay clientes que coincidan con estos criterios.</div>';
     return;
   }
 
-  results.innerHTML='<div class="empty">Buscando clientes…</div>';
-  $('searchBtn').disabled=true;
-  $('searchStatus').textContent='Buscando…';
-  hideNotice();
-
-  // Escapar caracteres especiales del filtro PostgREST para que la búsqueda no se rompa.
-  const escaped=term.replace(/[,%]/g,' ').replace(/[()]/g,' ').trim();
-  const {data,error}=await db.from('profiles')
-    .select('id,username,full_name,email,phone,whatsapp,whatsapp_same,instagram,document_number,document_type,created_at,birth_date')
-    .or('username.ilike.%'+escaped+'%,full_name.ilike.%'+escaped+'%,email.ilike.%'+escaped+'%,document_number.ilike.%'+escaped+'%,phone.ilike.%'+escaped+'%')
-    .order('created_at',{ascending:false})
-    .limit(30);
-
-  $('searchBtn').disabled=false;
-  $('searchStatus').textContent='Admin';
-
-  if(error){
-    results.innerHTML='';
-    showNotice('No se pudo buscar clientes: '+error.message,true);
-    return;
-  }
-
-  if(!data?.length){
-    results.innerHTML='<div class="empty">No se encontraron clientes para «'+term.replace(/[<>&"]/g,'')+'».</div>';
-    return;
-  }
-
-  const ids=data.map(x=>x.id);
-  const {data:accounts,error:accountError}=await db
-    .from('avopuntos_accounts')
-    .select('profile_id,balance')
-    .in('profile_id',ids);
-
-  if(accountError){
-    showNotice('Clientes encontrados, pero no se pudieron cargar sus saldos: '+accountError.message,true);
-  }
-
-  const balanceMap=new Map((accounts||[]).map(a=>[a.profile_id,Number(a.balance||0)]));
-
-  results.innerHTML=data.map(p=>{
-    const secondary=[p.email,p.phone,[p.document_type,p.document_number].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
-    return '<div class="result-item" data-id="'+p.id+'">'+
-      '<div class="result-main"><div class="result-user">'+(p.username||p.full_name||'Sin nickname')+'</div><div class="result-sub">'+(p.full_name||'')+(secondary?' · '+secondary:'')+'</div></div>'+
-      '<div class="result-balance">'+(balanceMap.get(p.id)||0)+' AP</div>'+
+  results.innerHTML=rows.map((p,index)=>{
+    const username=escapeHtml(p.username||p.full_name||'Sin nickname');
+    const fullName=escapeHtml(p.full_name||'');
+    const email=escapeHtml(p.email||'Sin correo registrado');
+    const balance=formatDirectoryCount(p.balance)+' AP';
+    const registered=escapeHtml(formatDate(p.created_at));
+    const emailBadge=p.email_confirmed
+      ? '<span class="customer-directory-badge good">Correo confirmado</span>'
+      : '<span class="customer-directory-badge pending">Correo pendiente</span>';
+    const marketingBadge=p.marketing_authorized===true
+      ? '<span class="customer-directory-badge good">Acepta publicidad</span>'
+      : '';
+    return '<div class="result-item" data-directory-index="'+index+'" role="button" tabindex="0" aria-label="Abrir ficha de '+username+'">'+
+      '<div class="customer-result-main">'+
+        '<div class="result-user">'+username+'</div>'+
+        '<div class="result-sub">'+(fullName?fullName+' · ':'')+email+'</div>'+
+        '<div class="customer-result-tags">'+emailBadge+marketingBadge+'</div>'+
+      '</div>'+
+      '<div class="customer-result-meta">'+
+        '<div class="result-balance">'+balance+'</div>'+
+        '<div class="result-sub">'+registered+'</div>'+
+      '</div>'+
     '</div>';
   }).join('');
 
-  results.querySelectorAll('.result-item').forEach((el,i)=>el.addEventListener('click',()=>loadClient(data[i])));
+  results.querySelectorAll('.result-item[data-directory-index]').forEach(el=>{
+    const open=()=>{
+      const index=Number(el.dataset.directoryIndex);
+      const profile=rows[index];
+      if(profile)loadClient(profile);
+    };
+    el.addEventListener('click',open);
+    el.addEventListener('keydown',event=>{
+      if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}
+    });
+  });
 }
 
+function renderCustomerDirectoryPagination(pagination){
+  const target=$('customerPagination');
+  const info=pagination||{};
+  const page=Math.max(1,Number(info.page)||1);
+  const totalPages=Math.max(1,Number(info.total_pages)||1);
+  const total=Math.max(0,Number(info.total_filtered)||0);
+  const from=Math.max(0,Number(info.from)||0);
+  const to=Math.max(0,Number(info.to)||0);
+  target.innerHTML=
+    '<div class="customer-pagination-inner">'+
+      '<span class="customer-pagination-summary">Mostrando '+formatDirectoryCount(from)+'–'+formatDirectoryCount(to)+' de '+formatDirectoryCount(total)+' clientes</span>'+
+      '<div class="customer-pagination-controls">'+
+        '<button type="button" class="ghost customer-page-button" data-customer-page="'+(page-1)+'" '+(page<=1?'disabled':'')+'>ANTERIOR</button>'+
+        '<span class="customer-page-label">Página '+formatDirectoryCount(page)+' de '+formatDirectoryCount(totalPages)+'</span>'+
+        '<button type="button" class="ghost customer-page-button" data-customer-page="'+(page+1)+'" '+(page>=totalPages?'disabled':'')+'>SIGUIENTE</button>'+
+      '</div>'+
+    '</div>';
+}
+
+async function loadCustomerDirectory(options={}){
+  if(options.resetPage===true)customerDirectoryPage=1;
+  const term=$('searchInput').value.trim();
+  if(term.length===1){
+    $('results').innerHTML='<div class="empty">Escribe al menos 2 caracteres o borra el texto para ver todos los clientes.</div>';
+    return;
+  }
+
+  const requestId=++customerDirectoryRequest;
+  const refresh=$('customerDirectoryRefreshBtn');
+  $('searchBtn').disabled=true;
+  refresh.disabled=true;
+  $('searchStatus').textContent='Cargando…';
+  $('results').innerHTML='<div class="empty">Cargando clientes…</div>';
+  $('customerPagination').innerHTML='';
+
+  try{
+    const {data,error}=await db.rpc('avopuntos_admin_list_customers',{
+      p_search:term||null,
+      p_filter:$('customerFilter').value||'all',
+      p_sort:$('customerSort').value||'newest',
+      p_page:customerDirectoryPage,
+      p_page_size:CUSTOMER_DIRECTORY_PAGE_SIZE
+    });
+
+    if(requestId!==customerDirectoryRequest)return;
+    if(error){
+      $('searchStatus').textContent='Error';
+      $('results').innerHTML='';
+      $('customerGrowthChart').innerHTML='<div class="empty">No se pudieron cargar las estadísticas.</div>';
+      $('customerPagination').innerHTML='';
+      showNotice('No se pudo cargar el directorio de clientes: '+(error.message||'error de consulta'),true);
+      return;
+    }
+
+    hideNotice();
+    const payload=data||{};
+    renderCustomerDirectoryStats(payload.stats);
+    renderCustomerGrowthChart(payload.monthly_registrations);
+    renderCustomerDirectoryRows(payload.customers);
+    renderCustomerDirectoryPagination(payload.pagination);
+    $('searchStatus').textContent=formatDirectoryCount(payload.stats?.total)+' clientes';
+    customerDirectoryPage=Number(payload.pagination?.page)||1;
+  }catch(error){
+    if(requestId!==customerDirectoryRequest)return;
+    $('searchStatus').textContent='Error';
+    $('results').innerHTML='';
+    showNotice('No se pudo cargar el directorio de clientes: '+(error?.message||'verifica tu conexión.'),true);
+  }finally{
+    if(requestId===customerDirectoryRequest){
+      $('searchBtn').disabled=false;
+      refresh.disabled=false;
+    }
+  }
+}
+
+function searchClients(){
+  loadCustomerDirectory({resetPage:true});
+}
 async function openReceipt(receiptNumber){
   const number=String(receiptNumber||'').trim();
   if(!number||!selectedProfile?.id)return;
@@ -3418,6 +3638,7 @@ async function enterWithExistingSession(){document.getElementById('sessionGate')
   $('loginStatus').textContent='';
   showAdmin();
   await loadPointsSettings();
+  await loadCustomerDirectory({resetPage:true});
   return true;
 }
 
@@ -3472,19 +3693,31 @@ async function logout(){
 
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
-$('searchForm').addEventListener('submit',e=>{e.preventDefault();searchClients();});
+$('searchForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  searchClients();
+});
 let searchDebounce=null;
 $('searchInput').addEventListener('input',()=>{
   clearTimeout(searchDebounce);
   const term=$('searchInput').value.trim();
-  if(term.length<2){
-    $('results').innerHTML=term?'Escribe al menos 2 caracteres.':'';
-    $('searchStatus').textContent='Admin';
+  if(term.length===1){
+    $('results').innerHTML='<div class="empty">Escribe al menos 2 caracteres o borra el texto para ver todos los clientes.</div>';
     return;
   }
-  searchDebounce=setTimeout(()=>searchClients(),300);
+  searchDebounce=setTimeout(()=>loadCustomerDirectory({resetPage:true}),term.length===0?100:300);
 });
-
+$('customerFilter').addEventListener('change',()=>loadCustomerDirectory({resetPage:true}));
+$('customerSort').addEventListener('change',()=>loadCustomerDirectory({resetPage:true}));
+$('customerDirectoryRefreshBtn').addEventListener('click',()=>loadCustomerDirectory({resetPage:true}));
+$('customerPagination').addEventListener('click',event=>{
+  const button=event.target.closest('[data-customer-page]');
+  if(!button||button.disabled)return;
+  const nextPage=Number(button.dataset.customerPage);
+  if(!Number.isInteger(nextPage)||nextPage<1)return;
+  customerDirectoryPage=nextPage;
+  loadCustomerDirectory();
+});
 $('historyYear').addEventListener('change',populateHistoryMonths);
 $('editCustomerBtn').addEventListener('click',()=>customerEditing?saveCustomerData():enterCustomerEditMode());
 $('cancelEditCustomerBtn').addEventListener('click',cancelCustomerEditMode);
