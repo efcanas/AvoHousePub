@@ -67,10 +67,77 @@ body::before{content:"";position:fixed;top:0;left:0;width:100%;height:100%;backg
 .top-register a{padding:9px 14px;font-size:.72em}
 .register-card{padding:22px}
 }
+
+/* ===== BANNER FLOTANTE CAMPAÑA PILOTO AHP ===== */
+.ahp-pilot-banner{
+  position:fixed;right:24px;bottom:24px;z-index:10000;
+  width:min(390px,calc(100vw - 40px));padding:22px 22px 18px;
+  color:#f5f3ed;background:linear-gradient(145deg,rgba(25,26,27,.98),rgba(10,11,12,.98));
+  border:1px solid rgba(214,173,90,.72);border-radius:18px;
+  box-shadow:0 16px 48px rgba(0,0,0,.48);backdrop-filter:blur(12px);
+}
+.ahp-pilot-banner[hidden]{display:none!important}
+.ahp-pilot-banner::before{
+  content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;
+  background:#d6ad5a;border-radius:0 4px 4px 0;
+}
+.ahp-pilot-banner__close{
+  position:absolute;top:9px;right:10px;width:34px;height:34px;
+  display:grid;place-items:center;border:1px solid rgba(255,255,255,.22);
+  border-radius:50%;background:rgba(255,255,255,.06);color:#fff;
+  font:400 24px/1 Arial,sans-serif;cursor:pointer;
+}
+.ahp-pilot-banner__close:hover{background:rgba(255,255,255,.16)}
+.ahp-pilot-banner__eyebrow{
+  margin:0 38px 10px 0;color:#d6ad5a;font-size:10px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+}
+.ahp-pilot-banner__title{
+  margin:0 28px 9px 0;color:#fff;font-size:19px;font-weight:750;
+  line-height:1.22;letter-spacing:.1px;
+}
+.ahp-pilot-banner__offer{
+  margin:0 0 8px;color:#e5bd6b;font-size:31px;font-weight:800;
+  line-height:1;letter-spacing:1px;
+}
+.ahp-pilot-banner__copy{
+  margin:0 0 15px;color:#e2e0db;font-size:13px;line-height:1.5;
+}
+.ahp-pilot-banner__cta{
+  display:block;width:100%;padding:12px 16px;border:1px solid #d6ad5a;
+  border-radius:10px;background:#d6ad5a;color:#171717;text-align:center;
+  text-decoration:none;font-size:12px;font-weight:800;letter-spacing:1.1px;
+  transition:background .2s ease,border-color .2s ease;
+}
+.ahp-pilot-banner__cta:hover{background:#edca82;border-color:#edca82}
+.ahp-pilot-banner__note{
+  margin:10px 0 0;color:#aaa;font-size:10px;line-height:1.4;text-align:center;
+}
+@media(max-width:480px){
+  .ahp-pilot-banner{
+    left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));
+    width:auto;padding:19px 18px 15px;border-radius:16px;
+  }
+  .ahp-pilot-banner__title{font-size:18px}
+  .ahp-pilot-banner__offer{font-size:29px}
+  .ahp-pilot-banner__copy{font-size:12px;margin-bottom:13px}
+  .ahp-pilot-banner__cta{padding:12px}
+}
+
 </style>
 </head>
 
 <body>
+
+<aside id="ahpPilotBanner" class="ahp-pilot-banner" role="region" aria-label="Promoción de lanzamiento de AvoPuntos" hidden>
+  <button class="ahp-pilot-banner__close" id="ahpPilotBannerClose" type="button" aria-label="Cerrar anuncio" title="Cerrar">×</button>
+  <p class="ahp-pilot-banner__eyebrow">Lanzamiento · Logro Piloto</p>
+  <p class="ahp-pilot-banner__title">¡Regístrate antes del 31 de diciembre de 2026!</p>
+  <p class="ahp-pilot-banner__offer">AP×2</p>
+  <p class="ahp-pilot-banner__copy">Obtén el logro Piloto y acumula el doble de AvoPuntos en tus compras elegibles hasta el 31 de enero de 2027.</p>
+  <a class="ahp-pilot-banner__cta" id="ahpPilotBannerRegister" href="cuenta/registro.html">CREAR MI CUENTA</a>
+  <p class="ahp-pilot-banner__note">Promoción para mayores de 18 años · Consulta los términos del programa.</p>
+</aside>
 
 <section class="hero">
 
@@ -108,6 +175,39 @@ body::before{content:"";position:fixed;top:0;left:0;width:100%;height:100%;backg
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
 <script src="menu-public.js?v=20261023-3" defer></script>
+
+<script>
+(function(){
+  const banner=document.getElementById('ahpPilotBanner');
+  const closeButton=document.getElementById('ahpPilotBannerClose');
+  const registerLink=document.getElementById('ahpPilotBannerRegister');
+  if(!banner||!closeButton||!registerLink)return;
+
+  const parts=new Intl.DateTimeFormat('en-US',{
+    timeZone:'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(new Date());
+  const dateParts={};
+  parts.forEach(part=>{if(part.type!=='literal')dateParts[part.type]=part.value;});
+  const today=dateParts.year+'-'+dateParts.month+'-'+dateParts.day;
+  if(today>'2026-12-31')return;
+
+  const dismissedKey='ahpPilotBannerDismissed2026';
+  try{
+    if(localStorage.getItem(dismissedKey)==='1')return;
+  }catch(error){}
+
+  banner.hidden=false;
+
+  function dismissBanner(){
+    banner.hidden=true;
+    try{localStorage.setItem(dismissedKey,'1');}catch(error){}
+  }
+
+  closeButton.addEventListener('click',dismissBanner);
+  registerLink.addEventListener('click',dismissBanner);
+})();
+</script>
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
