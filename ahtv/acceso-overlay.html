@@ -185,8 +185,8 @@
       margin: 0 0 5px !important;
       padding: 0 !important;
       color: #fff !important;
-      font-size: 13px !important;
-      line-height: 16px !important;
+      font-size: 14px !important;
+      line-height: 17px !important;
       font-weight: 700 !important;
     }
     .key-box {
@@ -214,8 +214,8 @@
       margin: 0 !important;
       padding: 0 !important;
       color: #b8ff39 !important;
-      font-size: 20px;
-      line-height: 24px !important;
+      font-size: 22px;
+      line-height: 26px !important;
       letter-spacing: 0 !important;
       font-weight: 800 !important;
       text-align: center !important;
@@ -283,7 +283,7 @@
         const measure = document.createElement('canvas').getContext('2d');
         if (!measure) return;
         const availableWidth = Math.max(10, keyBox.clientWidth - 12);
-        let size = 20;
+        let size = 22;
         while (size > 7.5) {
           measure.font = '800 ' + size + 'px Arial';
           if (measure.measureText(value).width <= availableWidth) break;
