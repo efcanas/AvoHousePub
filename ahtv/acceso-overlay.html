@@ -10,10 +10,10 @@
   <style>
     * { box-sizing: border-box !important; }
     html, body {
-      width: 390px !important;
-      height: 640px !important;
-      min-width: 390px !important;
-      min-height: 640px !important;
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
@@ -23,13 +23,13 @@
     }
     .panel {
       position: relative !important;
-      width: 390px !important;
-      height: 640px !important;
+      width: 100% !important;
+      height: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
       border: 0 !important;
-      border-radius: 28px !important;
+      border-radius: min(7.18vw, 4.375vh) !important;
       background: rgba(3,4,5,.70) !important;
       color: #fff !important;
     }
@@ -37,8 +37,8 @@
       position: absolute !important;
       inset: 0 !important;
       display: block !important;
-      width: 390px !important;
-      height: 640px !important;
+      width: 100% !important;
+      height: 100% !important;
       pointer-events: none !important;
       z-index: 1 !important;
     }
@@ -74,7 +74,7 @@
     }
     .layout {
       position: absolute !important;
-      inset: 22px 20px 22px 20px !important;
+      inset: min(5.64vw, 3.4375vh) min(5.13vw, 3.125vh) !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
@@ -90,19 +90,19 @@
       align-items: center !important;
       justify-content: center !important;
       flex: none !important;
-      width: 240px !important;
-      min-width: 240px !important;
-      max-width: 240px !important;
-      height: 240px !important;
-      min-height: 240px !important;
-      max-height: 240px !important;
-      margin: 12px auto 14px !important;
-      padding: 10px !important;
+      width: min(61.538vw, 37.5vh) !important;
+      min-width: min(61.538vw, 37.5vh) !important;
+      max-width: min(61.538vw, 37.5vh) !important;
+      height: min(61.538vw, 37.5vh) !important;
+      min-height: min(61.538vw, 37.5vh) !important;
+      max-height: min(61.538vw, 37.5vh) !important;
+      margin: min(3.077vw, 1.875vh) auto min(3.59vw, 2.1875vh) !important;
+      padding: min(2.564vw, 1.5625vh) !important;
       overflow: hidden !important;
       border: 1px solid rgba(225,255,225,.95) !important;
-      border-radius: 12px !important;
+      border-radius: min(3.077vw, 1.875vh) !important;
       background: #fff !important;
-      box-shadow: 0 0 12px rgba(30,255,10,.68) !important;
+      box-shadow: 0 0 min(3.077vw, 1.875vh) rgba(30,255,10,.68) !important;
       color: #111 !important;
       line-height: 0 !important;
       font-size: 10px !important;
@@ -111,12 +111,12 @@
     html body .panel #qr canvas,
     html body .panel #qr img {
       flex: none !important;
-      width: 220px !important;
-      min-width: 220px !important;
-      max-width: 220px !important;
-      height: 220px !important;
-      min-height: 220px !important;
-      max-height: 220px !important;
+      width: min(56.41vw, 34.375vh) !important;
+      min-width: min(56.41vw, 34.375vh) !important;
+      max-width: min(56.41vw, 34.375vh) !important;
+      height: min(56.41vw, 34.375vh) !important;
+      min-height: min(56.41vw, 34.375vh) !important;
+      max-height: min(56.41vw, 34.375vh) !important;
       margin: 0 !important;
       padding: 0 !important;
       object-fit: contain !important;
@@ -136,11 +136,11 @@
       text-align: center !important;
     }
     .title {
-      margin: 0 0 8px !important;
+      margin: 0 0 min(2.051vw, 1.25vh) !important;
       padding: 0 !important;
       color: #fff !important;
-      font-size: 36px !important;
-      line-height: 42px !important;
+      font-size: min(9.231vw, 5.625vh) !important;
+      line-height: min(10.769vw, 6.5625vh) !important;
       font-weight: 800 !important;
       letter-spacing: -.7px !important;
       white-space: nowrap !important;
@@ -149,12 +149,12 @@
     .title .tv { color: #ff6400 !important; }
     .hint {
       width: 100% !important;
-      max-width: 330px !important;
+      max-width: min(84.615vw, 51.5625vh) !important;
       margin: 0 !important;
       padding: 0 !important;
       color: #f0f1f3 !important;
-      font-size: 19px !important;
-      line-height: 25px !important;
+      font-size: min(4.872vw, 2.96875vh) !important;
+      line-height: min(6.41vw, 3.90625vh) !important;
       font-weight: 600 !important;
       text-align: center !important;
       white-space: normal !important;
@@ -164,8 +164,8 @@
       display: block !important;
       flex: none !important;
       width: 100% !important;
-      height: 2px !important;
-      margin: 17px 0 16px !important;
+      height: min(.513vw, .3125vh) !important;
+      margin: min(4.359vw, 2.65625vh) 0 min(4.103vw, 2.5vh) !important;
       padding: 0 !important;
       background: #36ff15 !important;
       box-shadow: 0 0 7px rgba(40,255,15,.72) !important;
@@ -183,11 +183,11 @@
     }
     .key-label {
       display: block !important;
-      margin: 0 0 8px !important;
+      margin: 0 0 min(2.051vw, 1.25vh) !important;
       padding: 0 !important;
       color: #fff !important;
-      font-size: 21px !important;
-      line-height: 26px !important;
+      font-size: min(5.385vw, 3.28125vh) !important;
+      line-height: min(6.667vw, 4.0625vh) !important;
       font-weight: 700 !important;
       text-align: center !important;
     }
@@ -197,12 +197,12 @@
       justify-content: center !important;
       width: 100% !important;
       min-width: 0 !important;
-      height: 64px !important;
+      height: min(16.41vw, 10vh) !important;
       margin: 0 !important;
-      padding: 0 10px !important;
+      padding: 0 min(2.564vw, 1.5625vh) !important;
       overflow: hidden !important;
       border: 2px solid transparent !important;
-      border-radius: 11px !important;
+      border-radius: min(2.821vw, 1.71875vh) !important;
       background:
         linear-gradient(rgba(3,5,6,.98), rgba(3,5,6,.98)) padding-box,
         linear-gradient(100deg, #25ff08 0%, #8fff27 49%, #ff6500 54%, #ff4b00 100%) border-box !important;
@@ -216,8 +216,8 @@
       margin: 0 !important;
       padding: 0 !important;
       color: #b8ff39 !important;
-      font-size: 29px;
-      line-height: 35px !important;
+      font-size: min(7.436vw, 4.53125vh);
+      line-height: min(8.974vw, 5.46875vh) !important;
       letter-spacing: 0 !important;
       font-weight: 800 !important;
       text-align: center !important;
@@ -228,8 +228,8 @@
     }
     .error {
       color: #ffb8b8 !important;
-      font-size: 12px !important;
-      line-height: 15px !important;
+      font-size: min(3.077vw, 1.875vh) !important;
+      line-height: min(3.846vw, 2.34375vh) !important;
       white-space: normal !important;
     }
   </style>
@@ -278,15 +278,24 @@
       const fallbackCode = String(new URLSearchParams(window.location.search).get('code') || '').trim().toLowerCase();
       let currentCode = '';
       let qrInstance = null;
+      let renderedQrPixelSize = 0;
       let refreshInProgress = false;
+
+      function currentQrPixelSize() {
+        const scale = Math.min(window.innerWidth / 390, window.innerHeight / 640);
+        return Math.max(64, Math.round(220 * scale));
+      }
 
       function fitCodeToBox(value) {
         if (!value || !keyBox || !codeEl) return;
         const measure = document.createElement('canvas').getContext('2d');
         if (!measure) return;
+        codeEl.style.fontSize = '';
         const availableWidth = Math.max(10, keyBox.clientWidth - 20);
-        let size = 29;
-        while (size > 7.5) {
+        const baseSize = parseFloat(window.getComputedStyle(codeEl).fontSize) || 29;
+        let size = baseSize;
+        const minSize = Math.max(7.5, baseSize * 0.45);
+        while (size > minSize) {
           measure.font = '800 ' + size + 'px Arial';
           if (measure.measureText(value).width <= availableWidth) break;
           size -= 0.25;
@@ -302,26 +311,27 @@
         codeEl.textContent = nextCode;
         fitCodeToBox(nextCode);
 
-        // No se eliminan ni se vuelven a crear el canvas/la imagen.
-        // La misma instancia conserva el tamaño y la posición definidos por CSS.
-        if (nextCode === currentCode && qrInstance) return true;
+        const nextQrPixelSize = currentQrPixelSize();
+        if (
+          nextCode === currentCode &&
+          qrInstance &&
+          nextQrPixelSize === renderedQrPixelSize
+        ) return true;
 
         currentCode = nextCode;
+        renderedQrPixelSize = nextQrPixelSize;
         const target = new URL('/ahtv/index.html', window.location.origin);
         target.searchParams.set('access', nextCode);
 
-        if (!qrInstance) {
-          qrInstance = new QRCode(qrEl, {
-            text: target.toString(),
-            width: 220,
-            height: 220,
-            colorDark: '#0c0d10',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-          });
-        } else {
-          qrInstance.makeCode(target.toString());
-        }
+        qrEl.innerHTML = '';
+        qrInstance = new QRCode(qrEl, {
+          text: target.toString(),
+          width: nextQrPixelSize,
+          height: nextQrPixelSize,
+          colorDark: '#0c0d10',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
         return true;
       }
 
@@ -379,7 +389,7 @@
       window.setInterval(refreshCurrentCode, 15000);
       window.addEventListener('focus', refreshCurrentCode);
       window.addEventListener('resize', function () {
-        if (currentCode) fitCodeToBox(currentCode);
+        if (currentCode) renderAccessCode(currentCode);
       });
       document.addEventListener('visibilitychange', function () {
         if (!document.hidden) refreshCurrentCode();
