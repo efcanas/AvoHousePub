@@ -266,7 +266,7 @@ Deno.serve(async (req: Request) => {
       const result = await sendToAll(payload, config);
       return respond(req, { ok: true, ...result });
     } catch (error) {
-      console.error("[admin-push] No fue posible despachar el evento.");
+      console.error("[admin-push] Dispatch error:", error instanceof Error ? error.message : String(error));
       return respond(req, { ok: false, message: "No fue posible enviar la notificación." }, 500);
     }
   }
