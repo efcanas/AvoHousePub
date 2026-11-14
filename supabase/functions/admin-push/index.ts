@@ -44,7 +44,7 @@ function decodeBase64Url(value: string): Uint8Array {
 function encodeBase64Url(value: Uint8Array): string {
   let binary = "";
   for (const byte of value) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
 function rawVapidKeysToJwk(publicKeyBase64Url: string, privateKeyBase64Url: string) {
