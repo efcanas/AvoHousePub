@@ -624,12 +624,19 @@
 
 
     .admin-push-card { border-color: rgba(184,255,57,.28); }
-    .admin-push-card .push-help { margin:8px 0 12px; color:var(--muted); font-size:13px; line-height:1.5; }
-    .admin-push-actions { display:flex; flex-wrap:wrap; gap:8px; }
-    .admin-push-actions button { margin:0; }
-    #pushStatus { min-height:18px; margin-top:10px; font-size:12px; }
-    #pushDeviceCount { margin-top:5px; color:var(--muted); font-size:11px; }
-    @media(max-width:640px){ .admin-push-actions { display:grid; grid-template-columns:1fr; } .admin-push-actions button { width:100%; } }
+    .admin-push-actions {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .admin-push-actions.is-single { grid-template-columns:1fr; }
+    .admin-push-actions button {
+      width:100%;
+      min-width:0;
+      margin:0;
+      padding:12px 10px;
+      white-space:normal;
+    }
 
 </style>
   <link rel="stylesheet" href="../../cuenta/admin/header.css?v=20261019-2">
@@ -691,13 +698,10 @@
         <h3 id="adminPushTitle" style="margin:0;">Notificaciones AHP</h3>
         <span id="pushDeviceState" class="muted">COMPROBANDO</span>
       </div>
-      <div class="admin-push-actions">
-        <button id="pushEnableButton" class="primary" type="button" disabled>ACTIVAR EN ESTE DISPOSITIVO</button>
-        <button id="pushTestButton" class="danger" type="button" hidden>ENVIAR NOTIFICACIÓN DE PRUEBA</button>
-        <button id="pushDisableButton" class="danger" type="button" hidden>DESACTIVAR EN ESTE DISPOSITIVO</button>
+      <div id="pushActions" class="admin-push-actions is-single">
+        <button id="pushEnableButton" class="mode-action-enable" type="button" disabled>ENVIAR NOTIFICACIÓN</button>
+        <button id="pushDisableButton" class="mode-action-disable" type="button" hidden>DESACTIVAR</button>
       </div>
-      <div id="pushStatus" class="meta" role="status" aria-live="polite">Comprobando compatibilidad…</div>
-      <div id="pushDeviceCount"></div>
     </section>
 
     <div class="card admin-song-card">
@@ -823,11 +827,9 @@
   const songSuggestionsCardEl = document.querySelector(".admin-suggestions-card");
 
   const pushDeviceStateEl = document.getElementById("pushDeviceState");
+  const pushActionsEl = document.getElementById("pushActions");
   const pushEnableButton = document.getElementById("pushEnableButton");
-  const pushTestButton = document.getElementById("pushTestButton");
   const pushDisableButton = document.getElementById("pushDisableButton");
-  const pushStatusEl = document.getElementById("pushStatus");
-  const pushDeviceCountEl = document.getElementById("pushDeviceCount");
 
   let pushRegistration = null;
   let pushCurrentSubscription = null;
@@ -1313,8 +1315,9 @@
 
 
   function setPushMessage(message, isError = false) {
-    pushStatusEl.textContent = message || "";
-    pushStatusEl.className = isError ? "error" : "meta";
+    if (!isError) return;
+    pushDeviceStateEl.title = message || "No fue posible completar la acción.";
+    console.error("[AHP Push]", message || "Error en notificaciones.");
   }
 
   function pushIsIOS() {
@@ -1352,15 +1355,12 @@
     return data;
   }
 
-  function renderPushState(enabled, deviceCount) {
-    pushEnableButton.hidden = enabled;
-    pushTestButton.hidden = !enabled;
+  function renderPushState(enabled) {
+    pushActionsEl.classList.toggle("is-single", !enabled);
     pushDisableButton.hidden = !enabled;
     pushDeviceStateEl.textContent = enabled ? "ACTIVADAS" : "DESACTIVADAS";
-    pushDeviceStateEl.className = enabled ? "ok" : "muted";
-    pushDeviceCountEl.textContent = deviceCount
-      ? deviceCount + (deviceCount === 1 ? " dispositivo autorizado para esta cuenta." : " dispositivos autorizados para esta cuenta.")
-      : "Todavía no hay dispositivos autorizados.";
+    pushDeviceStateEl.className = enabled ? "ok" : "error";
+    pushDeviceStateEl.removeAttribute("title");
   }
 
   async function initPushNotifications() {
@@ -1377,7 +1377,7 @@
 
       if (!pushSupported) {
         pushDeviceStateEl.textContent = "NO DISPONIBLE";
-        renderPushState(false, 0);
+        renderPushState(false);
         pushEnableButton.disabled = true;
         setPushMessage("Este navegador no admite notificaciones web push.", true);
         return;
@@ -1386,7 +1386,7 @@
       pushStandaloneRequired = pushIsIOS() && !pushIsStandalone();
       if (pushStandaloneRequired) {
         pushDeviceStateEl.textContent = "REQUIERE INSTALACIÓN";
-        renderPushState(false, 0);
+        renderPushState(false);
         pushEnableButton.disabled = true;
         setPushMessage("En iPhone o iPad, abre AHP desde el icono agregado a la pantalla de inicio. No actives las notificaciones desde una pestaña normal de Safari.", true);
         return;
@@ -1394,7 +1394,7 @@
 
       if (Notification.permission === "denied") {
         pushDeviceStateEl.textContent = "PERMISO BLOQUEADO";
-        renderPushState(false, 0);
+        renderPushState(false);
         pushEnableButton.disabled = true;
         setPushMessage("El permiso está bloqueado por el navegador o el sistema. Debes habilitar las notificaciones en los ajustes de este dispositivo.", true);
         return;
@@ -1414,7 +1414,7 @@
       });
 
       pushSubscriptionRegistered = Boolean(pushCurrentSubscription && status.enabled);
-      renderPushState(pushSubscriptionRegistered, Number(status.devices || 0));
+      renderPushState(pushSubscriptionRegistered);
 
       if (pushSubscriptionRegistered) {
         setPushMessage("Este dispositivo está autorizado. Recibirás avisos aunque AHP no esté abierto.");
@@ -1424,13 +1424,12 @@
     } catch (error) {
       console.error(error);
       pushDeviceStateEl.textContent = "NO DISPONIBLE";
-      renderPushState(false, 0);
+      renderPushState(false);
       setPushMessage(error.message || "No se pudo comprobar la configuración de notificaciones.", true);
     } finally {
       pushStatusLoading = false;
       pushEnableButton.disabled = pushSaving || !pushSupported || pushStandaloneRequired ||
-        (typeof Notification !== "undefined" && Notification.permission === "denied") ||
-        pushSubscriptionRegistered;
+        (typeof Notification !== "undefined" && Notification.permission === "denied");
     }
   }
 
@@ -1438,69 +1437,57 @@
     if (pushSaving || !pushSupported || !pushRegistration || !pushPublicKey) return;
     pushSaving = true;
     pushEnableButton.disabled = true;
-    setPushMessage("Solicitando permiso al dispositivo…");
 
     try {
-      let permission = Notification.permission;
-      if (permission === "default") {
-        permission = await Notification.requestPermission();
-      }
-      if (permission !== "granted") {
-        setPushMessage(
-          permission === "denied"
-            ? "No se concedió el permiso. Puedes habilitarlo desde los ajustes de notificaciones del dispositivo."
-            : "No se concedió el permiso para enviar notificaciones.",
-          true
-        );
-        return;
-      }
+      if (!pushSubscriptionRegistered) {
+        let permission = Notification.permission;
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
 
-      const subscription = await pushRegistration.pushManager.getSubscription() ||
-        await pushRegistration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: pushApplicationServerKey(pushPublicKey)
+        if (permission !== "granted") {
+          if (permission === "denied") {
+            pushDeviceStateEl.textContent = "PERMISO BLOQUEADO";
+            pushDeviceStateEl.className = "error";
+          }
+          throw new Error("No se concedió el permiso para enviar notificaciones.");
+        }
+
+        const subscription = await pushRegistration.pushManager.getSubscription() ||
+          await pushRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: pushApplicationServerKey(pushPublicKey)
+          });
+
+        await invokeAdminPush({
+          action: "subscribe",
+          subscription: subscription.toJSON(),
+          deviceLabel: pushDeviceLabel()
         });
 
-      const result = await invokeAdminPush({
-        action: "subscribe",
-        subscription: subscription.toJSON(),
-        deviceLabel: pushDeviceLabel()
-      });
+        pushCurrentSubscription = subscription;
+        pushSubscriptionRegistered = true;
+        renderPushState(true);
+      }
 
-      pushCurrentSubscription = subscription;
-      pushSubscriptionRegistered = true;
-      const status = await invokeAdminPush({
-        action: "status",
-        endpoint: subscription.endpoint
-      });
-      renderPushState(true, Number(status.devices || 1));
-      setPushMessage(result.message || "Notificaciones activadas en este dispositivo.");
-    } catch (error) {
-      console.error(error);
-      setPushMessage(error.message || "No fue posible activar las notificaciones.", true);
-    } finally {
-      pushSaving = false;
-      pushEnableButton.disabled = pushSubscriptionRegistered;
-    }
-  }
+      if (!pushCurrentSubscription) {
+        pushCurrentSubscription = await pushRegistration.pushManager.getSubscription();
+      }
+      if (!pushCurrentSubscription) {
+        throw new Error("No existe una suscripción activa para este dispositivo.");
+      }
 
-  async function testPushNotifications() {
-    if (pushSaving || !pushCurrentSubscription) return;
-    pushSaving = true;
-    pushTestButton.disabled = true;
-    setPushMessage("Enviando notificación de prueba…");
-    try {
-      const result = await invokeAdminPush({
+      await invokeAdminPush({
         action: "test",
         endpoint: pushCurrentSubscription.endpoint
       });
-      setPushMessage(result.message || "Notificación de prueba enviada.");
+      pushDeviceStateEl.removeAttribute("title");
     } catch (error) {
-      console.error(error);
-      setPushMessage(error.message || "No fue posible enviar la prueba.", true);
+      setPushMessage(error.message || "No fue posible activar o enviar la notificación.", true);
     } finally {
       pushSaving = false;
-      pushTestButton.disabled = false;
+      pushEnableButton.disabled = !pushSupported || pushStandaloneRequired ||
+        (typeof Notification !== "undefined" && Notification.permission === "denied");
     }
   }
 
@@ -1517,17 +1504,16 @@
       await pushCurrentSubscription.unsubscribe();
       pushCurrentSubscription = null;
       pushSubscriptionRegistered = false;
-      const status = await invokeAdminPush({ action: "status", endpoint: "" });
-      renderPushState(false, Number(status.devices || 0));
-      setPushMessage("Notificaciones desactivadas en este dispositivo.");
+      renderPushState(false);
+      setPushMessage("");
     } catch (error) {
       console.error(error);
       setPushMessage(error.message || "No fue posible desactivar las notificaciones.", true);
     } finally {
       pushSaving = false;
       pushDisableButton.disabled = false;
-      pushEnableButton.disabled = Boolean(pushCurrentSubscription) ||
-        !pushSupported || pushStandaloneRequired;
+      pushEnableButton.disabled = !pushSupported || pushStandaloneRequired ||
+        (typeof Notification !== "undefined" && Notification.permission === "denied");
     }
   }
 
@@ -2381,7 +2367,6 @@ async function init() {
   });
 
   pushEnableButton.addEventListener("click", enablePushNotifications);
-  pushTestButton.addEventListener("click", testPushNotifications);
   pushDisableButton.addEventListener("click", disablePushNotifications);
 
   init();
