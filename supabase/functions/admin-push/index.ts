@@ -227,19 +227,27 @@ Deno.serve(async (req: Request) => {
 
   if (action === "status") {
     const endpoint = cleanString(body.endpoint, 2048);
-    let query = service
+    const { data, count, error } = await service
       .from("ah_admin_push_subscriptions")
-      .select("id,device_label,created_at,last_seen_at", { count: "exact" })
+      .select("id,endpoint,device_label,created_at,last_seen_at", { count: "exact" })
       .eq("user_id", user.id);
 
-    if (endpoint) query = query.eq("endpoint", endpoint);
-    const { data, count, error } = await query;
     if (error) return respond(req, { ok: false, message: "No se pudo consultar el estado de notificaciones." }, 500);
+    const currentDevice = endpoint
+      ? (data ?? []).find((item) => item.endpoint === endpoint) ?? null
+      : null;
     return respond(req, {
       ok: true,
-      enabled: Boolean(endpoint && data?.length),
+      enabled: Boolean(currentDevice),
       devices: count ?? data?.length ?? 0,
-      device: data?.[0] ?? null
+      device: currentDevice
+        ? {
+            id: currentDevice.id,
+            device_label: currentDevice.device_label,
+            created_at: currentDevice.created_at,
+            last_seen_at: currentDevice.last_seen_at
+          }
+        : null
     });
   }
 
