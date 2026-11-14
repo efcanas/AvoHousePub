@@ -173,6 +173,7 @@ async function sendOne(subscription: Record<string, unknown>, config: Record<str
 }
 
 async function sendToAll(payload: Record<string, unknown>, config: Record<string, string>) {
+  await getApplicationServer(config);
   const { data: subscriptions, error } = await service
     .from("ah_admin_push_subscriptions")
     .select("id,endpoint,p256dh,auth");
