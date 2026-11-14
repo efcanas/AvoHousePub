@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import webPush from "npm:web-push@4.0.0";
+import * as webPush from "jsr:@negrel/webpush@0.5.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -34,11 +34,73 @@ function cleanString(value: unknown, max = 500): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-function decodeVapidKey(value: string): Uint8Array {
+function decodeBase64Url(value: string): Uint8Array {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
   const binary = atob(padded);
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function encodeBase64Url(value: Uint8Array): string {
+  let binary = "";
+  for (const byte of value) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+}
+
+function rawVapidKeysToJwk(publicKeyBase64Url: string, privateKeyBase64Url: string) {
+  const publicBytes = decodeBase64Url(publicKeyBase64Url);
+  const privateBytes = decodeBase64Url(privateKeyBase64Url);
+
+  if (publicBytes.length !== 65 || publicBytes[0] !== 4 || privateBytes.length !== 32) {
+    throw new Error("Las claves VAPID no tienen el formato P-256 esperado.");
+  }
+
+  const x = encodeBase64Url(publicBytes.slice(1, 33));
+  const y = encodeBase64Url(publicBytes.slice(33, 65));
+  const d = encodeBase64Url(privateBytes);
+
+  return {
+    publicKey: {
+      kty: "EC",
+      crv: "P-256",
+      alg: "ES256",
+      x,
+      y,
+      key_ops: ["verify"],
+      ext: true
+    },
+    privateKey: {
+      kty: "EC",
+      crv: "P-256",
+      alg: "ES256",
+      x,
+      y,
+      d,
+      key_ops: ["sign"],
+      ext: true
+    }
+  };
+}
+
+let cachedApplicationServer: InstanceType<typeof webPush.ApplicationServer> | null = null;
+let cachedVapidPair = "";
+
+async function getApplicationServer(config: Record<string, string>) {
+  const pairId = config.ah_push_vapid_public_key + "." + config.ah_push_vapid_private_key;
+  if (cachedApplicationServer && cachedVapidPair === pairId) return cachedApplicationServer;
+
+  const exportedKeys = rawVapidKeysToJwk(
+    config.ah_push_vapid_public_key,
+    config.ah_push_vapid_private_key
+  );
+  const vapidKeys = await webPush.importVapidKeys(exportedKeys, { extractable: false });
+
+  cachedApplicationServer = await webPush.ApplicationServer.new({
+    contactInformation: config.ah_push_vapid_subject,
+    vapidKeys
+  });
+  cachedVapidPair = pairId;
+  return cachedApplicationServer;
 }
 
 const service = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -94,6 +156,7 @@ function parseSubscription(value: unknown) {
 }
 
 async function sendOne(subscription: Record<string, unknown>, config: Record<string, string>, payload: Record<string, unknown>) {
+  const applicationServer = await getApplicationServer(config);
   const stored = {
     endpoint: String(subscription.endpoint),
     keys: {
@@ -102,16 +165,10 @@ async function sendOne(subscription: Record<string, unknown>, config: Record<str
     }
   };
 
-  webPush.setVapidDetails(
-    config.ah_push_vapid_subject,
-    config.ah_push_vapid_public_key,
-    config.ah_push_vapid_private_key
-  );
-
-  return await webPush.sendNotification(
-    stored,
+  const subscriber = applicationServer.subscribe(stored);
+  return await subscriber.pushTextMessage(
     JSON.stringify(payload),
-    { TTL: 86400, urgency: "high" }
+    { ttl: 86400, urgency: webPush.Urgency.High }
   );
 }
 
@@ -134,7 +191,8 @@ async function sendToAll(payload: Record<string, unknown>, config: Record<string
       return;
     }
     failed += 1;
-    const statusCode = Number((result.reason as { statusCode?: number })?.statusCode);
+    const error = result.reason as { statusCode?: number; response?: Response };
+    const statusCode = Number(error?.statusCode || error?.response?.status || 0);
     if (statusCode === 404 || statusCode === 410) expiredIds.push(String(items[index].id));
     console.error("[admin-push] Falló la entrega a un dispositivo:", statusCode || "sin código");
   });
