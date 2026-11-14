@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "AvoHouse",
+  "short_name": "AvoHouse",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#101114",
+  "theme_color": "#101114",
+  "icons": [
+    {
+      "src": "/LogoPrincipal.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}
