@@ -691,7 +691,6 @@
         <h3 id="adminPushTitle" style="margin:0;">Notificaciones AHP</h3>
         <span id="pushDeviceState" class="muted">COMPROBANDO</span>
       </div>
-      <p class="push-help">Activa los avisos en este dispositivo para recibir registros nuevos, sugerencias musicales y solicitudes pendientes cuando AHtv esté en modo manual. La activación se realiza por separado en cada teléfono o equipo.</p>
       <div class="admin-push-actions">
         <button id="pushEnableButton" class="primary" type="button" disabled>ACTIVAR EN ESTE DISPOSITIVO</button>
         <button id="pushTestButton" class="danger" type="button" hidden>ENVIAR NOTIFICACIÓN DE PRUEBA</button>
@@ -1417,7 +1416,7 @@
       pushSubscriptionRegistered = Boolean(pushCurrentSubscription && status.enabled);
       renderPushState(pushSubscriptionRegistered, Number(status.devices || 0));
 
-      if (enabled) {
+      if (pushSubscriptionRegistered) {
         setPushMessage("Este dispositivo está autorizado. Recibirás avisos aunque AHP no esté abierto.");
       } else {
         setPushMessage("Las notificaciones aún no están activadas en este dispositivo.");
