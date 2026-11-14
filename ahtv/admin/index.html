@@ -832,6 +832,7 @@
 
   let pushRegistration = null;
   let pushCurrentSubscription = null;
+  let pushSubscriptionRegistered = false;
   let pushPublicKey = null;
   let pushStatusLoading = false;
   let pushSaving = false;
@@ -1413,8 +1414,8 @@
         endpoint: pushCurrentSubscription?.endpoint || ""
       });
 
-      const enabled = Boolean(pushCurrentSubscription && status.enabled);
-      renderPushState(enabled, Number(status.devices || 0));
+      pushSubscriptionRegistered = Boolean(pushCurrentSubscription && status.enabled);
+      renderPushState(pushSubscriptionRegistered, Number(status.devices || 0));
 
       if (enabled) {
         setPushMessage("Este dispositivo está autorizado. Recibirás avisos aunque AHP no esté abierto.");
@@ -1430,7 +1431,7 @@
       pushStatusLoading = false;
       pushEnableButton.disabled = pushSaving || !pushSupported || pushStandaloneRequired ||
         (typeof Notification !== "undefined" && Notification.permission === "denied") ||
-        Boolean(pushCurrentSubscription && pushCurrentSubscription.endpoint);
+        pushSubscriptionRegistered;
     }
   }
 
@@ -1455,10 +1456,11 @@
         return;
       }
 
-      const subscription = await pushRegistration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: pushApplicationServerKey(pushPublicKey)
-      });
+      const subscription = await pushRegistration.pushManager.getSubscription() ||
+        await pushRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: pushApplicationServerKey(pushPublicKey)
+        });
 
       const result = await invokeAdminPush({
         action: "subscribe",
@@ -1467,6 +1469,7 @@
       });
 
       pushCurrentSubscription = subscription;
+      pushSubscriptionRegistered = true;
       const status = await invokeAdminPush({
         action: "status",
         endpoint: subscription.endpoint
@@ -1478,7 +1481,7 @@
       setPushMessage(error.message || "No fue posible activar las notificaciones.", true);
     } finally {
       pushSaving = false;
-      pushEnableButton.disabled = Boolean(pushCurrentSubscription);
+      pushEnableButton.disabled = pushSubscriptionRegistered;
     }
   }
 
@@ -1514,6 +1517,7 @@
       });
       await pushCurrentSubscription.unsubscribe();
       pushCurrentSubscription = null;
+      pushSubscriptionRegistered = false;
       const status = await invokeAdminPush({ action: "status", endpoint: "" });
       renderPushState(false, Number(status.devices || 0));
       setPushMessage("Notificaciones desactivadas en este dispositivo.");
