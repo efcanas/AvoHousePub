@@ -249,22 +249,14 @@ async function buildAndSend(receiptNumber: string) {
     const name = escapeHtml(item?.item_name || item?.variant_name || "Producto");
     const lineNote = String(item?.line_note ?? "").trim();
     const noteHtml = lineNote
-      ? `<div style="margin-top:3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.45;color:#b9bec8;">${escapeHtml(lineNote).replace(/\r?\n/g, "<br>")}</div>`
+      ? `<br><span style="font-size:12px;color:#b9bec8;">${escapeHtml(lineNote).replace(/\r?\n/g, "<br>")}</span>`
       : "";
     const total = money(grossLineTotals[index] ?? 0);
-    return `<tr>
-      <td style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid #292929;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#ffffff;">${qty} × ${name}${noteHtml}</td>
-      <td align="right" style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid #292929;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#ffffff;font-weight:700;white-space:nowrap;">${total}</td>
-    </tr>`;
+    return `<tr><td style="padding:8px 0;">${qty} × ${name}${noteHtml}</td><td align="right" style="padding:8px 0;font-weight:700;white-space:nowrap;">${total}</td></tr>`;
   }).join("");
 
   const receiptNoteHtml = receiptNote
-    ? `<tr>
-      <td colspan="2" style="padding:12px 0;border-bottom:1px solid #292929;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#d4d7dd;">
-        <strong>Observaciones del pedido</strong><br>
-        ${escapeHtml(receiptNote).replace(/\r?\n/g, "<br>")}
-      </td>
-    </tr>`
+    ? `<tr><td colspan="2" style="padding:8px 0;"><strong>Observaciones del pedido</strong><br>${escapeHtml(receiptNote).replace(/\r?\n/g, "<br>")}</td></tr>`
     : "";
   const itemsHtmlWithNotes = itemsHtml + receiptNoteHtml;
 
