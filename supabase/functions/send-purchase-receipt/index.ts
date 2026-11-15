@@ -215,6 +215,7 @@ async function buildAndSend(receiptNumber: string) {
   const rawReceipt = receipt.raw_receipt && typeof receipt.raw_receipt === "object"
     ? receipt.raw_receipt
     : {};
+  const receiptNote = String(rawReceipt?.note ?? "").trim();
   const receiptDiscounts = Array.isArray(rawReceipt.total_discounts)
     ? rawReceipt.total_discounts
     : [];
@@ -246,18 +247,38 @@ async function buildAndSend(receiptNumber: string) {
   const itemsHtml = items.map((item: any, index: number) => {
     const qty = Number(item?.quantity) || 1;
     const name = escapeHtml(item?.item_name || item?.variant_name || "Producto");
+    const lineNote = String(item?.line_note ?? "").trim();
+    const noteHtml = lineNote
+      ? `<div style="margin-top:3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.45;color:#b9bec8;">${escapeHtml(lineNote).replace(/\r?\n/g, "<br>")}</div>`
+      : "";
     const total = money(grossLineTotals[index] ?? 0);
     return `<tr>
-      <td style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid #292929;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#ffffff;">${qty} × ${name}</td>
+      <td style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid #292929;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#ffffff;">${qty} × ${name}${noteHtml}</td>
       <td align="right" style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid #292929;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#ffffff;font-weight:700;white-space:nowrap;">${total}</td>
     </tr>`;
   }).join("");
 
+  const receiptNoteHtml = receiptNote
+    ? `<tr>
+      <td colspan="2" style="padding:12px 0;border-bottom:1px solid #292929;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#d4d7dd;">
+        <strong>Observaciones del pedido</strong><br>
+        ${escapeHtml(receiptNote).replace(/\r?\n/g, "<br>")}
+      </td>
+    </tr>`
+    : "";
+  const itemsHtmlWithNotes = itemsHtml + receiptNoteHtml;
+
   const itemsText = items.map((item: any, index: number) => {
     const qty = Number(item?.quantity) || 1;
     const name = String(item?.item_name || item?.variant_name || "Producto");
-    return `${qty} × ${name} · ${money(grossLineTotals[index] ?? 0)}`;
+    const lineNote = String(item?.line_note ?? "").trim();
+    const itemText = `${qty} × ${name} · ${money(grossLineTotals[index] ?? 0)}`;
+    return lineNote ? `${itemText}\n   ${lineNote}` : itemText;
   }).join("\n");
+
+  const itemsTextWithNotes = itemsText + (
+    receiptNote ? `\n\nObservaciones del pedido:\n${receiptNote}` : ""
+  );
 
   const payments = Array.isArray(receipt.payments) ? receipt.payments : [];
   const paymentNames = [...new Set(
@@ -288,8 +309,8 @@ async function buildAndSend(receiptNumber: string) {
           CUSTOMER_NAME: String(profile.full_name ?? "Cliente AvoHouse"),
           TICKET: receiptNumber,
           PURCHASE_DATE: formatDate(receipt.receipt_date || receipt.created_at),
-          ITEMS_HTML: itemsHtml,
-          ITEMS_TEXT: itemsText,
+          ITEMS_HTML: itemsHtmlWithNotes,
+          ITEMS_TEXT: itemsTextWithNotes,
           SUBTOTAL: money(grossSubtotal),
           POINTS_DISCOUNT: pointsDiscountTotal > 0 ? "−" + money(pointsDiscountTotal) : "—",
           OTHER_DISCOUNT: otherDiscountTotal > 0 ? "−" + money(otherDiscountTotal) : "—",
