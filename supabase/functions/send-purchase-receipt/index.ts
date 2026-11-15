@@ -19,6 +19,8 @@ const SUPABASE_AUTH = getSupabaseAuth();
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const PURCHASE_TEMPLATE_ID = "5df899e2-f3ff-43e6-89ba-43e3484b059d";
 const FROM_EMAIL = "AvoHouse <noreply@avohousepub.com>";
+const MAX_TEMPLATE_VARIABLE_CHARS = 1800;
+const ITEM_TEMPLATE_CHUNK_COUNT = 18;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -66,6 +68,21 @@ function escapeHtml(value: unknown): string {
   }[c] ?? c));
 }
 
+function splitTemplateValue(value: string, variableName: string): string[] {
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < value.length) {
+    let end = Math.min(start + MAX_TEMPLATE_VARIABLE_CHARS, value.length);
+    if (end < value.length && /[\uD800-\uDBFF]/.test(value.charAt(end - 1))) end--;
+    chunks.push(value.slice(start, end));
+    if (chunks.length > ITEM_TEMPLATE_CHUNK_COUNT) {
+      throw new Error(`${variableName} requiere más de ${ITEM_TEMPLATE_CHUNK_COUNT} bloques de ${MAX_TEMPLATE_VARIABLE_CHARS} caracteres. El correo no se envió para evitar un comprobante incompleto.`);
+    }
+    start = end;
+  }
+  if (chunks.length === 0) chunks.push("");
+  return Array.from({ length: ITEM_TEMPLATE_CHUNK_COUNT }, (_, index) => chunks[index] ?? "");
+}
 async function supabaseRequest(path: string, init: RequestInit = {}) {
   if (!SUPABASE_URL || !SUPABASE_AUTH) throw new Error("Faltan las credenciales internas de Supabase.");
 
@@ -272,6 +289,20 @@ async function buildAndSend(receiptNumber: string) {
     receiptNote ? `\n\nObservaciones del pedido:\n${receiptNote}` : ""
   );
 
+  const itemTemplateVariables: Record<string, string> = {};
+  try {
+    const htmlChunks = splitTemplateValue(itemsHtmlWithNotes, "ITEMS_HTML");
+    const textChunks = splitTemplateValue(itemsTextWithNotes, "ITEMS_TEXT");
+    for (let index = 0; index < ITEM_TEMPLATE_CHUNK_COUNT; index++) {
+      const suffix = String(index + 1).padStart(2, "0");
+      itemTemplateVariables[`ITEMS_HTML_${suffix}`] = htmlChunks[index];
+      itemTemplateVariables[`ITEMS_TEXT_${suffix}`] = textChunks[index];
+    }
+  } catch (error) {
+    const message = cleanError(error);
+    await upsertState(receiptNumber, { status: "error", last_error: message });
+    throw error;
+  }
   const payments = Array.isArray(receipt.payments) ? receipt.payments : [];
   const paymentNames = [...new Set(
     payments.map((p: any) => String(p?.name ?? "").trim()).filter(Boolean),
@@ -301,8 +332,9 @@ async function buildAndSend(receiptNumber: string) {
           CUSTOMER_NAME: String(profile.full_name ?? "Cliente AvoHouse"),
           TICKET: receiptNumber,
           PURCHASE_DATE: formatDate(receipt.receipt_date || receipt.created_at),
-          ITEMS_HTML: itemsHtmlWithNotes,
-          ITEMS_TEXT: itemsTextWithNotes,
+          ITEMS_HTML: "",
+          ITEMS_TEXT: "",
+          ...itemTemplateVariables,
           SUBTOTAL: money(grossSubtotal),
           POINTS_DISCOUNT: pointsDiscountTotal > 0 ? "−" + money(pointsDiscountTotal) : "—",
           OTHER_DISCOUNT: otherDiscountTotal > 0 ? "−" + money(otherDiscountTotal) : "—",
