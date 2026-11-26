@@ -1662,7 +1662,7 @@ function downloadSelectedCustomerContact(){
   const lines=[
     'BEGIN:VCARD',
     'VERSION:3.0',
-    'N:'+escapeVCardText(contactName)+';;;;',
+    'N:;'+escapeVCardText(contactName)+';;;',
     'FN:'+escapeVCardText(contactName),
     'ORG:AvoHouse'
   ];
