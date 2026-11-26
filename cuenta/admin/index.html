@@ -98,6 +98,9 @@ button:disabled{opacity:.45;cursor:default}
 .info{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08);min-width:0}
 .info-label{display:block;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 .info-value{display:block;font-size:16px;word-break:break-word}
+.customer-vcard-link{color:inherit;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:rgba(184,255,57,.6);text-underline-offset:4px;cursor:pointer}
+.customer-vcard-link:hover{color:#b8ff39}
+.customer-vcard-link:focus-visible{outline:2px solid #b8ff39;outline-offset:3px;border-radius:3px}
 .verification-admin{margin-top:8px;padding:9px 10px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.025)}
 .verification-admin-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .verification-admin-badge{font-size:11px;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:5px 8px;color:#bdbdbd}
@@ -1281,7 +1284,7 @@ body.admin-achievement-modal-open{overflow:hidden}
           <span id="clientStatus" class="panel-tag">—</span>
         </div>
         <div class="info-grid">
-          <div class="info"><span class="info-label">Nickname</span><span id="infoUsername" class="info-value">—</span></div>
+          <div class="info"><span class="info-label">Nickname</span><a id="infoUsername" class="info-value customer-vcard-link" data-edit-view="editFullName" href="#" title="Descargar contacto (.vcf)" aria-label="Descargar tarjeta de contacto del cliente seleccionado">—</a></div>
           <div class="info">
             <span class="info-label">Nombre completo</span>
             <span id="infoFullName" class="info-value edit-view" data-edit-view="editFullName">—</span>
@@ -1632,6 +1635,79 @@ function formatDateInput(value){
   const d=new Date(value+'T00:00:00');
   if(Number.isNaN(d.getTime()))return value;
   return new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(d);
+}
+
+function escapeVCardText(value){
+  return String(value??'')
+    .replace(/\\/g,'\\\\')
+    .replace(/\r\n|\n|\r/g,'\\n')
+    .replace(/,/g,'\\,')
+    .replace(/;/g,'\\;');
+}
+
+function getCustomerInstagramUrl(value){
+  const raw=String(value||'').trim();
+  if(!raw)return '';
+  if(/^https?:\/\//i.test(raw))return raw;
+  if(/^(?:www\.)?instagram\.com\//i.test(raw))return 'https://'+raw.replace(/^www\./i,'www.');
+  const handle=raw.replace(/^@/,'').replace(/\s+/g,'');
+  return handle?'https://www.instagram.com/'+encodeURIComponent(handle)+'/':'';
+}
+
+function downloadSelectedCustomerContact(){
+  if(!selectedProfile?.id)return;
+  const profile=selectedProfile;
+  const baseName=String(profile.full_name||profile.username||'Cliente AvoHouse').trim();
+  const contactName=/^C\s/i.test(baseName)?'C '+baseName.slice(2).trim():'C '+baseName;
+  const lines=[
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    'N:'+escapeVCardText(contactName)+';;;;',
+    'FN:'+escapeVCardText(contactName),
+    'ORG:AvoHouse'
+  ];
+
+  const nickname=String(profile.username||'').trim();
+  if(nickname)lines.push('NICKNAME:'+escapeVCardText(nickname));
+
+  const phone=String(profile.phone||'').trim();
+  if(phone)lines.push('TEL;TYPE=CELL,VOICE:'+escapeVCardText(phone));
+
+  const whatsapp=String(profile.whatsapp||'').trim();
+  const phoneDigits=phone.replace(/\D/g,'');
+  const whatsappDigits=whatsapp.replace(/\D/g,'');
+  if(!profile.whatsapp_same&&whatsapp&&whatsappDigits!==phoneDigits){
+    lines.push('TEL;TYPE=CELL;X-ABLabel=WhatsApp:'+escapeVCardText(whatsapp));
+  }
+
+  const email=String(profile.email||'').trim();
+  if(email)lines.push('EMAIL;TYPE=INTERNET:'+escapeVCardText(email));
+
+  const birthDate=String(profile.birth_date||'').slice(0,10);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(birthDate))lines.push('BDAY:'+birthDate);
+
+  const instagramUrl=getCustomerInstagramUrl(profile.instagram);
+  if(instagramUrl){
+    const instagramHandle=String(profile.instagram||'').trim().replace(/^@/,'');
+    lines.push('X-SOCIALPROFILE;TYPE=instagram;X-USER='+escapeVCardText(instagramHandle)+':'+escapeVCardText(instagramUrl));
+  }
+
+  lines.push('END:VCARD');
+  const blob=new Blob([lines.join('\r\n')+'\r\n'],{type:'text/vcard;charset=utf-8'});
+  const objectUrl=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  const safeFilename=contactName
+    .normalize('NFKC')
+    .replace(/[\\/:*?"<>|]+/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+  link.href=objectUrl;
+  link.download=(safeFilename||'C Cliente')+'.vcf';
+  link.rel='noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(objectUrl),1500);
 }
 function movementLabel(type,details={}){
   if(details?.refund_cancellation===true && type==='earn'){
@@ -3723,6 +3799,10 @@ $('customerPagination').addEventListener('click',event=>{
   loadCustomerDirectory();
 });
 $('historyYear').addEventListener('change',populateHistoryMonths);
+$('infoUsername').addEventListener('click',event=>{
+  event.preventDefault();
+  downloadSelectedCustomerContact();
+});
 $('editCustomerBtn').addEventListener('click',()=>customerEditing?saveCustomerData():enterCustomerEditMode());
 $('cancelEditCustomerBtn').addEventListener('click',cancelCustomerEditMode);
 $('deleteCustomerBtn').addEventListener('click',deleteSelectedCustomer);
