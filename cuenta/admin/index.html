@@ -1657,12 +1657,21 @@ function getCustomerInstagramUrl(value){
 function downloadSelectedCustomerContact(){
   if(!selectedProfile?.id)return;
   const profile=selectedProfile;
-  const baseName=String(profile.full_name||profile.username||'Cliente AvoHouse').trim();
+  const firstName=String(profile.first_name||'').trim();
+  const lastName=String(profile.last_name||'').trim();
+  const hasSeparatedName=Boolean(firstName&&lastName);
+  const baseName=hasSeparatedName
+    ? firstName+' '+lastName
+    : String(profile.full_name||profile.username||'Cliente AvoHouse').trim();
   const contactName=/^C\s/i.test(baseName)?'C '+baseName.slice(2).trim():'C '+baseName;
+  const prefixedGivenName=/^C\s/i.test(firstName)?'C '+firstName.slice(2).trim():'C '+firstName;
+  const nameProperty=hasSeparatedName
+    ? 'N:'+escapeVCardText(lastName)+';'+escapeVCardText(prefixedGivenName)+';;;'
+    : 'N:;'+escapeVCardText(contactName)+';;;';
   const lines=[
     'BEGIN:VCARD',
     'VERSION:3.0',
-    'N:;'+escapeVCardText(contactName)+';;;',
+    nameProperty,
     'FN:'+escapeVCardText(contactName),
     'ORG:AvoHouse'
   ];
