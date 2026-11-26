@@ -31,6 +31,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 .password-row input{padding-right:78px}
 .toggle-password{position:absolute;right:9px;bottom:9px;border:0;background:transparent;color:#ddd;font-size:12px;cursor:pointer;padding:5px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.name-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .radio-group{display:flex;align-items:center;gap:26px;margin-top:8px}
 .radio-option{display:flex;align-items:center;gap:7px;font-size:14px;color:#ddd;line-height:1}
 .radio-option input{margin:0}
@@ -71,6 +72,7 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 @media(max-width:480px){
 .card{padding:23px 19px}
 .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.name-row{grid-template-columns:1fr;gap:0}
 .row>.field{min-width:0;font-size:13px}
 .row>.field input,.row>.field select{min-width:0;padding-left:8px;padding-right:8px;font-size:13px}
 .logo{width:105px}
@@ -96,9 +98,14 @@ h1{text-align:center;font-size:28px;margin:0 0 8px}
 </div>
 
 <form id="registerForm" novalidate>
-<label class="field">Nombre completo *
-<input name="nombre" autocomplete="name" required>
+<div class="name-row">
+<label class="field">Nombres *
+<input name="nombres" autocomplete="given-name" maxlength="100" required>
 </label>
+<label class="field">Apellidos *
+<input name="apellidos" autocomplete="family-name" maxlength="100" required>
+</label>
+</div>
 
 <label class="field">Nickname público *
 <input id="username" name="username" maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="Ej. AvoLover82">
@@ -265,7 +272,7 @@ function updatePasswordStatuses(){
 }
 function getMissing(){
   const missing=[];
-  [['nombre','nombre completo'],['tipo_documento','tipo de documento'],['documento','número de documento'],['correo','correo electrónico'],['telefono','número de celular'],['username','nickname'],['fecha_nacimiento','fecha de nacimiento']].forEach(([n,l])=>{if(!field(n).value.trim())missing.push(l)});
+  [['nombres','nombres'],['apellidos','apellidos'],['tipo_documento','tipo de documento'],['documento','número de documento'],['correo','correo electrónico'],['telefono','número de celular'],['username','nickname'],['fecha_nacimiento','fecha de nacimiento']].forEach(([n,l])=>{if(!field(n).value.trim())missing.push(l)});
   const nick=field('username').value.trim();
   if(nick && !/^[A-Za-z0-9_]{3,20}$/.test(nick))missing.push('un nickname válido');
   else if(nick && !nicknameAvailable)missing.push('un nickname disponible');
@@ -358,7 +365,9 @@ registerForm.addEventListener('submit',async e=>{
   registerNotice.classList.add('show');
   try{
 
-  const fullName=field('nombre').value.trim();
+  const firstName=field('nombres').value.trim().replace(/\s+/g,' ');
+  const lastName=field('apellidos').value.trim().replace(/\s+/g,' ');
+  const fullName=[firstName,lastName].filter(Boolean).join(' ');
   const username=field('username').value.trim();
   const documentType=field('tipo_documento').value;
   const documentNumber=field('documento').value.trim();
@@ -371,6 +380,8 @@ registerForm.addEventListener('submit',async e=>{
 
   const {data,error}=await supabaseClient.functions.invoke('register-customer',{
     body:{
+      firstName,
+      lastName,
       fullName,
       username,
       documentType,
